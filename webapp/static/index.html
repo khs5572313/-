@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>정밀 판독기</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #fff; --text: #1b1f24; --muted: #6a737d; --line: #e1e4e8;
+  --accent: #2457d6; --err: #c62828; --warn: #b26a00; --info: #4a5a70; --ok: #1e7f4f;
+  --mark: #fff2b3; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111418; --panel: #1a1f25; --text: #e6e9ed; --muted: #98a2ad; --line: #2c333b;
+          --accent: #7aa2ff; --err: #ff7b72; --warn: #e3b341; --info: #9fb0c4; --ok: #56d39b; --mark: #4a3f10; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 -apple-system, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+header { padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; gap: 12px; align-items: baseline; }
+header h1 { font-size: 18px; margin: 0; }
+header span { color: var(--muted); font-size: 13px; }
+main { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 16px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+.card h2 { font-size: 15px; margin: 0 0 10px; }
+label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+select, input[type=text], button { font: inherit; }
+select, input[type=text] { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; width: 100%; margin-top: 12px; }
+button:disabled { opacity: .5; cursor: default; }
+.drop { border: 2px dashed var(--line); border-radius: 8px; padding: 18px; text-align: center; color: var(--muted); cursor: pointer; }
+.drop.over { border-color: var(--accent); color: var(--accent); }
+.files { font-size: 13px; margin-top: 6px; color: var(--muted); }
+.radio { display: flex; gap: 14px; font-size: 14px; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.jobs { list-style: none; margin: 0; padding: 0; }
+.jobs li { padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+.jobs li:hover, .jobs li.sel { border-color: var(--line); background: var(--bg); }
+.jobs .t { font-weight: 600; font-size: 14px; word-break: break-all; }
+.jobs .s { font-size: 12px; color: var(--muted); }
+.badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid currentColor; margin-right: 4px; }
+.st-done { color: var(--ok); } .st-error { color: var(--err); } .st-running, .st-queued { color: var(--warn); }
+.summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); }
+.summary b { color: var(--text); font-size: 18px; display: block; }
+.issues { max-height: 260px; overflow: auto; font-size: 13px; }
+.issue { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.lv-error { color: var(--err); font-weight: 600; } .lv-warning { color: var(--warn); font-weight: 600; } .lv-info { color: var(--info); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.pager button { min-width: 38px; padding: 4px 8px; font-size: 13px; }
+.pager button.on { outline: 2px solid var(--accent); }
+.pager button.bad { color: var(--err); } .pager button.chk { color: var(--warn); }
+.review { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 1200px) { .review { grid-template-columns: 1fr; } }
+.imgbox { border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: 78vh; background: #888; }
+.imgbox img { display: block; width: 100%; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; font-size: 13px; }
+textarea { width: 100%; height: 60vh; font: 13px/1.6 var(--mono); padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); resize: vertical; }
+.diffs { font-size: 13px; max-height: 18vh; overflow: auto; margin-top: 8px; }
+.diff { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.diff code { background: var(--mark); padding: 0 3px; border-radius: 3px; font-family: var(--mono); }
+table.grid { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.grid th, table.grid td { border: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
+table.grid td.unc { background: var(--mark); }
+.q { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; white-space: pre-wrap; font-size: 14px; }
+.q .no { font-weight: 700; } .q .unc { background: var(--mark); }
+pre.json { font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-all; max-height: 70vh; overflow: auto; background: var(--bg); padding: 10px; border-radius: 8px; }
+.empty { color: var(--muted); text-align: center; padding: 60px 0; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header><h1>정밀 판독기</h1><span>생기부 · 시험지 스캔본/사진 → 이중 판독 · 대조 · 검증</span></header>
+<main>
+  <aside>
+    <div class="card">
+      <h2>새 판독</h2>
+      <div class="drop" id="drop">PDF·사진 파일을 끌어다 놓거나 클릭<br><small>여러 장이면 순서대로 이어 붙입니다</small></div>
+      <input type="file" id="file" multiple accept=".pdf,image/*" hidden>
+      <div class="files" id="fileList"></div>
+      <label>제목(선택)</label><input type="text" id="title" placeholder="예: 3학년 홍길동 생기부">
+      <label>문서 종류</label><select id="profile"></select>
+      <label>판독 방식</label>
+      <div class="radio">
+        <label style="margin:0;color:inherit"><input type="radio" name="passes" value="2" checked> 이중 판독(정확)</label>
+        <label style="margin:0;color:inherit"><input type="radio" name="passes" value="1"> 단일(저렴)</label>
+      </div>
+      <label style="color:inherit"><input type="checkbox" id="forceOcr"> PDF 텍스트 레이어 무시하고 이미지로 판독</label>
+      <div class="hint">이중 판독은 비용이 약 2배이지만 숫자 오판독을 잡아냅니다.</div>
+      <button class="primary" id="go" disabled>판독 시작</button>
+    </div>
+    <div class="card">
+      <h2>작업 목록</h2>
+      <ul class="jobs" id="jobs"></ul>
+    </div>
+  </aside>
+  <section id="detail"><div class="card empty">왼쪽에서 파일을 올리거나 작업을 선택하세요.</div></section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let files = [], current = null, job = null, pageIdx = 0, imgMode = "enhanced", view = "review", poll = null;
+
+async function api(path, opt) {
+  const r = await fetch(path, opt);
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+}
+
+// ---------- 업로드 ----------
+const drop = $("#drop");
+drop.onclick = () => $("#file").click();
+$("#file").onchange = e => setFiles([...e.target.files]);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); setFiles([...e.dataTransfer.files]); };
+function setFiles(f) {
+  files = f;
+  $("#fileList").innerHTML = f.map((x, i) => `${i + 1}. ${esc(x.name)}`).join("<br>");
+  $("#go").disabled = !f.length;
+}
+$("#go").onclick = async () => {
+  const fd = new FormData();
+  files.forEach(f => fd.append("files", f));
+  fd.append("profile", $("#profile").value);
+  fd.append("passes", document.querySelector("input[name=passes]:checked").value);
+  fd.append("force_ocr", $("#forceOcr").checked);
+  fd.append("title", $("#title").value);
+  $("#go").disabled = true;
+  try {
+    const { id } = await api("/api/jobs", { method: "POST", body: fd });
+    setFiles([]); $("#title").value = "";
+    await loadJobs(); openJob(id);
+  } catch (e) { alert("업로드 실패: " + e.message); $("#go").disabled = false; }
+};
+
+// ---------- 작업 목록 ----------
+const STATE = { done: "완료", error: "실패", running: "처리 중", queued: "대기" };
+async function loadJobs() {
+  const list = await api("/api/jobs");
+  $("#jobs").innerHTML = list.map(j => `
+    <li data-id="${j.id}" class="${j.id === current ? "sel" : ""}">
+      <div class="t">${esc(j.title)}</div>
+      <div class="s"><span class="badge st-${j.state}">${STATE[j.state] || j.state}</span>${esc(j.profile)} · ${esc(j.message || "")}</div>
+    </li>`).join("") || `<li class="s">아직 작업이 없습니다.</li>`;
+  document.querySelectorAll("#jobs li[data-id]").forEach(li => li.onclick = () => openJob(li.dataset.id));
+}
+
+async function openJob(id) {
+  if (current !== id) { pageIdx = 0; view = "review"; }
+  current = id;
+  clearTimeout(poll);
+  job = await api(`/api/jobs/${id}`);
+  render();
+  loadJobs();
+  if (["queued", "running"].includes(job.status.state)) poll = setTimeout(() => openJob(id), 2500);
+}
+
+// ---------- 상세 화면 ----------
+function render() {
+  const { status, result } = job;
+  const el = $("#detail");
+  if (!result) {
+    el.innerHTML = `<div class="card"><h2>${esc(status.title)}</h2>
+      <p><span class="badge st-${status.state}">${STATE[status.state]}</span>${esc(status.message)}</p>
+      <pre class="json">${esc((status.log || []).slice(-15).join("\n"))}</pre></div>`;
+    return;
+  }
+  const issues = result.issues || [];
+  const cnt = lv => issues.filter(i => i.level === lv).length;
+  const u = result.usage || {};
+  const busy = ["queued", "running"].includes(status.state);
+  el.innerHTML = `
+    <div class="card">
+      <h2>${esc(status.title)} <span class="badge st-${status.state}">${STATE[status.state]}</span> ${busy ? esc(status.message) : ""}</h2>
+      <div class="summary">
+        <div><b>${result.meta.page_count}</b>쪽</div>
+        <div><b style="color:var(--err)">${cnt("error")}</b>오류</div>
+        <div><b style="color:var(--warn)">${cnt("warning")}</b>확인 필요</div>
+        <div><b>${u.calls ?? "-"}</b>API 호출</div>
+        <div><b>$${u.estimated_cost_usd ?? "-"}</b>추정 비용</div>
+        <div><b>${result.meta.elapsed_sec ?? "-"}s</b>소요</div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <a href="/api/jobs/${current}/file/transcript_clean.md">전사문(.md)</a> ·
+        <a href="/api/jobs/${current}/file/transcript.md">표시 포함 전사문</a> ·
+        ${result.structured ? `<a href="/api/jobs/${current}/file/${result.meta.profile}.json">구조화 JSON</a> ·` : ""}
+        <a href="/api/jobs/${current}/file/result.json">전체 결과</a>
+      </div>
+    </div>
+    <div class="card"><h2>검증 결과 (${issues.length})</h2>
+      <div class="issues">${issues.map(i => `<div class="issue"><span class="lv-${i.level}">[${{error:"오류",warning:"확인",info:"참고"}[i.level]}]</span> <small>${esc(i.where)}</small> — ${esc(i.message)}</div>`).join("") || "문제 없음"}</div>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button data-v="review" class="${view === "review" ? "on" : ""}">페이지 검수</button>
+        <button data-v="structured" class="${view === "structured" ? "on" : ""}">구조화 결과</button>
+        <button data-v="json" class="${view === "json" ? "on" : ""}">JSON</button>
+        <button id="restruct" ${busy ? "disabled" : ""} style="margin-left:auto">수정 반영 → 구조화·검증 다시 실행</button>
+      </div>
+      <div id="view"></div>
+    </div>`;
+  el.querySelectorAll(".tabs button[data-v]").forEach(b => b.onclick = () => { view = b.dataset.v; render(); });
+  $("#restruct").onclick = async () => { await api(`/api/jobs/${current}/restructure`, { method: "POST" }); openJob(current); };
+  ({ review: renderReview, structured: renderStructured, json: () => $("#view").innerHTML = `<pre class="json">${esc(JSON.stringify(result.structured, null, 2))}</pre>` })[view]();
+}
+
+function renderReview() {
+  const pages = job.result.pages;
+  const p = pages[pageIdx];
+  const imgs = p.images || {};
+  const src = imgs[imgMode] || imgs.original || imgs.enhanced;
+  const diffs = p.discrepancies || [];
+  const METHOD = { text_layer: "PDF 텍스트 레이어(OCR 불필요)", ocr_single: "단일 판독", ocr_double: "이중 판독 — 일치", ocr_double_adjudicated: "이중 판독 → 불일치 재판정" };
+  $("#view").innerHTML = `
+    <div class="pager">${pages.map((q, i) => {
+      const bad = q.error || q.low_agreement, chk = /⟦\?/.test(q.transcript || "");
+      return `<button data-i="${i}" class="${i === pageIdx ? "on" : ""} ${bad ? "bad" : chk ? "chk" : ""}">${q.page}</button>`; }).join("")}</div>
+    <div class="toolbar">
+      <b>${p.page}쪽</b> <span>${esc(p.source)}</span> · <span>${METHOD[p.method] || esc(p.error || "")}</span>
+      ${p.agreement != null ? ` · 일치율 ${(p.agreement * 100).toFixed(1)}%` : ""}
+      ${p.preprocess?.deskew_degrees ? ` · 기울기 ${p.preprocess.deskew_degrees}° 보정` : ""}
+      ${p.preprocess?.perspective_corrected ? " · 원근 보정" : ""}
+      ${p.edited ? ` · <span class="lv-warning">수정됨</span>` : ""}
+    </div>
+    <div class="review">
+      <div>
+        <div class="toolbar">
+          ${imgs.enhanced ? `<button id="imgToggle">${imgMode === "enhanced" ? "원본 보기" : "보정본 보기"}</button>` : ""}
+          <button id="zoomIn">확대</button><button id="zoomOut">축소</button>
+        </div>
+        <div class="imgbox"><img id="pimg" src="${src ? `/api/jobs/${current}/file/${src}` : ""}" alt="페이지 이미지"></div>
+      </div>
+      <div>
+        <div class="toolbar">
+          <button id="nextMark">다음 ⟦?⟧ 찾기</button>
+          <button id="savePage">이 쪽 저장</button>
+          <span id="saveMsg" class="hint"></span>
+        </div>
+        <textarea id="tx" spellcheck="false">${esc(p.transcript || "")}</textarea>
+        <div class="hint">⟦?값⟧ = 확인 필요. 원본과 대조해 값만 남기고 표시를 지운 뒤 저장하세요.</div>
+        ${diffs.length ? `<div class="diffs"><b>두 판독의 불일치 ${diffs.length}곳</b>${diffs.map(d => `
+          <div class="diff">#${d.id} ${d.digits ? "🔢" : ""} A <code>${esc(d.a) || "∅"}</code> · B <code>${esc(d.b) || "∅"}</code>
+          ${d.decision ? ` → <code>${esc(d.decision.reading) || "∅"}</code> <small>(${d.decision.confidence}) ${esc(d.decision.reason)}</small>` : ""}
+          ${d.status ? `<span class="badge ${d.status === "auto_resolved" ? "st-done" : "st-running"}">${{auto_resolved: "자동 확정", needs_review: "검토", unresolved: "미판정"}[d.status]}</span>` : ""}</div>`).join("")}</div>` : ""}
+      </div>
+    </div>`;
+  document.querySelectorAll(".pager button").forEach(b => b.onclick = () => { pageIdx = +b.dataset.i; renderReview(); });
+  const img = $("#pimg"); let zoom = 100;
+  $("#zoomIn").onclick = () => { zoom = Math.min(400, zoom + 50); img.style.width = zoom + "%"; };
+  $("#zoomOut").onclick = () => { zoom = Math.max(50, zoom - 50); img.style.width = zoom + "%"; };
+  if ($("#imgToggle")) $("#imgToggle").onclick = () => { imgMode = imgMode === "enhanced" ? "original" : "enhanced"; renderReview(); };
+  $("#nextMark").onclick = () => {
+    const ta = $("#tx"), from = ta.selectionEnd || 0;
+    let i = ta.value.indexOf("⟦?", from); if (i < 0) i = ta.value.indexOf("⟦?");
+    if (i < 0) { $("#saveMsg").textContent = "남은 ⟦?⟧ 없음"; return; }
+    const j = ta.value.indexOf("⟧", i);
+    ta.focus(); ta.setSelectionRange(i, j + 1);
+    const line = ta.value.slice(0, i).split("\n").length;
+    ta.scrollTop = Math.max(0, (line - 5) * 20.8);
+  };
+  $("#savePage").onclick = async () => {
+    await api(`/api/jobs/${current}/pages/${p.page}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ transcript: $("#tx").value }) });
+    p.transcript = $("#tx").value; p.edited = true;
+    $("#saveMsg").textContent = "저장됨 — 모두 고친 뒤 '구조화·검증 다시 실행'을 누르세요";
+  };
+}
+
+function renderStructured() {
+  const s = job.result.structured, prof = job.result.meta.profile;
+  if (!s) { $("#view").innerHTML = `<div class="empty">구조화 결과가 없습니다.</div>`; return; }
+  const unc = (row, f) => (row.uncertain_fields || []).includes(f) ? "unc" : "";
+  if (prof === "saenggibu") {
+    const cols = [["year","학년"],["semester","학기"],["category","구분"],["group","교과"],["subject","과목"],["units","단위"],["raw_score","원점수"],["average","평균"],["std_dev","표준편차"],["achievement","성취도"],["enrolled","수강자"],["rank_grade","등급"],["distribution","분포"]];
+    const rows = s.grade_rows || [];
+    const notes = (title, arr, keys) => arr?.length ? `<h3>${title} (${arr.length})</h3>` + arr.map(n => `<div class="q"><span class="no">${keys.map(k => esc(n[k])).filter(Boolean).join(" · ")}</span>\n${esc(n.text)}</div>`).join("") : "";
+    $("#view").innerHTML = `<div style="overflow:auto"><table class="grid"><tr>${cols.map(c => `<th>${c[1]}</th>`).join("")}</tr>
+      ${rows.map(r => `<tr>${cols.map(([k]) => `<td class="${unc(r, k)}">${esc(r[k])}</td>`).join("")}</tr>`).join("")}</table></div>
+      ${notes("세부능력 및 특기사항", s.subject_notes, ["year", "subject"])}
+      ${notes("창의적 체험활동", s.activities, ["year", "area", "hours"])}
+      ${notes("행동특성 및 종합의견", s.behavior, ["year"])}
+      ${notes("기타 항목", s.other_sections, ["title"])}`;
+  } else if (prof === "exam") {
+    $("#view").innerHTML = `<p class="hint">${esc(s.header)}</p>` + (s.questions || []).map(q => `
+      <div class="q"><span class="no ${unc(q, "number")}">${esc(q.number)}.</span> <span class="${unc(q, "stem")}">${esc(q.stem)}</span> ${q.points ? `<small>${esc(q.points)}</small>` : ""}
+${q.passage ? `<div class="${unc(q, "passage")}" style="border-left:3px solid var(--line);padding-left:8px;margin:6px 0">${esc(q.passage)}</div>` : ""}${q.figure_note ? `<div class="hint">그림: ${esc(q.figure_note)}</div>` : ""}<div class="${unc(q, "choices")}">${(q.choices || []).map(c => `${esc(c.label)} ${esc(c.text)}`).join("\n")}</div></div>`).join("");
+  } else {
+    $("#view").innerHTML = `<pre class="json">${esc(JSON.stringify(s, null, 2))}</pre>`;
+  }
+}
+
+(async () => {
+  const profs = await api("/api/profiles");
+  $("#profile").innerHTML = profs.map(p => `<option value="${p.key}">${esc(p.label)}</option>`).join("");
+  loadJobs();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+data/
+out/
+# 학생 개인정보가 담긴 원본·결과는 절대 커밋하지 않는다
+samples/
