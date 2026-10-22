@@ -24,6 +24,17 @@
                          웹 검수 화면: 원본 이미지 ↔ 전사문 나란히, ⟦?⟧ 바로 찾아가기
 ```
 
+## Word 자동 변환
+
+판독이 끝나면 **Word 파일 2개가 자동으로 만들어집니다.** 웹 화면에서는 기본 설정이 "완료되면 자동 다운로드"이므로, 파일을 올리면 끝날 때 바로 받아집니다.
+
+| 파일 | 내용 | 용도 |
+|---|---|---|
+| `<제목>_전사.docx` | 원문을 쪽 단위로 그대로 옮긴 문서. 표는 실제 Word 표로, ⟦?⟧는 **노란 형광펜**으로 표시 | 원본 보관, 그대로 편집 |
+| `<제목>_정리.docx` | 생기부: 성적표(가로 방향, 불확실 칸은 노란색), 세특·창체·행특 / 시험지: 문항 번호·발문·자료 박스(안의 표 포함)·선지. 자동 검증 결과가 부록으로 붙음 | 상담 자료, 변형 문항 작업 |
+
+일반 문서를 빠르게 Word로만 바꾸려면 문서 종류를 **일반 문서(전사만)**, 판독 방식을 **단일(저렴)**로 고르세요. 이 경우 전사본만 만들어집니다.
+
 ## 설치
 
 ```bash
@@ -51,7 +62,7 @@ Python 3.10 이상이 필요합니다. Windows는 `run_web.bat`, Mac/Linux는 `.
 ### 2) 명령줄
 
 ```bash
-python -m docread 생기부.pdf --profile saenggibu --out out/학생A
+python -m docread 생기부.pdf --profile saenggibu --title "2학년 학생A" --out out/학생A
 python -m docread p1.jpg p2.jpg p3.jpg --profile exam              # 시험지 사진 3장
 python -m docread 시험지.pdf --profile exam --passes 1             # 단일 판독(저렴)
 python -m docread 생기부.pdf --force-ocr                           # 텍스트 레이어 무시
@@ -62,6 +73,7 @@ python -m docread --restructure out/학생A                          # 전사문
 
 | 파일 | 내용 |
 |---|---|
+| `<제목>_전사.docx`, `<제목>_정리.docx` | Word 파일 (위 설명 참고) |
 | `transcript_clean.md` | 최종 전사문(표시 제거) |
 | `transcript.md` | ⟦?⟧ 표시가 포함된 전사문 |
 | `saenggibu.json` / `exam.json` | 구조화 결과 (성적 행, 세특, 창체, 행특 / 문항, 자료, 선지) |
@@ -131,5 +143,6 @@ python -m pytest -q    # API 키 없이 실행됨 (가짜 엔진 사용)
 | `docread/consensus.py` | 두 판독 결과의 토큰 단위 대조와 판정 반영 |
 | `docread/profiles/` | 문서 종류별 판독 지침, 출력 스키마, 검증 규칙 (새 문서 종류는 여기에 추가) |
 | `docread/pipeline.py` | 전체 흐름 |
+| `docread/word.py` | Word(.docx) 전사본·정리본 생성 |
 | `docread/evaluate.py` | 정답 대비 정확도 측정 |
 | `webapp/` | 업로드·검수 웹 화면 |

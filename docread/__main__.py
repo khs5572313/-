@@ -23,6 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--second-engine", default="auto", choices=["auto", "claude", "clova"])
     ap.add_argument("--force-ocr", action="store_true", help="PDF 텍스트 레이어를 무시하고 이미지로 판독")
     ap.add_argument("--no-structure", action="store_true", help="전사까지만 수행")
+    ap.add_argument("--title", default="", help="문서 제목 (Word 파일명에도 쓰임)")
     ap.add_argument("--out", help="결과 폴더 (기본: out/<첫 파일명>_<시각>)")
     ap.add_argument("--restructure", metavar="OUT_DIR", help="기존 결과 폴더의 구조화·검증만 다시 실행")
     a = ap.parse_args(argv)
@@ -36,9 +37,11 @@ def main(argv: list[str] | None = None) -> int:
         out = a.out or os.path.join("out", f"{os.path.splitext(os.path.basename(a.files[0]))[0]}_{time.strftime('%Y%m%d-%H%M%S')}")
         opts = Options(profile=a.profile, passes=a.passes, second_engine=a.second_engine,
                        force_ocr=a.force_ocr, structure=not a.no_structure)
-        result = run(a.files, out, opts)
+        result = run(a.files, out, opts, title=a.title)
 
     print(f"\n결과 폴더: {out}")
+    for f in result.get("exports") or []:
+        print(f"  Word: {os.path.join(out, f)}")
     for i in result["issues"][:30]:
         print(f"  [{i['level']}] {i['where']}: {i['message']}")
     if len(result["issues"]) > 30:

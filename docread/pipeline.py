@@ -24,6 +24,7 @@ from .engines import ClaudeEngine, ClovaEngine, EngineError
 from .pdf_input import PageInput, load_inputs
 from .preprocess import prepare
 from .profiles import get_profile
+from .word import export_all
 
 Progress = Callable[[str], None]
 
@@ -40,7 +41,7 @@ class Options:
 
 
 def run(paths: list[str], out_dir: str, opts: Options, claude: ClaudeEngine | None = None,
-        second=None, progress: Progress = print) -> dict:
+        second=None, progress: Progress = print, title: str = "") -> dict:
     t0 = time.time()
     os.makedirs(os.path.join(out_dir, "pages"), exist_ok=True)
     profile = get_profile(opts.profile)
@@ -69,7 +70,7 @@ def run(paths: list[str], out_dir: str, opts: Options, claude: ClaudeEngine | No
         page_results = list(ex.map(work, pages))
 
     result = {
-        "meta": {"profile": profile.key, "profile_label": profile.label, "options": asdict(opts),
+        "meta": {"title": title, "profile": profile.key, "profile_label": profile.label, "options": asdict(opts),
                  "inputs": [os.path.basename(p) for p in paths], "page_count": len(pages),
                  "second_engine": getattr(second, "name", None) if opts.passes >= 2 else None},
         "pages": page_results,
@@ -127,6 +128,16 @@ def _finish(result: dict, out_dir: str, profile, claude: ClaudeEngine, opts: Opt
     result["structured"] = structured
     result["issues"] = sorted(issues, key=lambda i: order.get(i["level"], 3))
     result["usage"] = claude.usage.to_dict(claude.model)
+
+    progress("Word 파일 만드는 중…")
+    for old in result.get("exports") or []:
+        if os.path.exists(os.path.join(out_dir, old)):
+            os.remove(os.path.join(out_dir, old))
+    try:
+        result["exports"] = export_all(result, out_dir)
+    except Exception as e:  # Word 생성 실패가 판독 결과를 날리지 않게
+        result["exports"] = []
+        result["issues"].append({"level": "error", "where": "word", "message": f"Word 생성 실패: {e}"})
 
 
 def _process_page(p: PageInput, out_dir: str, opts: Options, profile, claude: ClaudeEngine, second) -> dict:

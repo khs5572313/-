@@ -62,10 +62,10 @@ def _write_status(d: str, **upd) -> None:
         os.replace(path + ".tmp", path)
 
 
-def _run_job(d: str, inputs: list[str], opts: Options) -> None:
+def _run_job(d: str, inputs: list[str], opts: Options, title: str) -> None:
     _write_status(d, state="running", message="판독 시작")
     try:
-        run(inputs, d, opts, progress=lambda m: _write_status(d, message=m))
+        run(inputs, d, opts, progress=lambda m: _write_status(d, message=m), title=title)
         _write_status(d, state="done", message="완료")
     except Exception as e:
         _write_status(d, state="error", message=f"실패: {type(e).__name__}: {e}")
@@ -112,9 +112,10 @@ async def create_job(files: list[UploadFile] = File(...), profile: str = Form("s
             f.write(data)
         inputs.append(path)
     opts = Options(profile=profile, passes=2 if passes >= 2 else 1, force_ocr=force_ocr)
-    _write_status(d, id=job_id, title=title or os.path.basename(files[0].filename or job_id),
-                  profile=profile, passes=opts.passes, created=time.time(), state="queued", message="대기 중")
-    executor.submit(_run_job, d, inputs, opts)
+    title = title or os.path.splitext(os.path.basename(files[0].filename or job_id))[0]
+    _write_status(d, id=job_id, title=title, profile=profile, passes=opts.passes, created=time.time(),
+                  state="queued", message="대기 중")
+    executor.submit(_run_job, d, inputs, opts, title)
     return {"id": job_id}
 
 

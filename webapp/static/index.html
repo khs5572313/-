@@ -69,6 +69,7 @@ table.grid td.unc { background: var(--mark); }
 pre.json { font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-all; max-height: 70vh; overflow: auto; background: var(--bg); padding: 10px; border-radius: 8px; }
 .empty { color: var(--muted); text-align: center; padding: 60px 0; }
 a { color: var(--accent); }
+a.wordbtn { display: inline-block; padding: 7px 14px; border-radius: 6px; background: var(--accent); color: #fff; text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -88,6 +89,7 @@ a { color: var(--accent); }
         <label style="margin:0;color:inherit"><input type="radio" name="passes" value="1"> 단일(저렴)</label>
       </div>
       <label style="color:inherit"><input type="checkbox" id="forceOcr"> PDF 텍스트 레이어 무시하고 이미지로 판독</label>
+      <label style="color:inherit;margin-top:2px"><input type="checkbox" id="autoWord" checked> 완료되면 Word 파일 자동 다운로드</label>
       <div class="hint">이중 판독은 비용이 약 2배이지만 숫자 오판독을 잡아냅니다.</div>
       <button class="primary" id="go" disabled>판독 시작</button>
     </div>
@@ -101,6 +103,7 @@ a { color: var(--accent); }
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const autoDl = new Set();
 let files = [], current = null, job = null, pageIdx = 0, imgMode = "enhanced", view = "review", poll = null;
 
 async function api(path, opt) {
@@ -131,6 +134,7 @@ $("#go").onclick = async () => {
   $("#go").disabled = true;
   try {
     const { id } = await api("/api/jobs", { method: "POST", body: fd });
+    if ($("#autoWord").checked) autoDl.add(id);
     setFiles([]); $("#title").value = "";
     await loadJobs(); openJob(id);
   } catch (e) { alert("업로드 실패: " + e.message); $("#go").disabled = false; }
@@ -154,6 +158,12 @@ async function openJob(id) {
   clearTimeout(poll);
   job = await api(`/api/jobs/${id}`);
   render();
+  if (job.status.state === "done" && autoDl.has(id)) {
+    autoDl.delete(id);
+    (job.result.exports || []).forEach((f, i) => setTimeout(() => {
+      const a = document.createElement("a"); a.href = `/api/jobs/${id}/file/${encodeURIComponent(f)}`; a.download = f; a.click();
+    }, i * 600));
+  }
   loadJobs();
   if (["queued", "running"].includes(job.status.state)) poll = setTimeout(() => openJob(id), 2500);
 }
@@ -184,6 +194,9 @@ function render() {
         <div><b>${result.meta.elapsed_sec ?? "-"}s</b>소요</div>
       </div>
       <div class="toolbar" style="margin-top:10px">
+        ${(result.exports || []).map(f => `<a class="wordbtn" href="/api/jobs/${current}/file/${encodeURIComponent(f)}" download>⬇ ${esc(f.endsWith("_정리.docx") ? "Word 정리본" : "Word 전사본")}</a>`).join("")}
+      </div>
+      <div class="toolbar">
         <a href="/api/jobs/${current}/file/transcript_clean.md">전사문(.md)</a> ·
         <a href="/api/jobs/${current}/file/transcript.md">표시 포함 전사문</a> ·
         ${result.structured ? `<a href="/api/jobs/${current}/file/${result.meta.profile}.json">구조화 JSON</a> ·` : ""}

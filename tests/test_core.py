@@ -214,7 +214,8 @@ def test_pipeline_end_to_end(tmp_path):
     assert "| 3 |" in p2["transcript"] and "⟦?" not in p2["transcript"]
     assert res["structured"]["grade_rows"][0]["rank_grade"] == "3"
     assert res["usage"]["calls"] == 3  # 전사 2 + 구조화 1 (판정은 가짜라 미집계)
-    for f in ("result.json", "transcript.md", "transcript_clean.md", "saenggibu.json",
+    assert res["exports"] == ["text_전사.docx", "text_정리.docx"]
+    for f in ("result.json", "transcript.md", "transcript_clean.md", "saenggibu.json", *res["exports"],
               "pages/p002_original.png", "pages/p002_enhanced.png"):
         assert (out / f).exists(), f
 
@@ -266,3 +267,55 @@ def test_evaluate_scores():
     assert r["digit_error_rate"] > 0 and r["errors_flagged_ratio"] == 1.0 and r["flags"] == 1
     r = score("| 생활과 윤리 | 8 | 85.3 |", truth)
     assert r["errors_flagged_ratio"] == 0.0
+
+
+# ---------- Word 변환 ----------
+
+def _word_result(profile, structured):
+    return {"meta": {"title": "테스트 문서", "profile": profile, "profile_label": "x", "page_count": 2, "inputs": ["a.pdf"]},
+            "pages": [{"page": 1, "source": "a.pdf p.1",
+                       "transcript": "# 교과학습발달상황\n| 과목 | 등급 |\n|---|---|\n| 생활과 윤리 | ⟦?3⟧ |\n**굵게** 본문 __밑줄__"},
+                      {"page": 2, "source": "a.pdf p.2", "transcript": "둘째 쪽"}],
+            "structured": structured, "issues": [{"level": "error", "where": "x", "message": "테스트 오류"}]}
+
+
+def test_word_transcript_tables_and_highlights(tmp_path):
+    from docx import Document
+    from docx.enum.text import WD_COLOR_INDEX
+    from docread.word import export_all
+
+    files = export_all(_word_result("generic", None), str(tmp_path))
+    assert files == ["테스트_문서_전사.docx"]
+    d = Document(tmp_path / files[0])
+    assert len(d.tables) == 1
+    t = d.tables[0]
+    assert [c.text for c in t.rows[0].cells] == ["과목", "등급"]
+    run = t.cell(1, 1).paragraphs[0].runs[0]
+    assert run.text == "3" and run.font.highlight_color == WD_COLOR_INDEX.YELLOW
+    body = "\n".join(p.text for p in d.paragraphs)
+    assert "굵게 본문 밑줄" in body and "둘째 쪽" in body and "⟦" not in body
+
+
+def test_word_summary_docs(tmp_path):
+    from docx import Document
+    from docread.word import export_all
+
+    sg = {"school_year_info": "", "grade_rows": [_row(uncertain_fields=["rank_grade"])],
+          "subject_notes": [{"year": "2", "subject": "생활과 윤리", "text": "토론 활동에서…", "uncertain_fields": []}],
+          "activities": [], "behavior": [], "other_sections": []}
+    files = export_all(_word_result("saenggibu", sg), str(tmp_path))
+    d = Document(tmp_path / files[1])
+    assert d.tables[0].cell(1, 4).text == "생활과 윤리" and d.tables[0].cell(1, 11).text == "2"
+    assert "w:fill=\"FFF2B3\"" in d.tables[0].cell(1, 11)._tc.xml
+    assert any("토론 활동" in p.text for p in d.paragraphs)
+    assert "테스트 오류" in d.tables[-1].cell(1, 2).text
+
+    ex = {"header": "2학기 기말", "questions": [{"number": "1", "stem": "옳은 것은?", "passage": "<보기>\nㄱ. 가\n| a | b |\n|---|---|\n| 1 | 2 |",
+                                                "choices": [{"label": "①", "text": "ㄱ"}], "points": "[3점]", "figure_note": "", "uncertain_fields": []}]}
+    files = export_all(_word_result("exam", ex), str(tmp_path))
+    d = Document(tmp_path / files[1])
+    text = "\n".join(p.text for p in d.paragraphs)
+    assert "1. 옳은 것은?" in text and "① ㄱ" in text
+    box = d.tables[0].cell(0, 0)
+    assert "ㄱ. 가" in box.text
+    assert [c.text for c in box.tables[0].rows[1].cells] == ["1", "2"]
