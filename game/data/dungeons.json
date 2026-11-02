@@ -1,0 +1,8 @@
+[
+  { "id": "d_forest", "name": "통념의 숲",      "requires": null,       "floors": ["m_myth", "m_sample", "m_survey"],               "reward": { "gold": 300 } },
+  { "id": "d_cave",   "name": "판례 동굴",      "requires": "d_forest", "floors": ["m_clause", "m_precedent", "m_court"],           "reward": { "gold": 900 } },
+  { "id": "d_hill",   "name": "수요곡선 언덕",  "requires": "d_cave",   "floors": ["m_curve", "m_elastic", "m_cost"],               "reward": { "gold": 2500 } },
+  { "id": "d_tower",  "name": "딜레마의 탑",    "requires": "d_hill",   "floors": ["m_dilemma", "m_utility", "m_imperative"],       "reward": { "gold": 6000 } },
+  { "id": "d_maze",   "name": "통합 지문 미궁", "requires": "d_tower",  "floors": ["m_mix_law", "m_mix_eco", "m_mix_soc", "m_mix_eth"], "reward": { "gold": 12000 } },
+  { "id": "d_final",  "name": "수능 본관",      "requires": "d_maze",   "floors": ["m_fin_soc", "m_fin_law", "m_fin_eco", "m_fin_eth", "m_fin_boss"], "reward": { "gold": 0 }, "final": true }
+]

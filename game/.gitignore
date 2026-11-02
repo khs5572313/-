@@ -1,0 +1,3 @@
+node_modules/
+# 루트 .gitignore 의 data/(학생 개인정보용) 규칙에서 게임 수치 데이터는 제외한다
+!data/

@@ -1,0 +1,20 @@
+[
+  { "id": "w_highlighter", "name": "형광펜",          "slot": "weapon", "price": 0,     "atk": 0 },
+  { "id": "w_sharp",       "name": "샤프",            "slot": "weapon", "price": 150,   "atk": 4 },
+  { "id": "w_fountain",    "name": "만년필",          "slot": "weapon", "price": 600,   "atk": 9 },
+  { "id": "w_redpen",      "name": "빨간펜 세트",     "slot": "weapon", "price": 2000,  "atk": 16 },
+  { "id": "w_stylus",      "name": "태블릿 펜",       "slot": "weapon", "price": 6000,  "atk": 26 },
+  { "id": "w_masternote",  "name": "오답 마스터 노트", "slot": "weapon", "price": 18000, "atk": 40 },
+
+  { "id": "a_uniform",     "name": "교복",            "slot": "armor",  "price": 0,     "def": 0,  "hp": 0 },
+  { "id": "a_hoodie",      "name": "후드 집업",       "slot": "armor",  "price": 250,   "def": 15, "hp": 20 },
+  { "id": "a_padding",     "name": "롱패딩",          "slot": "armor",  "price": 1200,  "def": 35, "hp": 50 },
+  { "id": "a_blanket",     "name": "독서실 담요",     "slot": "armor",  "price": 4000,  "def": 60, "hp": 90 },
+  { "id": "a_cushion",     "name": "전설의 방석",     "slot": "armor",  "price": 10000, "def": 90, "hp": 140 },
+
+  { "id": "c_none",        "name": "빈 손목",         "slot": "charm",  "price": 0 },
+  { "id": "c_stopwatch",   "name": "스톱워치",        "slot": "charm",  "price": 500,   "studyP": 0.05 },
+  { "id": "c_watch",       "name": "손목시계",        "slot": "charm",  "price": 1500,  "studyP": 0.05, "wageMul": 1.25 },
+  { "id": "c_candle",      "name": "집중 향초",       "slot": "charm",  "price": 3000,  "studyP": 0.07, "wageMul": 1.25, "dailyRelief": 6 },
+  { "id": "c_eraser",      "name": "행운의 지우개",   "slot": "charm",  "price": 9000,  "studyP": 0.10, "wageMul": 1.3,  "dailyRelief": 8 }
+]

@@ -1,0 +1,7 @@
+[
+  { "id": "c_law", "name": "법과 정치 특강",   "npc": "판사 출신 해람", "stat": "law" },
+  { "id": "c_eco", "name": "경제 그래프 교실", "npc": "시장 상인 도윤", "stat": "eco" },
+  { "id": "c_soc", "name": "사회·문화 탐구반", "npc": "연구원 소이",   "stat": "soc" },
+  { "id": "c_eth", "name": "윤리 토론 모임",   "npc": "철학자 무명",   "stat": "eth" },
+  { "id": "c_int", "name": "비문학 독해 훈련", "npc": "사서 가람",     "stat": "int" }
+]

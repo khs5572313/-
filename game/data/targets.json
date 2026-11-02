@@ -1,0 +1,88 @@
+[
+  {
+    "id": "T1",
+    "bot": "skilled",
+    "metric": "winRate",
+    "min": 0.95,
+    "desc": "잘하는 봇은 거의 항상 수능을 통과한다"
+  },
+  {
+    "id": "T2",
+    "bot": "skilled",
+    "metric": "medianWinDay",
+    "min": 100,
+    "max": 132,
+    "desc": "잘해도 학기 막판에야 통과한다(너무 빨리 끝나지 않음)"
+  },
+  {
+    "id": "T3",
+    "bot": "diligent",
+    "metric": "winRate",
+    "min": 0.55,
+    "max": 0.9,
+    "desc": "성실하지만 전략이 단순하면 대부분 통과하되 보장되진 않는다"
+  },
+  {
+    "id": "T4",
+    "bot": "casual",
+    "metric": "winRate",
+    "max": 0.1,
+    "desc": "대충 하면 수능 통과가 거의 불가능하다"
+  },
+  {
+    "id": "T5",
+    "bot": "diligent",
+    "metric": "medianFirstClearDay",
+    "max": 20,
+    "desc": "첫 던전은 3주 안에 깬다(초반 성취감)"
+  },
+  {
+    "id": "T6",
+    "bot": "diligent",
+    "metric": "midWallRatio",
+    "min": 1.3,
+    "desc": "중반 벽: 3·4번째 던전에 걸리는 날이 1·2번째보다 1.3배 이상"
+  },
+  {
+    "id": "T7",
+    "bot": "diligent",
+    "metric": "mockLossRunShare",
+    "min": 0.5,
+    "desc": "성실한 봇도 절반 이상은 모의고사를 한 번은 진다(긴장감)"
+  },
+  {
+    "id": "T8",
+    "bot": "skilled",
+    "metric": "avgMockLosses",
+    "max": 1.0,
+    "desc": "잘하는 봇의 모의고사 패배는 평균 1회 이하"
+  },
+  {
+    "id": "T9",
+    "bot": "diligent",
+    "metric": "idleShopShare",
+    "max": 0.3,
+    "desc": "돈은 있는데 상점에 살 게 없는 날 30% 이하(돈의 쓸모 유지)"
+  },
+  {
+    "id": "T10",
+    "bot": "skilled",
+    "metric": "avgBurnouts",
+    "max": 0.5,
+    "desc": "잘하는 봇은 번아웃이 거의 없다(관리하면 피할 수 있음)"
+  },
+  {
+    "id": "T11",
+    "bot": "casual",
+    "metric": "medianFirstClearDay",
+    "max": 60,
+    "desc": "대충 해도 첫 던전 정도는 깬다(이탈 방지)"
+  },
+  {
+    "id": "T12",
+    "bot": "diligent",
+    "metric": "poorShare",
+    "max": 0.6,
+    "desc": "다음 장비를 살 돈이 없는 날 60% 이하(목표가 손에 닿음)"
+  }
+]

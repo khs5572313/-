@@ -146,3 +146,7 @@ python -m pytest -q    # API 키 없이 실행됨 (가짜 엔진 사용)
 | `docread/word.py` | Word(.docx) 전사본·정리본 생성 |
 | `docread/evaluate.py` | 정답 대비 정확도 측정 |
 | `webapp/` | 업로드·검수 웹 화면 |
+
+## 부록: 개념마을 (사탐 학습 육성 게임 규칙 엔진)
+
+`game/` 폴더는 docread와 독립된 별도 프로젝트입니다. 「AI 코딩으로 하루 만에 3D RPG」 영상의 방법론(PRD → 완료 기준 PLAN → 화면 없는 규칙 엔진 → 봇 밸런스 테스트)을 사탐 학습 게임에 적용한 실증 예제입니다. 자세한 내용은 [game/README.md](game/README.md)를 참고하세요.

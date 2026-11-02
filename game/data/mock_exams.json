@@ -1,0 +1,6 @@
+[
+  {"index": 0, "name": "1차 모의고사", "monsters": ["m_mock1_a", "m_mock1_b"], "reward": {"gold": 300, "int": 5}, "failStress": 15},
+  {"index": 1, "name": "2차 모의고사", "monsters": ["m_mock2_a", "m_mock2_b"], "reward": {"gold": 1000, "int": 10}, "failStress": 20},
+  {"index": 2, "name": "3차 모의고사", "monsters": ["m_mock3_a", "m_mock3_b"], "reward": {"gold": 3000, "int": 15}, "failStress": 20},
+  {"index": 3, "name": "4차 모의고사", "monsters": ["m_mock4_a", "m_mock4_b"], "reward": {"gold": 8000, "int": 20}, "failStress": 25}
+]

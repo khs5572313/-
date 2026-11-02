@@ -1,0 +1,7 @@
+[
+  { "id": "j_flyer", "name": "전단지 돌리기", "wage": 9,   "hours": 8, "p": 0.9,  "cooldown": 0, "req": {} },
+  { "id": "j_store", "name": "편의점",        "wage": 15,  "hours": 8, "p": 0.85, "cooldown": 0, "req": { "int": 15 } },
+  { "id": "j_grade", "name": "학습지 채점",   "wage": 30,  "hours": 8, "p": 0.85, "cooldown": 1, "req": { "masterySum": 150 } },
+  { "id": "j_tutor", "name": "과외 보조",     "wage": 60,  "hours": 8, "p": 0.8,  "cooldown": 2, "req": { "masterySum": 500, "int": 60 } },
+  { "id": "j_review","name": "문항 검수",     "wage": 120, "hours": 8, "p": 0.75, "cooldown": 3, "req": { "law": 250, "eco": 250, "soc": 250, "eth": 250, "int": 120 } }
+]

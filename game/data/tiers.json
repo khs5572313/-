@@ -1,0 +1,6 @@
+[
+  { "name": "초급", "tuition": 20,  "baseP": 0.80, "gain": 2 },
+  { "name": "중급", "tuition": 60,  "baseP": 0.70, "gain": 3 },
+  { "name": "고급", "tuition": 180, "baseP": 0.60, "gain": 5 },
+  { "name": "특급", "tuition": 500, "baseP": 0.50, "gain": 8 }
+]
