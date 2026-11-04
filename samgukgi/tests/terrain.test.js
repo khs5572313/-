@@ -111,3 +111,52 @@ test('AI 경로: 강을 만나면 여울로 돌아간다', () => {
   assert.ok(visited.includes(key(7, 8)), `여울을 지나야 함: ${visited.join(' ')}`);
   assert.ok(s.units[0].col >= 8, '건너편 도착');
 });
+
+test('배: 나루터에서만 승선하고, 상륙한 날은 공격할 수 없다', async () => {
+  const { moveUnit, attackTargets } = await import('../src/game.js');
+  const rows = Array(9).fill('...SSSS.........');
+  rows[4] = '..PSSSS.........';
+  const s = createGame(arena(rows, [['lab_a', 'spear', 2, 4], ['lab_a', 'spear', 0, 0], ['lab_b', 'spear', 9, 4]]), data);
+  const [atPort, inland] = s.units;
+  assert.ok(![...moveRange(s, data, inland).keys()].some((k) => rows[Number(k.split(',')[1])][Number(k.split(',')[0])] === 'S'), '나루터 아닌 곳에서는 승선 불가');
+  assert.ok(moveRange(s, data, atPort).has(key(3, 4)), '나루터 옆 바다로 승선 가능');
+  assert.ok(moveUnit(s, data, atPort, 3, 4));
+  assert.ok(atPort.embarked && atPort.acted, '승선한 날은 행동 종료');
+  // 다음 날: 바다 4칸 항해 후 상륙
+  atPort.moved = false; atPort.acted = false;
+  const r = moveRange(s, data, atPort);
+  assert.ok(r.has(key(6, 4)) && r.has(key(7, 4)), '바다를 건너 해안(7,4)에 상륙 가능');
+  moveUnit(s, data, atPort, 7, 4);
+  assert.ok(!atPort.embarked && atPort.acted, '상륙한 날은 행동 종료');
+});
+
+test('부교: 강가에서 3일, 공병은 1일 만에 다리가 생긴다', async () => {
+  const { buildBridge, bridgeSites, endTurn } = await import('../src/game.js');
+  const rows = Array(9).fill('.......~........');
+  const s = createGame({ ...arena(rows, [['lab_a', 'spear', 6, 2], ['lab_b', 'spear', 14, 8]]),
+    units: [{ general: 'lab_std', nation: 'lab_a', type: 'spear', troops: 5000, col: 6, row: 2 },
+      { general: 'lab_engineer', nation: 'lab_a', type: 'spear', troops: 5000, col: 6, row: 6 },
+      { general: 'lab_std', nation: 'lab_b', type: 'spear', troops: 5000, col: 14, row: 8 }] }, data);
+  const [std, eng] = s.units;
+  const siteE = bridgeSites(s, data, eng)[0];
+  buildBridge(s, data, eng, siteE);
+  assert.equal(siteE.terrain, 'bridge', '공병은 하루');
+  const siteS = bridgeSites(s, data, std)[0];
+  for (let d = 0; d < 3; d++) { std.moved = false; std.acted = false; buildBridge(s, data, std, siteS); }
+  assert.equal(siteS.terrain, 'bridge', '보통 부대는 3일');
+});
+
+test('성벽: 공성병기는 성벽을 크게 깎고, 성벽이 무너지면 방어 보너스가 사라진다', async () => {
+  const { attack } = await import('../src/game.js');
+  const sc = { ...arena(plains, [['lab_a', 'siege', 8, 4], ['lab_b', 'spear', 10, 4]]),
+    castles: [{ name: '시험성', col: 10, row: 4, owner: 'lab_b', wall: 100 }] };
+  const s = createGame(sc, data);
+  const [eng, gar] = s.units;
+  const t = s.map.tiles.find((x) => x.castle);
+  const before = computeDamage(s, data, s.units[0], gar);
+  attack(s, data, eng, gar);
+  assert.ok(t.wall <= 100 - 14, `성벽 ${t.wall}`);
+  t.wall = 0;
+  const after = computeDamage(s, data, s.units[0], gar);
+  assert.ok(after / before > 2.5, `성벽 붕괴 후 피해 ${after} vs ${before}`);
+});

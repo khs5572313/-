@@ -23,6 +23,8 @@ export default {
                 mods: [{ stat: 'moraleStart', value: 10 }, { stat: 'moraleLoss', value: -0.2 }] },
   bulgul:     { name: '불굴', desc: '사기 감소 -30%',
                 mods: [{ stat: 'moraleLoss', value: -0.3 }] },
+  gongbyeong: { name: '공병', desc: '부교를 하루 만에 놓는다(보통 3일). 성벽 공격 피해 +50%',
+                mods: [{ stat: 'bridge', value: 2 }, { stat: 'wall', value: 0.5 }] },
   gyeolsa:    { name: '결사', desc: '병력이 30% 미만이면 공격 +25%',
                 mods: [{ stat: 'atk', value: 0.25, cond: { troopsBelow: 0.3 } }] },
 };

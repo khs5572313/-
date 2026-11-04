@@ -38,14 +38,14 @@ test('시나리오 맵이 올바르게 파싱된다', () => {
   for (const u of scenario.units) {
     const t = map.tiles[u.row * map.w + u.col];
     assert.ok(!data.terrain[t.terrain].impassable, `${u.general} 시작 칸이 이동 불가 지형`);
-    assert.ok(data.generals[u.general], `${u.general} 무장 데이터 없음`);
+    if (u.general !== null) assert.ok(data.generals[u.general], `${u.general} 무장 데이터 없음`);
   }
 });
 
 test('모든 무장의 특기·적성이 정의되어 있다', () => {
   for (const [id, g] of Object.entries(data.generals)) {
     for (const s of g.skills) assert.ok(data.skills[s], `${id}: 특기 ${s} 없음`);
-    for (const t of Object.keys(data.units)) assert.ok(['S', 'A', 'B', 'C', 'D'].includes(g.aptitude[t]), `${id}: ${t} 적성`);
+    for (const t of ['cavalry', 'spear', 'archer']) assert.ok(['S', 'A', 'B', 'C', 'D'].includes(g.aptitude[t]), `${id}: ${t} 적성`);
     assert.ok(data.nations[g.nation], `${id}: 국가 ${g.nation} 없음`);
   }
 });

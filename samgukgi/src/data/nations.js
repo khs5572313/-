@@ -69,6 +69,7 @@ export default {
       mods: [{ stat: 'atk', value: 0.08, cond: { nearWater: true } }],
     },
   },
+  balhae: { name: '발해', color: '#2f8f8a', buff: null }, // 국가 버프는 M3에서 설계
   mohe: {
     name: '말갈', color: '#4f8a5b',
     buff: {

@@ -9,6 +9,10 @@ export default {
     lead: 70, war: 70, int: 70, pol: 70, cha: 70,
     aptitude: { cavalry: 'B', spear: 'B', archer: 'B' }, skills: [] },
 
+  lab_engineer: { name: '공병 장수', hanja: '', nation: 'lab_a', born: null, died: null, historicity: '가상',
+    note: '표준 장수에 공병 특기만 더한 실험용 장수', lead: 70, war: 70, int: 70, pol: 70, cha: 70,
+    aptitude: { cavalry: 'B', spear: 'B', archer: 'B' }, skills: ['gongbyeong'] },
+
   // ── 당 ──────────────────────────────
   li_shimin: { name: '이세민', hanja: '李世民', nation: 'tang', born: 598, died: 649, historicity: '사서',
     note: '당 태종. 645년 고구려 친정', lead: 95, war: 80, int: 88, pol: 92, cha: 97,
@@ -24,7 +28,7 @@ export default {
     aptitude: { cavalry: 'S', spear: 'A', archer: 'S' }, skills: ['singung', 'dolgyeok'] },
   li_daozong: { name: '이도종', hanja: '李道宗', nation: 'tang', born: null, died: 653, historicity: '사서',
     note: '안시성 공략 때 토산 축조 지휘', lead: 80, war: 76, int: 74, pol: 70, cha: 75,
-    aptitude: { cavalry: 'B', spear: 'A', archer: 'B' }, skills: [] },
+    aptitude: { cavalry: 'B', spear: 'A', archer: 'B' }, skills: ['gongbyeong'] },
 
   // ── 고구려 ───────────────────────────
   ansi_lord: { name: '안시성주', hanja: '安市城主', nation: 'goguryeo', born: null, died: null, historicity: '후대전승',

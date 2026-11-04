@@ -116,4 +116,65 @@ export default [
       std('lab_b', 'archer', 10, 3, { hold: true }), std('lab_b', 'archer', 11, 4, { hold: true }),
     ],
   }),
+  base({
+    id: 'lab-landing', title: '실험 8 · 바다 건너 상륙전',
+    desc: '청군은 바다 건너 적을 쳐야 합니다. 나루터(P)에서 배에 오르는 데 하루, 바다는 하루 4칸, 해안에 내리는 데 하루가 걸리고 '
+      + '승선·상륙한 날은 공격할 수 없습니다. 배 위에서는 방어 ×0.6이고 궁병만 제 힘(×0.9)을 냅니다.',
+    expect: { winner: null, text: '관찰용. 적의 사거리를 피해 상륙 지점을 고르는지, 상륙 직후 얼마나 얻어맞는지 봅니다.' },
+    rows: [
+      '....SSSSSSS.....',
+      '....SSSSSSS.....',
+      '....SSSSSSS.....',
+      '...PSSSSSSS.....',
+      '...PSSSSSSS.....',
+      '....SSSSSSS.....',
+      '....SSSSSSS.....',
+      '....SSSSSSS.....',
+      '....SSSSSSS.....',
+    ],
+    units: [
+      std('lab_a', 'spear', 2, 3), std('lab_a', 'spear', 2, 5), std('lab_a', 'archer', 1, 4),
+      std('lab_b', 'spear', 12, 4, { hold: true }), std('lab_b', 'archer', 13, 3, { hold: true }),
+    ],
+  }),
+  base({
+    id: 'lab-bridge', title: '실험 9 · 공병의 부교',
+    desc: '여울도 나루도 없는 강입니다. 보통 부대는 강가에서 3일을 일해야 부교를 놓지만, 공병 특기를 가진 장수(창병)는 하루면 됩니다. '
+      + '부교가 생기면 기병 2부대가 건너가 궁병을 칩니다. 부교 위에서는 방어 ×0.8입니다.',
+    expect: { winner: 'lab_a', text: '청군 우세. 공병이 다리를 놓고 기병이 건너 궁병을 덮칩니다.' },
+    rows: Array(9).fill('.......~........'),
+    units: [
+      { general: 'lab_engineer', nation: 'lab_a', type: 'spear', troops: 5000, col: 4, row: 4 },
+      std('lab_a', 'cavalry', 3, 2), std('lab_a', 'cavalry', 3, 6),
+      std('lab_b', 'archer', 11, 3, { hold: true }), std('lab_b', 'archer', 11, 5, { hold: true }),
+    ],
+  }),
+  base({
+    id: 'lab-siege-none', title: '실험 10 · 성벽만으로 공성 (공성병기 없음)',
+    desc: '창병 3부대(1만5천)가 창병 1부대(5천)가 지키는 성을 12일 안에 함락해야 합니다. 성벽이 온전하면 방어 ×3.0이고, '
+      + '성벽은 창병의 공격으로 조금씩만 깎이며 수비대가 매일 보수합니다. 실험 11과 비교해 보세요.',
+    expect: { winner: 'lab_b', text: '수비 우세. 병력이 3배여도 공성병기 없이는 성벽을 못 무너뜨립니다.' },
+    rows: plains(),
+    castles: [{ name: '목표성', col: 11, row: 4, owner: 'lab_b', wall: 100 }],
+    turnLimit: undefined,
+    victory: [{ nation: 'lab_a', type: 'capture', castle: '목표성' }, { nation: 'lab_b', type: 'survive', turns: 12 }],
+    units: [
+      std('lab_a', 'spear', 2, 2), std('lab_a', 'spear', 2, 4), std('lab_a', 'spear', 2, 6),
+      std('lab_b', 'spear', 11, 4, { hold: true }),
+    ],
+  }),
+  base({
+    id: 'lab-siege-engine', title: '실험 11 · 공성병기 투입',
+    desc: '실험 10과 같은 성을, 창병 1부대를 공성병기(충차·포차)로 바꿔 공격합니다. 공성병기는 사람에게는 약하지만 '
+      + '성벽을 창병의 7배 가까이 깎습니다. 성벽이 무너지면 성의 방어 보너스가 사라집니다.',
+    expect: { winner: 'lab_a', text: '공격 우세. 성벽을 먼저 무너뜨리면 함락할 수 있습니다.' },
+    rows: plains(),
+    castles: [{ name: '목표성', col: 11, row: 4, owner: 'lab_b', wall: 100 }],
+    turnLimit: undefined,
+    victory: [{ nation: 'lab_a', type: 'capture', castle: '목표성' }, { nation: 'lab_b', type: 'survive', turns: 12 }],
+    units: [
+      std('lab_a', 'spear', 2, 2), std('lab_a', 'siege', 2, 4), std('lab_a', 'spear', 2, 6),
+      std('lab_b', 'spear', 11, 4, { hold: true }),
+    ],
+  }),
 ];

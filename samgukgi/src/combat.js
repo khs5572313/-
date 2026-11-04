@@ -43,13 +43,13 @@ function apt(general, type) {
 // 사거리 = 병종 기본 + 특기(강노·기사) + 고지 보너스(산·성벽 위 궁병 +1)
 export function unitRange(state, data, unit, pos = unit) {
   const tile = state?.map ? tileAt(state.map, pos.col, pos.row) : null;
-  const height = tile ? data.terrain[tile.terrain].rangeBonus?.[unit.type] ?? 0 : 0;
+  const height = tile && !unit.embarked ? data.terrain[tile.terrain].rangeBonus?.[unit.type] ?? 0 : 0;
   return data.units[unit.type].range + getMods(state, data, unit, { pos }).range + height;
 }
 
 // 기병이 산악 같은 '하마' 지형에 있으면 말을 끌고 걷는 상태
 export function isDismounted(state, data, unit, pos = unit) {
-  if (unit.type !== 'cavalry') return false;
+  if (unit.type !== 'cavalry' || unit.embarked) return false;
   const tile = tileAt(state.map, pos.col, pos.row);
   return !!(tile && data.terrain[tile.terrain].dismount);
 }
@@ -66,7 +66,11 @@ export function defensePower(state, data, unit, opts = {}) {
   const mods = getMods(state, data, unit, { ...opts, role: 'defend' });
   const tile = tileAt(state.map, unit.col, unit.row);
   const terr = data.terrain[tile.terrain];
-  const terrainDef = (terr.def ?? 1) * (terr.defUnit?.[unit.type] ?? 1);
+  let baseDef = terr.def ?? 1;
+  // 성: 성벽 내구도에 비례해 방어 보너스가 줄어든다 (온전 ×1.7 → 붕괴 ×1.0)
+  if (tile.castle && tile.wallMax) baseDef = 1 + (baseDef - 1) * (tile.wall / tile.wallMax);
+  let terrainDef = baseDef * (terr.defUnit?.[unit.type] ?? 1);
+  if (unit.embarked) terrainDef = data.ship.def; // 배 위
   const aptDef = 1 + (apt(g, unit.type) - 1) / 2; // 적성은 방어에 절반만 반영
   return data.units[unit.type].def * (0.5 + effStat(g.lead) / 100) * aptDef * terrainDef * (1 + mods.def);
 }
@@ -83,12 +87,13 @@ export function computeDamage(state, data, att, def, opts = {}) {
   const aTerrain = data.terrain[tileAt(state.map, attPos.col, attPos.row).terrain];
   const dTerrain = data.terrain[tileAt(state.map, def.col, def.row).terrain];
   let mul = data.counter[att.type][def.type];
-  mul *= aTerrain.atk?.[att.type] ?? 1;
+  if (att.embarked) mul *= data.ship.atk[att.type] ?? 0.6;
+  else mul *= aTerrain.atk?.[att.type] ?? 1;
   if (dist === 1) {
-    mul *= dTerrain.charge?.[att.type] ?? 1;
+    if (!def.embarked) mul *= dTerrain.charge?.[att.type] ?? 1;
     mul *= data.units[att.type].adjacentMul ?? 1;
   } else {
-    mul *= RANGED_FALLOFF * (dTerrain.cover ?? 1);
+    mul *= RANGED_FALLOFF * (def.embarked ? 1 : dTerrain.cover ?? 1);
   }
   const morale = 0.6 + 0.4 * (att.morale / 100);
   const troops = opts.attTroops ?? att.troops;

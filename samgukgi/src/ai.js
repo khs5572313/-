@@ -4,12 +4,13 @@
 //  2) 전진: 공격할 가치가 없으면 목표(가장 가까운 적 또는 비어 있는 목표 성)까지의
 //     '실제 행군 비용'이 가장 줄어드는 칸으로 이동한다. 강은 여울로 돌아가고,
 //     산은 넘는 것과 우회하는 것 중 싼 쪽을 고른다.
-import { distance } from './hex.js';
+import { distance, neighbors } from './hex.js';
 import { computeDamage, canCounter } from './combat.js';
 import {
   moveRange, attackTargets, moveUnit, attack, waitUnit, aliveUnits, activeNation, isEnemy, unitAt, tileAt,
-  movePoints, findPath, travelCostMap,
+  movePoints, findPath, travelCostMap, travelDays, bridgeSites, buildBridge, BRIDGE_WORK,
 } from './game.js';
+import { getMods } from './modifiers.js';
 import { key } from './hex.js';
 
 function withPos(unit, col, row, fn) {
@@ -49,7 +50,12 @@ function scoreAttack(state, data, unit, target, col, row) {
       });
     }
     const kill = dmg >= target.troops ? 2000 : 0;
-    const siege = objective && target.col === objective.col && target.row === objective.row ? dmg * 1.5 + 150 : 0;
+    const onObjective = objective && target.col === objective.col && target.row === objective.row;
+    const tt = tileAt(state.map, target.col, target.row);
+    // 성벽을 깎는 가치: 성벽 1 = 병력 약 40명 상당 (목표 성이면 두 배)
+    const wall = tt.castle && tt.wall > 0
+      ? (unit.troops / 5000) * data.wallDamage[unit.type] * (1 + getMods(state, data, unit, {}).wall) * 40 * (onObjective ? 2 : 1) : 0;
+    const siege = (onObjective ? dmg * 1.5 + 150 : 0) + wall;
     const danger = dangerAt(state, data, unit, col, row, kill ? target : null);
     return dmg - 0.9 * ctr + kill + siege - 0.35 * danger;
   });
@@ -58,6 +64,12 @@ function scoreAttack(state, data, unit, target, col, row) {
 function goalFor(state, data, unit) {
   const objective = captureTarget(state, unit);
   if (objective && objective.owner !== unit.nation && !unitAt(state, objective.col, objective.row)) return objective;
+  // 공성병기는 목표 성(없으면 가장 가까운 적 성)으로 간다
+  if (unit.type === 'siege') {
+    if (objective && objective.owner !== unit.nation) return objective;
+    const castles = state.map.tiles.filter((t) => t.castle && t.owner && t.owner !== unit.nation);
+    if (castles.length) return castles.sort((a, b) => distance(unit, a) - distance(unit, b))[0];
+  }
   let best = null, bd = Infinity;
   for (const e of aliveUnits(state)) {
     if (!isEnemy(e, unit)) continue;
@@ -95,13 +107,29 @@ export function actUnit(state, data, unit) {
   const goal = goalFor(state, data, unit);
   if (goal && !unit.hold) {
     const travel = travelCostMap(state, data, unit.type, goal);
+    const here = travelDays(travel, data, unit, unit.col, unit.row, tileAt(state.map, unit.col, unit.row)) ?? Infinity;
+    // 부교: 강 건너편으로 가는 길이 크게 줄어들면 다리를 놓는다
+    for (const site of bridgeSites(state, data, unit)) {
+      const work = 1 + getMods(state, data, unit, {}).bridge;
+      const days = Math.ceil((BRIDGE_WORK - (site.bridgeWork || 0)) / work);
+      let beyond = Infinity;
+      for (const n of neighbors(site.col, site.row)) {
+        const t = tileAt(state.map, n.col, n.row);
+        if (!t || (n.col === unit.col && n.row === unit.row) || t.terrain === 'river' || t.terrain === 'sea') continue;
+        beyond = Math.min(beyond, travel.get(`${key(n.col, n.row)}|land`) ?? Infinity);
+      }
+      if (beyond + days + 1 < here - 1) {
+        buildBridge(state, data, unit, site);
+        return result;
+      }
+    }
     let pick = null;
     for (const k of reach.keys()) {
       const [col, row] = k.split(',').map(Number);
-      const t = travel.get(key(col, row)) ?? 9999;
+      const t = travelDays(travel, data, unit, col, row, tileAt(state.map, col, row)) ?? 99;
       const def = data.terrain[tileAt(state.map, col, row).terrain].def ?? 1;
       // 동점이면 목표에 직선으로 더 가까운 칸, 그래도 같으면 무작위 (탐색 순서에 따른 방향 편향 제거)
-      const cost = t * 120 + dangerAt(state, data, unit, col, row) * 0.5 - def * 50
+      const cost = t * 700 + dangerAt(state, data, unit, col, row) * 0.5 - def * 50
         + distance({ col, row }, goal) * 5 + state.rng();
       if (!pick || cost < pick.cost) pick = { col, row, cost };
     }

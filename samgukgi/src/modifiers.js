@@ -2,7 +2,7 @@
 // 이벤트·시나리오 효과도 나중에 같은 형식으로 얹으면 된다.
 import { neighbors } from './hex.js';
 
-export const STATS = ['atk', 'def', 'counter', 'move', 'range', 'moraleLoss', 'moraleRegen', 'moraleFloor', 'moraleStart', 'troops'];
+export const STATS = ['atk', 'def', 'counter', 'move', 'range', 'moraleLoss', 'moraleRegen', 'moraleFloor', 'moraleStart', 'troops', 'bridge', 'wall'];
 
 export function unitSources(unit, data) {
   const out = [];

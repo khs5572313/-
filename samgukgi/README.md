@@ -50,11 +50,14 @@ samgukgi/
 │ ├ ai.js                   기본 AI (기대 피해 − 반격 − 위험도로 행동 선택)
 │ └ data/                   ← 밸런스 조정은 여기만 고치면 됨
 │   ├ terrain.js  units.js  nations.js  skills.js  generals.js
-│   └ scenarios/labs.js       병종 실험실 7종
+│   ├ scenarios/labs.js       병종 실험실 11종
+│   ├ maps/fullmap.js         실측 고도로 만든 전체 지도 (자동 생성)
+│   ├ sites.js                역사 지점 위경도·신뢰도
 │   └ scenarios/liaodong645.js
 ├ src/sim.js                자동 대전 (브라우저·Node 공용)
 ├ tools/balance.js          밸런스 시뮬레이터
 ├ tools/build.mjs           웹 화면을 파일 하나(dist/)로 묶기
+├ tools/mapgen.py           고도 데이터 → 전체 지도 생성 (python3 tools/mapgen.py --preview)
 ├ tests/                    규칙 테스트 + 밸런스 회귀 테스트
 └ web/                      브라우저 화면 (index.html, app.js)
 ```
@@ -66,4 +69,4 @@ samgukgi/
 
 - 수치를 바꾼 뒤에는 반드시 `npm test`를 실행합니다. 밸런스 회귀 테스트가 설계 목표(상성 우위 75% 이상, 명장 역상성 25~65%, 시나리오 25~75%)를 벗어나면 실패로 알려 줍니다.
 - 새 국가 버프·특기는 `{ stat, value, cond }` 형식으로 추가합니다. 사용할 수 있는 키는 `src/data/nations.js` 맨 위 주석에 있습니다.
-- 지도는 `rows` 문자열로 그립니다(`.` 평지, `h` 구릉, `m` 산악, `f` 숲, `w` 습지, `~` 강(배 없이 도하 불가), `=` 여울·나루, `S` 바다).
+- 지도는 `rows` 문자열로 그립니다(`.` 평지, `h` 구릉, `m` 산악, `f` 숲, `w` 습지, `~` 강(걸어서 도하 불가), `=` 여울, `S` 바다, `P` 나루터·포구, `B` 부교).

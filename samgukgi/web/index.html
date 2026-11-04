@@ -91,6 +91,7 @@
     <button id="step">한 턴만</button>
     <button id="restart">처음부터</button>
     <button id="sim">100판 돌려 승률 보기</button>
+    <span id="zoomCtl" hidden><button id="zin" aria-label="확대">＋ 확대</button> <button id="zout" aria-label="축소">− 축소</button></span>
   </div>
 
   <section class="brief">
@@ -113,7 +114,8 @@
       <div class="panel" id="tile"><h3>지형</h3><div class="muted">칸에 마우스를 올리면 병종별 이동·전투 효과가 나옵니다.</div></div>
       <div class="panel"><h3>전투 기록</h3><div id="log"></div></div>
       <div class="panel help">
-        흰 점선은 이동 경로, 빨간 실선은 근접 공격, 주황 점선은 원거리 사격입니다.
+        흰 점선은 이동 경로, 빨간 실선은 근접 공격, 주황 점선은 원거리 사격입니다. 갈색 배 모양은 승선한 부대, 성 아래 노란 막대는 성벽 내구도입니다.
+        직접 조종할 때 강가의 부대를 고르면 금색 점선 강 칸이 보이고, 그 칸을 누르면 부교를 놓습니다.
         진영을 고르면 직접 조종할 수 있습니다. 아군 부대를 누르고, 파란 칸으로 이동한 뒤, 빨간 테두리 적을 누르면 공격합니다.
       </div>
     </aside>

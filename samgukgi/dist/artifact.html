@@ -91,6 +91,7 @@
     <button id="step">한 턴만</button>
     <button id="restart">처음부터</button>
     <button id="sim">100판 돌려 승률 보기</button>
+    <span id="zoomCtl" hidden><button id="zin" aria-label="확대">＋ 확대</button> <button id="zout" aria-label="축소">− 축소</button></span>
   </div>
 
   <section class="brief">
@@ -113,7 +114,8 @@
       <div class="panel" id="tile"><h3>지형</h3><div class="muted">칸에 마우스를 올리면 병종별 이동·전투 효과가 나옵니다.</div></div>
       <div class="panel"><h3>전투 기록</h3><div id="log"></div></div>
       <div class="panel help">
-        흰 점선은 이동 경로, 빨간 실선은 근접 공격, 주황 점선은 원거리 사격입니다.
+        흰 점선은 이동 경로, 빨간 실선은 근접 공격, 주황 점선은 원거리 사격입니다. 갈색 배 모양은 승선한 부대, 성 아래 노란 막대는 성벽 내구도입니다.
+        직접 조종할 때 강가의 부대를 고르면 금색 점선 강 칸이 보이고, 그 칸을 누르면 부교를 놓습니다.
         진영을 고르면 직접 조종할 수 있습니다. 아군 부대를 누르고, 파란 칸으로 이동한 뒤, 빨간 테두리 적을 누르면 공격합니다.
       </div>
     </aside>
@@ -141,7 +143,7 @@
       name: "\uD3C9\uC9C0",
       char: ".",
       color: "#c7d39a",
-      move: { cavalry: 2, spear: 2, archer: 2 },
+      move: { cavalry: 2, spear: 2, archer: 2, siege: 2 },
       def: 1,
       note: "\uAE30\uC900 \uC9C0\uD615. \uAE30\uBCD1\uC774 \uAC10\uC810 \uC5C6\uC774 \uC81C \uC18D\uB3C4(\uD558\uB8E8 5\uCE78)\uB97C \uB0B4\uB294 \uC720\uC77C\uD55C \uC9C0\uD615"
     },
@@ -149,7 +151,7 @@
       name: "\uAD6C\uB989",
       char: "h",
       color: "#b8a774",
-      move: { cavalry: 4, spear: 3, archer: 3 },
+      move: { cavalry: 4, spear: 3, archer: 3, siege: 4 },
       def: 1.15,
       atk: { archer: 1.15 },
       note: "\uC5B8\uB355 \uC704 \uAD81\uBCD1 \uACF5\uACA9 \xD71.15"
@@ -165,13 +167,13 @@
       defUnit: { cavalry: 0.8 },
       rangeBonus: { archer: 1 },
       dismount: true,
-      note: "\uAE30\uBCD1\uC740 \uB9D0\uC744 \uB04C\uACE0 \uAC78\uC5B4 \uD558\uB8E8 1\uCE78(\uD558\uB9C8). \uD558\uB9C8 \uAE30\uBCD1 \uACF5\uACA9 \xD70.6\xB7\uBC29\uC5B4 \xD70.8. \uC0B0 \uC704 \uAD81\uBCD1 \uC0AC\uAC70\uB9AC +1"
+      note: "\uAE30\uBCD1\uC740 \uB9D0\uC744 \uB04C\uACE0 \uAC78\uC5B4 \uD558\uB8E8 1\uCE78(\uD558\uB9C8). \uD558\uB9C8 \uAE30\uBCD1 \uACF5\uACA9 \xD70.6\xB7\uBC29\uC5B4 \xD70.8. \uC0B0 \uC704 \uAD81\uBCD1 \uC0AC\uAC70\uB9AC +1. \uACF5\uC131\uBCD1\uAE30 \uC9C4\uC785 \uBD88\uAC00"
     },
     forest: {
       name: "\uC232",
       char: "f",
       color: "#6f9658",
-      move: { cavalry: 5, spear: 3, archer: 3 },
+      move: { cavalry: 5, spear: 3, archer: 3, siege: 5 },
       def: 1.15,
       atk: { archer: 0.85 },
       charge: { cavalry: 0.8 },
@@ -186,7 +188,7 @@
       def: 0.85,
       atk: { cavalry: 0.7 },
       charge: { cavalry: 0.7 },
-      note: "\uB9D0\uBC1C\uAD7D\uC774 \uBE60\uC9C4\uB2E4. \uAE30\uBCD1 \uC774\uB3D9 4\uBC30, \uAE30\uBCD1 \uC804\uD22C \xD70.7"
+      note: "\uB9D0\uBC1C\uAD7D\uC774 \uBE60\uC9C4\uB2E4. \uAE30\uBCD1 \uC774\uB3D9 4\uBC30, \uAE30\uBCD1 \uC804\uD22C \xD70.7. \uACF5\uC131\uBCD1\uAE30 \uC9C4\uC785 \uBD88\uAC00"
     },
     ford: {
       name: "\uC5EC\uC6B8\xB7\uB098\uB8E8",
@@ -195,8 +197,9 @@
       move: { cavalry: 4, spear: 4, archer: 4 },
       def: 0.6,
       stopOnEnter: true,
+      navigable: true,
       atk: { cavalry: 0.7, spear: 0.7, archer: 0.7 },
-      note: "\uAC74\uB110 \uC218 \uC788\uB294 \uC595\uC740 \uACF3. \uB4E4\uC5B4\uAC00\uBA74 \uADF8 \uD134 \uC774\uB3D9 \uC885\uB8CC. \uBB3C\uC18D \uBD80\uB300 \uBC29\uC5B4 \xD70.6\xB7\uACF5\uACA9 \xD70.7 (\uBC18\uB3C4\uC774\uACA9)"
+      note: "\uAC74\uB110 \uC218 \uC788\uB294 \uC595\uC740 \uACF3. \uB4E4\uC5B4\uAC00\uBA74 \uADF8 \uD134 \uC774\uB3D9 \uC885\uB8CC. \uBB3C\uC18D \uBD80\uB300 \uBC29\uC5B4 \xD70.6\xB7\uACF5\uACA9 \xD70.7 (\uBC18\uB3C4\uC774\uACA9). \uACF5\uC131\uBCD1\uAE30\uB294 \uBABB \uAC74\uB118"
     },
     river: {
       name: "\uAC15",
@@ -205,7 +208,8 @@
       move: {},
       def: 1,
       impassable: true,
-      note: "\uBC30\uAC00 \uC5C6\uC73C\uBA74 \uAC74\uB110 \uC218 \uC5C6\uB2E4. \uC5EC\uC6B8\xB7\uB098\uB8E8\uB85C \uB3CC\uC544\uAC00\uC57C \uD55C\uB2E4 (\uBC30\xB7\uBD80\uAD50\uB294 M2)"
+      navigable: true,
+      note: "\uAC78\uC5B4\uC11C\uB294 \uBABB \uAC74\uB10C\uB2E4. \uC5EC\uC6B8\uB85C \uB3CC\uC544\uAC00\uAC70\uB098, \uB098\uB8E8\uD130\uC5D0\uC11C \uBC30\uB97C \uD0C0\uAC70\uB098, \uBD80\uAD50\uB97C \uB193\uC544\uC57C \uD55C\uB2E4"
     },
     sea: {
       name: "\uBC14\uB2E4",
@@ -214,18 +218,37 @@
       move: {},
       def: 1,
       impassable: true,
-      note: "\uBC30\uAC00 \uC5C6\uC73C\uBA74 \uC9C4\uC785 \uBD88\uAC00 (\uC218\uAD70\uC740 M2)"
+      navigable: true,
+      note: "\uB098\uB8E8\uD130\xB7\uD3EC\uAD6C\uC5D0\uC11C \uBC30\uB97C \uD0C0\uC57C \uB4E4\uC5B4\uAC08 \uC218 \uC788\uB2E4. \uBC30 \uC704 \uBD80\uB300\uB294 \uBC29\uC5B4 \xD70.6"
+    },
+    port: {
+      name: "\uB098\uB8E8\uD130\xB7\uD3EC\uAD6C",
+      char: "P",
+      color: "#d7c08a",
+      move: { cavalry: 2, spear: 2, archer: 2, siege: 2 },
+      def: 1,
+      port: true,
+      note: "\uC5EC\uAE30\uC11C \uC606 \uBB3C\uCE78\uC73C\uB85C \uB098\uAC00\uBA74 \uBC30\uC5D0 \uC624\uB978\uB2E4(\uC2B9\uC120\uC5D0 \uD558\uB8E8). \uC0C1\uB959\uC740 \uD574\uC548 \uC5B4\uB514\uC11C\uB098 \uAC00\uB2A5"
+    },
+    bridge: {
+      name: "\uBD80\uAD50",
+      char: "B",
+      color: "#a98a5c",
+      move: { cavalry: 3, spear: 3, archer: 3, siege: 4 },
+      def: 0.8,
+      navigable: true,
+      note: "\uAC15 \uC704\uC5D0 \uB744\uC6B4 \uC784\uC2DC \uB2E4\uB9AC. \uC881\uC544\uC11C \uBC29\uC5B4 \xD70.8. \uBD80\uAD50\uB97C \uB193\uC73C\uB824\uBA74 \uAC15\uAC00\uC5D0\uC11C 3\uC77C(\uACF5\uBCD1 \uD2B9\uAE30 1\uC77C)"
     },
     castle: {
       name: "\uC131",
       char: "C",
       color: "#c9a64e",
-      move: { cavalry: 2, spear: 2, archer: 2 },
-      def: 1.7,
+      move: { cavalry: 2, spear: 2, archer: 2, siege: 2 },
+      def: 3,
       charge: { cavalry: 0.7 },
       rangeBonus: { archer: 1 },
       supply: 0.03,
-      note: "\uBC29\uC5B4 \xD71.7, \uC131\uBCBD \uC704 \uAD81\uBCD1 \uC0AC\uAC70\uB9AC +1, \uAE30\uBCD1 \uB3CC\uC785 \xD70.7, \uC790\uAD6D \uC131 \uBCF4\uAE09 3%/\uD134"
+      note: "\uC131\uBCBD\uC774 \uC628\uC804\uD558\uBA74 \uBC29\uC5B4 \xD73.0, \uC131\uBCBD\uC774 \uBB34\uB108\uC9C8\uC218\uB85D \xD71.0\uAE4C\uC9C0 \uB0B4\uB824\uAC04\uB2E4. \uC131\uBCBD \uC704 \uAD81\uBCD1 \uC0AC\uAC70\uB9AC +1, \uAE30\uBCD1 \uB3CC\uC785 \xD70.7, \uC790\uAD6D \uC131 \uBCF4\uAE09 3%/\uD134"
     }
   };
 
@@ -235,12 +258,23 @@
     spear: { name: "\uCC3D\uBCD1", short: "\uCC3D", atk: 1, def: 1.15, move: 6, range: 1 },
     // 궁병: 사거리 2. 거리 2 사격은 반격을 받지 않지만 화력 85%(combat.js RANGED_FALLOFF).
     // 인접(거리 1)하면 근접전에 말려들어 공격력 75%.
-    archer: { name: "\uAD81\uBCD1", short: "\uAD81", atk: 1, def: 0.8, move: 6, range: 2, adjacentMul: 0.75 }
+    archer: { name: "\uAD81\uBCD1", short: "\uAD81", atk: 1, def: 0.8, move: 6, range: 2, adjacentMul: 0.75 },
+    // 공성병기(충차·포차): 사람에게는 약하고 성벽에 강하다. 하루 2칸, 산·습지·여울 진입 불가
+    siege: { name: "\uACF5\uC131\uBCD1\uAE30", short: "\uACF5", atk: 0.5, def: 0.6, move: 4, range: 2, adjacentMul: 0.7 }
+  };
+  var wallDamage = { cavalry: 1, spear: 3, archer: 1, siege: 20 };
+  var ship = {
+    move: 8,
+    // 물 1칸 = 2MP → 하루 4칸 ≈ 24km
+    atk: { cavalry: 0.4, spear: 0.6, archer: 0.9, siege: 0.3 },
+    // 배 위에서는 궁병만 제 힘
+    def: 0.6
   };
   var counter = {
-    cavalry: { cavalry: 1, spear: 0.85, archer: 1.2 },
-    spear: { cavalry: 1.2, spear: 1, archer: 0.85 },
-    archer: { cavalry: 0.85, spear: 1.2, archer: 1 }
+    cavalry: { cavalry: 1, spear: 0.85, archer: 1.2, siege: 1.2 },
+    spear: { cavalry: 1.2, spear: 1, archer: 0.85, siege: 1.2 },
+    archer: { cavalry: 0.85, spear: 1.2, archer: 1, siege: 1.2 },
+    siege: { cavalry: 1, spear: 1, archer: 1, siege: 1 }
   };
 
   // src/data/nations.js
@@ -317,6 +351,8 @@
         mods: [{ stat: "atk", value: 0.08, cond: { nearWater: true } }]
       }
     },
+    balhae: { name: "\uBC1C\uD574", color: "#2f8f8a", buff: null },
+    // 국가 버프는 M3에서 설계
     mohe: {
       name: "\uB9D0\uAC08",
       color: "#4f8a5b",
@@ -386,6 +422,11 @@
       desc: "\uC0AC\uAE30 \uAC10\uC18C -30%",
       mods: [{ stat: "moraleLoss", value: -0.3 }]
     },
+    gongbyeong: {
+      name: "\uACF5\uBCD1",
+      desc: "\uBD80\uAD50\uB97C \uD558\uB8E8 \uB9CC\uC5D0 \uB193\uB294\uB2E4(\uBCF4\uD1B5 3\uC77C). \uC131\uBCBD \uACF5\uACA9 \uD53C\uD574 +50%",
+      mods: [{ stat: "bridge", value: 2 }, { stat: "wall", value: 0.5 }]
+    },
     gyeolsa: {
       name: "\uACB0\uC0AC",
       desc: "\uBCD1\uB825\uC774 30% \uBBF8\uB9CC\uC774\uBA74 \uACF5\uACA9 +25%",
@@ -411,6 +452,22 @@
       cha: 70,
       aptitude: { cavalry: "B", spear: "B", archer: "B" },
       skills: []
+    },
+    lab_engineer: {
+      name: "\uACF5\uBCD1 \uC7A5\uC218",
+      hanja: "",
+      nation: "lab_a",
+      born: null,
+      died: null,
+      historicity: "\uAC00\uC0C1",
+      note: "\uD45C\uC900 \uC7A5\uC218\uC5D0 \uACF5\uBCD1 \uD2B9\uAE30\uB9CC \uB354\uD55C \uC2E4\uD5D8\uC6A9 \uC7A5\uC218",
+      lead: 70,
+      war: 70,
+      int: 70,
+      pol: 70,
+      cha: 70,
+      aptitude: { cavalry: "B", spear: "B", archer: "B" },
+      skills: ["gongbyeong"]
     },
     // ── 당 ──────────────────────────────
     li_shimin: {
@@ -491,7 +548,7 @@
       pol: 70,
       cha: 75,
       aptitude: { cavalry: "B", spear: "A", archer: "B" },
-      skills: []
+      skills: ["gongbyeong"]
     },
     // ── 고구려 ───────────────────────────
     ansi_lord: {
@@ -707,7 +764,7 @@
   };
 
   // src/data/index.js
-  var data_default = { terrain: terrain_default, units, counter, nations: nations_default, skills: skills_default, generals: generals_default };
+  var data_default = { terrain: terrain_default, units, counter, wallDamage, ship, nations: nations_default, skills: skills_default, generals: generals_default };
 
   // src/data/scenarios/liaodong645.js
   var liaodong645_default = {
@@ -743,7 +800,7 @@
       { name: "\uAC1C\uBAA8\uC131", col: 8, row: 3, owner: "tang" },
       { name: "\uC694\uB3D9\uC131", col: 9, row: 6, owner: "tang" },
       { name: "\uBC31\uC554\uC131", col: 13, row: 6, owner: "tang" },
-      { name: "\uC548\uC2DC\uC131", col: 10, row: 10, owner: "goguryeo" },
+      { name: "\uC548\uC2DC\uC131", col: 10, row: 10, owner: "goguryeo", wall: 175 },
       { name: "\uAC74\uC548\uC131", col: 10, row: 13, owner: "goguryeo" }
     ],
     sides: ["tang", "goguryeo"],
@@ -754,6 +811,8 @@
       { general: "zhangsun_wuji", nation: "tang", type: "archer", troops: 5e3, col: 9, row: 4 },
       { general: "xue_rengui", nation: "tang", type: "cavalry", troops: 5e3, col: 12, row: 5 },
       { general: "li_daozong", nation: "tang", type: "spear", troops: 6e3, col: 8, row: 4 },
+      // 포차·충차 부대 (당군은 요동성 공략에 포차를 썼다)
+      { general: null, nation: "tang", type: "siege", troops: 3e3, col: 10, row: 4 },
       // 고구려: 안시성 수비대(농성) + 동쪽 구릉의 구원군
       { general: "ansi_lord", nation: "goguryeo", type: "spear", troops: 6e3, col: 10, row: 10, hold: true },
       { general: "ansi_vice", nation: "goguryeo", type: "archer", troops: 4e3, col: 12, row: 11 },
@@ -762,8 +821,8 @@
     ],
     victory: [
       { nation: "tang", type: "capture", castle: "\uC548\uC2DC\uC131" },
-      { nation: "goguryeo", type: "survive", turns: 15 }
-      // AI 대 AI 당 승률 ≈ 50% 로 맞춘 값 (tools/balance.js)
+      { nation: "goguryeo", type: "survive", turns: 20 }
+      // 성벽 175와 함께 AI 대 AI 당 승률 ≈ 50% (tools/balance.js)
     ]
   };
 
@@ -900,8 +959,594 @@
         std("lab_b", "archer", 10, 3, { hold: true }),
         std("lab_b", "archer", 11, 4, { hold: true })
       ]
+    }),
+    base({
+      id: "lab-landing",
+      title: "\uC2E4\uD5D8 8 \xB7 \uBC14\uB2E4 \uAC74\uB108 \uC0C1\uB959\uC804",
+      desc: "\uCCAD\uAD70\uC740 \uBC14\uB2E4 \uAC74\uB108 \uC801\uC744 \uCCD0\uC57C \uD569\uB2C8\uB2E4. \uB098\uB8E8\uD130(P)\uC5D0\uC11C \uBC30\uC5D0 \uC624\uB974\uB294 \uB370 \uD558\uB8E8, \uBC14\uB2E4\uB294 \uD558\uB8E8 4\uCE78, \uD574\uC548\uC5D0 \uB0B4\uB9AC\uB294 \uB370 \uD558\uB8E8\uAC00 \uAC78\uB9AC\uACE0 \uC2B9\uC120\xB7\uC0C1\uB959\uD55C \uB0A0\uC740 \uACF5\uACA9\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uBC30 \uC704\uC5D0\uC11C\uB294 \uBC29\uC5B4 \xD70.6\uC774\uACE0 \uAD81\uBCD1\uB9CC \uC81C \uD798(\xD70.9)\uC744 \uB0C5\uB2C8\uB2E4.",
+      expect: { winner: null, text: "\uAD00\uCC30\uC6A9. \uC801\uC758 \uC0AC\uAC70\uB9AC\uB97C \uD53C\uD574 \uC0C1\uB959 \uC9C0\uC810\uC744 \uACE0\uB974\uB294\uC9C0, \uC0C1\uB959 \uC9C1\uD6C4 \uC5BC\uB9C8\uB098 \uC5BB\uC5B4\uB9DE\uB294\uC9C0 \uBD05\uB2C8\uB2E4." },
+      rows: [
+        "....SSSSSSS.....",
+        "....SSSSSSS.....",
+        "....SSSSSSS.....",
+        "...PSSSSSSS.....",
+        "...PSSSSSSS.....",
+        "....SSSSSSS.....",
+        "....SSSSSSS.....",
+        "....SSSSSSS.....",
+        "....SSSSSSS....."
+      ],
+      units: [
+        std("lab_a", "spear", 2, 3),
+        std("lab_a", "spear", 2, 5),
+        std("lab_a", "archer", 1, 4),
+        std("lab_b", "spear", 12, 4, { hold: true }),
+        std("lab_b", "archer", 13, 3, { hold: true })
+      ]
+    }),
+    base({
+      id: "lab-bridge",
+      title: "\uC2E4\uD5D8 9 \xB7 \uACF5\uBCD1\uC758 \uBD80\uAD50",
+      desc: "\uC5EC\uC6B8\uB3C4 \uB098\uB8E8\uB3C4 \uC5C6\uB294 \uAC15\uC785\uB2C8\uB2E4. \uBCF4\uD1B5 \uBD80\uB300\uB294 \uAC15\uAC00\uC5D0\uC11C 3\uC77C\uC744 \uC77C\uD574\uC57C \uBD80\uAD50\uB97C \uB193\uC9C0\uB9CC, \uACF5\uBCD1 \uD2B9\uAE30\uB97C \uAC00\uC9C4 \uC7A5\uC218(\uCC3D\uBCD1)\uB294 \uD558\uB8E8\uBA74 \uB429\uB2C8\uB2E4. \uBD80\uAD50\uAC00 \uC0DD\uAE30\uBA74 \uAE30\uBCD1 2\uBD80\uB300\uAC00 \uAC74\uB108\uAC00 \uAD81\uBCD1\uC744 \uCE69\uB2C8\uB2E4. \uBD80\uAD50 \uC704\uC5D0\uC11C\uB294 \uBC29\uC5B4 \xD70.8\uC785\uB2C8\uB2E4.",
+      expect: { winner: "lab_a", text: "\uCCAD\uAD70 \uC6B0\uC138. \uACF5\uBCD1\uC774 \uB2E4\uB9AC\uB97C \uB193\uACE0 \uAE30\uBCD1\uC774 \uAC74\uB108 \uAD81\uBCD1\uC744 \uB36E\uCE69\uB2C8\uB2E4." },
+      rows: Array(9).fill(".......~........"),
+      units: [
+        { general: "lab_engineer", nation: "lab_a", type: "spear", troops: 5e3, col: 4, row: 4 },
+        std("lab_a", "cavalry", 3, 2),
+        std("lab_a", "cavalry", 3, 6),
+        std("lab_b", "archer", 11, 3, { hold: true }),
+        std("lab_b", "archer", 11, 5, { hold: true })
+      ]
+    }),
+    base({
+      id: "lab-siege-none",
+      title: "\uC2E4\uD5D8 10 \xB7 \uC131\uBCBD\uB9CC\uC73C\uB85C \uACF5\uC131 (\uACF5\uC131\uBCD1\uAE30 \uC5C6\uC74C)",
+      desc: "\uCC3D\uBCD1 3\uBD80\uB300(1\uB9CC5\uCC9C)\uAC00 \uCC3D\uBCD1 1\uBD80\uB300(5\uCC9C)\uAC00 \uC9C0\uD0A4\uB294 \uC131\uC744 12\uC77C \uC548\uC5D0 \uD568\uB77D\uD574\uC57C \uD569\uB2C8\uB2E4. \uC131\uBCBD\uC774 \uC628\uC804\uD558\uBA74 \uBC29\uC5B4 \xD73.0\uC774\uACE0, \uC131\uBCBD\uC740 \uCC3D\uBCD1\uC758 \uACF5\uACA9\uC73C\uB85C \uC870\uAE08\uC529\uB9CC \uAE4E\uC774\uBA70 \uC218\uBE44\uB300\uAC00 \uB9E4\uC77C \uBCF4\uC218\uD569\uB2C8\uB2E4. \uC2E4\uD5D8 11\uACFC \uBE44\uAD50\uD574 \uBCF4\uC138\uC694.",
+      expect: { winner: "lab_b", text: "\uC218\uBE44 \uC6B0\uC138. \uBCD1\uB825\uC774 3\uBC30\uC5EC\uB3C4 \uACF5\uC131\uBCD1\uAE30 \uC5C6\uC774\uB294 \uC131\uBCBD\uC744 \uBABB \uBB34\uB108\uB728\uB9BD\uB2C8\uB2E4." },
+      rows: plains(),
+      castles: [{ name: "\uBAA9\uD45C\uC131", col: 11, row: 4, owner: "lab_b", wall: 100 }],
+      turnLimit: void 0,
+      victory: [{ nation: "lab_a", type: "capture", castle: "\uBAA9\uD45C\uC131" }, { nation: "lab_b", type: "survive", turns: 12 }],
+      units: [
+        std("lab_a", "spear", 2, 2),
+        std("lab_a", "spear", 2, 4),
+        std("lab_a", "spear", 2, 6),
+        std("lab_b", "spear", 11, 4, { hold: true })
+      ]
+    }),
+    base({
+      id: "lab-siege-engine",
+      title: "\uC2E4\uD5D8 11 \xB7 \uACF5\uC131\uBCD1\uAE30 \uD22C\uC785",
+      desc: "\uC2E4\uD5D8 10\uACFC \uAC19\uC740 \uC131\uC744, \uCC3D\uBCD1 1\uBD80\uB300\uB97C \uACF5\uC131\uBCD1\uAE30(\uCDA9\uCC28\xB7\uD3EC\uCC28)\uB85C \uBC14\uAFD4 \uACF5\uACA9\uD569\uB2C8\uB2E4. \uACF5\uC131\uBCD1\uAE30\uB294 \uC0AC\uB78C\uC5D0\uAC8C\uB294 \uC57D\uD558\uC9C0\uB9CC \uC131\uBCBD\uC744 \uCC3D\uBCD1\uC758 7\uBC30 \uAC00\uAE4C\uC774 \uAE4E\uC2B5\uB2C8\uB2E4. \uC131\uBCBD\uC774 \uBB34\uB108\uC9C0\uBA74 \uC131\uC758 \uBC29\uC5B4 \uBCF4\uB108\uC2A4\uAC00 \uC0AC\uB77C\uC9D1\uB2C8\uB2E4.",
+      expect: { winner: "lab_a", text: "\uACF5\uACA9 \uC6B0\uC138. \uC131\uBCBD\uC744 \uBA3C\uC800 \uBB34\uB108\uB728\uB9AC\uBA74 \uD568\uB77D\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." },
+      rows: plains(),
+      castles: [{ name: "\uBAA9\uD45C\uC131", col: 11, row: 4, owner: "lab_b", wall: 100 }],
+      turnLimit: void 0,
+      victory: [{ nation: "lab_a", type: "capture", castle: "\uBAA9\uD45C\uC131" }, { nation: "lab_b", type: "survive", turns: 12 }],
+      units: [
+        std("lab_a", "spear", 2, 2),
+        std("lab_a", "siege", 2, 4),
+        std("lab_a", "spear", 2, 6),
+        std("lab_b", "spear", 11, 4, { hold: true })
+      ]
     })
   ];
+
+  // src/data/maps/fullmap.js
+  var fullmap_default = {
+    "id": "fullmap",
+    "meta": {
+      "lon0": 117,
+      "lon1": 132,
+      "lat0": 33,
+      "lat1": 44,
+      "hexKm": 6,
+      "kmLon": 87.11994002081072,
+      "kmLat": 110.57
+    },
+    "sites": [
+      {
+        "name": "\uD3C9\uC591\uC131",
+        "nation": "goguryeo",
+        "type": "capital",
+        "col": 126,
+        "row": 105,
+        "confidence": "high"
+      },
+      {
+        "name": "\uAD6D\uB0B4\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 133,
+        "row": 60,
+        "confidence": "high"
+      },
+      {
+        "name": "\uC694\uB3D9\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 89,
+        "row": 58,
+        "confidence": "high"
+      },
+      {
+        "name": "\uC548\uC2DC\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 83,
+        "row": 67,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uBC31\uC554\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 93,
+        "row": 60,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uC2E0\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 99,
+        "row": 44,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uAC74\uC548\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 79,
+        "row": 76,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uBE44\uC0AC\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 71,
+        "row": 104,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uC624\uACE8\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 102,
+        "row": 75,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uAC1C\uBAA8\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 90,
+        "row": 47,
+        "confidence": "low"
+      },
+      {
+        "name": "\uCC45\uC131",
+        "nation": "goguryeo",
+        "type": "castle",
+        "col": 193,
+        "row": 23,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uC0AC\uBE44\uC131",
+        "nation": "baekje",
+        "type": "capital",
+        "col": 143,
+        "row": 164,
+        "confidence": "high"
+      },
+      {
+        "name": "\uC6C5\uC9C4\uC131",
+        "nation": "baekje",
+        "type": "castle",
+        "col": 146,
+        "row": 160,
+        "confidence": "high"
+      },
+      {
+        "name": "\uC784\uC874\uC131",
+        "nation": "baekje",
+        "type": "castle",
+        "col": 141,
+        "row": 158,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uAC00\uB9BC\uC131",
+        "nation": "baekje",
+        "type": "castle",
+        "col": 142,
+        "row": 165,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uAE08\uC131",
+        "nation": "silla",
+        "type": "capital",
+        "col": 176,
+        "row": 173,
+        "confidence": "high"
+      },
+      {
+        "name": "\uB300\uC57C\uC131",
+        "nation": "silla",
+        "type": "castle",
+        "col": 161,
+        "row": 179,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uC0BC\uB144\uC0B0\uC131",
+        "nation": "silla",
+        "type": "castle",
+        "col": 155,
+        "row": 159,
+        "confidence": "high"
+      },
+      {
+        "name": "\uAD00\uC0B0\uC131",
+        "nation": "silla",
+        "type": "castle",
+        "col": 153,
+        "row": 163,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uD55C\uC0B0\uC8FC",
+        "nation": "silla",
+        "type": "castle",
+        "col": 147,
+        "row": 137,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uB2F9\uD56D\uC131",
+        "nation": "silla",
+        "type": "port",
+        "col": 140,
+        "row": 144,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uCE60\uC911\uC131",
+        "nation": "silla",
+        "type": "castle",
+        "col": 144,
+        "row": 128,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uB9E4\uC18C\uC131",
+        "nation": "silla",
+        "type": "battle",
+        "col": 145,
+        "row": 125,
+        "confidence": "low"
+      },
+      {
+        "name": "\uC601\uC8FC",
+        "nation": "tang",
+        "type": "castle",
+        "col": 49,
+        "row": 51,
+        "confidence": "high"
+      },
+      {
+        "name": "\uB4F1\uC8FC",
+        "nation": "tang",
+        "type": "port",
+        "col": 53,
+        "row": 131,
+        "confidence": "high"
+      },
+      {
+        "name": "\uB0B4\uC8FC",
+        "nation": "tang",
+        "type": "port",
+        "col": 42,
+        "row": 144,
+        "confidence": "high"
+      },
+      {
+        "name": "\uB355\uBB3C\uB3C4",
+        "nation": null,
+        "type": "port",
+        "col": 132,
+        "row": 144,
+        "confidence": "high"
+      },
+      {
+        "name": "\uAE30\uBC8C\uD3EC",
+        "nation": null,
+        "type": "battle",
+        "col": 140,
+        "row": 170,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uB098\uB178\uC4F0",
+        "nation": "wa",
+        "type": "port",
+        "col": 194,
+        "row": 221,
+        "confidence": "high"
+      },
+      {
+        "name": "\uC4F0\uC2DC\uB9C8",
+        "nation": "wa",
+        "type": "port",
+        "col": 178,
+        "row": 203,
+        "confidence": "high"
+      },
+      {
+        "name": "\uC0B4\uC218",
+        "nation": null,
+        "type": "battle",
+        "col": 125,
+        "row": 93,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uD669\uC0B0\uBC8C",
+        "nation": null,
+        "type": "battle",
+        "col": 147,
+        "row": 165,
+        "confidence": "mid"
+      },
+      {
+        "name": "\uB3D9\uBAA8\uC0B0",
+        "nation": "balhae",
+        "type": "capital",
+        "col": 162,
+        "row": 13,
+        "confidence": "mid"
+      }
+    ],
+    "rows": [
+      "mmmmmmmmmmmmmmmhmmhhmmmmmmmmhhhmhhhhhhhhhhhh.hhh.......=........~.............................................................=..........~....hh..hhhhhhhhhhhhmhhmmhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhhhhh=hh..............",
+      "mmmmmmmmmmmmmmmhhhhmmmmmmmhhhhmhhhhhhhhhhhhh.hhh....===........~..............................................................=..........=....h.hhhh......hhhhhhhhhhhhhhhh==hhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhh............",
+      "mmmmmmmmmmmmmmmmmhhmmmmmmmmhhhmhhhhhhhhhhhhh.hhh....=..........~...............................................................=..........~..hhhhmhhh.....hhhhhhhhhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhh............",
+      "mmmmmmmmmmmmmmmmmhhmmmhmhmhhhhhhhhhhhhhhhhhh.hh....=..........~................................................................=..........~hhhhhhhhh..h...hhhhhhhhhhhhhhhh==hhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhh...........",
+      "mmmmmmmmmmmmmmmmmhhhmhhmmhhhhhhhhhhhhhhh.hhhh.h...==.........=~...............===~~~=~=...................===.................==........h..~hhhhhmhhh.....hhhhhhhhhh..h.hh=..hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.h........",
+      "mmmmmmmmmmmmmmmmhhhhhhhmhhhhhhhhhhhhhhhh..hhh....=..........~...............==.=......~................===..==...............=........hh...~hhhhhhmmh...hhhhhhhhh.h.======hhhhhhhhhhhhhhhhhhhhhhhhhhhhh.hhhhhhhhh........",
+      "mmmmmmmmmmmmmmmhhhhhhhhmhhhhhhhhhhhhhhhh...hh.====.........~~..............==..~.......~~~...........===......=..............=......hh...h.h=~hmhhmmh...hhhhhhhhhh..=..h.hhhhhhhhhhhh.hhhhhhhhhhhhhhhhhhhhhhhhhhh........",
+      "mmmmmmmmmmmmmmhhhhhhhmmhhhhhhhhhhhhhhhhh...h.=...........=~...............=...~..........=~~~......==.........=..............=....h..h....hhh~~..hhh..h.hhhhhhhhh..=hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.h......",
+      "mmmmmmmmmmmmmhhhhhhh=hmhhhhhhhhhhhhhhhhh....==..........~~....................~..............=.....=..........=..............=....h..h...hhhhhh~.hh..h.h.hmhhhhhhhh=hhhhhhhhhmmmmmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.......",
+      "mmmmmmmmmmmmmmhhhhhh=hhhhhhhhhhhhhhhhhhh...=..........~~....................=~...............=....=...........=..............=...h...h.h.hhhhh=.mh=.h..hhhhhhhhhhhh=hhhhhhhmmmmmhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh......",
+      "mmmmmmmmmmmmmmmmhhmhh======hhhhhhhhhhhhhh.............=.....................=.................=..==............=....................h.hh...hmhh~hm=...hhhhmhhhhhhhhhhhhhhmmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.h.S.",
+      "mmmmmmmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhhhh.............~....................==..................~.=..............=..........h..........hhhh.mhmhh~~=...hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.==.hhhhhhhhhhhhhhhhhhhhhhhhhhhhh.SS.",
+      "mmmmmmmmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhhhh............~........=============....................~=...............=.........h..........hhhhhmmmh....=...hhhhhmhhhhhhhhhhhhhhhhhhhhhhmhh=hhhhhhhhhhhhhhhhmhhhhhhhhhhhhh.hS..",
+      "mmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhhhhh...........~...======.................................~=..............=...............hh....hhhhhhhhhhhhh~.hhh.hmmhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh....",
+      "mmmmmmmmmmmmmmmmm===hhhhhhh==hhhhhhhhhh~~~=~~~=~~~~=~...=.......................................~...............=...............h...h.hhhhmhhhhhhh=....hhmmmmhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhh.hhhh.hhhS.S",
+      "mmmmmmmmmmmmmmhh=hh==========hhh~~~~h~=hh.....~~=~=~...=.......................................~................=....................hhhhhh.hhh.~~..hhhhhhhmmhhhhhhhhhhhhhhhhhhhhhhh..=hhhhhhhhhhhmmhhhhhhhhhhhhhhhh..SSS",
+      "mmmmmmmmmmm======hhhhhhhhhhhh=~~~hhh~~hhhhh...=........=........................................~................=...................hhhh.h....=~=.hhhhhhhhmhhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhhmmmmmhhhhh.hhhh.hh..SSS",
+      "mmmmmmm====mmmmmmhhhmhhhhhhhhhhhhhhhhhhhhhh..~........=........................................=.................=..................hmhhhh....=h=.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh==hmhhhhhhhhhmmmmhhh.hhhh.hh...SSh",
+      "mmmmmmmmmmmmmmmmmmhhmhhhhhhhhhhhhhhhhhhhhhhh~~........=........................................~..................=.............h..h.h.hhhhhh.=.~.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhhhhmhhhhhhhmh.hhh.SSS.",
+      "mmmmmmmmmmmmmmmmmmmmmhmhhhhhhhhhhhhhhhhhhhh~.........=........................................~............................hh..hhhhh.hhhhhhhh=..~hhhhhhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhmhmhhhhhhhh..hhh.SSS..",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhh~~h........=........................................~............................hhh..h......h.....=...~hhhhhhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.==hh.hhhhhhh.hhmhhhh..h....SSS...",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhh~hh........=.........................................~..=.........................h...........======....=h.hhhhhhhhhhhhhhhhhhhhhhhhhhhhh....hh=h==~~=hhhhh.hhhhhhh..hh...SSS...S",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhh~hhh.......=.........................................~..=.....................................=.=......hh~=hhhhhhhhhhhhhhhhhhhhhhhhhhhhh..=====.h=h..~hh..===..hhhh.h....SSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhhh~hhhh......=..........................................~.=.....................................=.=......hhhh~.hhhhhhhhhhhhhhhhhhhhhhhhhhh......hhh=.hhh~h.==hh.hhhhhhhh...SSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhh=hhhh.................................................~.=...........h.....hh.......h....=======.=.....hhhhh~hhhhhhhhhhhhhhhhhhhhhhhmhhhh......hhhh=hhhh~.=..hhmhhhhhhh....SSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhh~~hhhhh.................................................~=..................h....................=...hhhhhhhh~hhhhhh===hhhhhhhhhhhhhhhhhh.......hhh=.hhh~.=..hhhhh..h.....SSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhh~hhhhhhhh..............h.................................=.....................h.................=...hhhhhhhhh~hhhhh=mh=hhhhhhhhmmmmhmhhhh....h..hh=.hhhh~=hh..........hhSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhh~hhhhhhhhhhhh.....hhhhhhh........====....................~....................h.hh..............=..hhhhhhhhhhh=hhhh=hmh=hh=hhhhhhmmmmmhhh..hhhhhhh=hhhhhh~hhhh.~~......hSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhh~hhhhhhhhhhhh.hhhhhhhhhhhhh.........=....................~..................hhh.h..............=...hhhhhhhhhhh~hh==hhmh====hhhhhmmmmhhhhhhhhhhhhhh=hhhhh.=~.h=~.S.....h.SSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhh~hhhhhhhhhhhhhhhhhhhhhhh.h...........=....................~...................hhh..............=.hhhhmhhhhhh====h=hhhhhhhhh=hhhhhmmmmhhhhhhmhhhhhh=hhhhhhhh~~~...SS.SSShSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhh~~hhhhhhhhhhhhhhhhh.hhhhhhh............=....................=..===...........hhhhhhh.h..........h=.hhhhhhmhhh=hhh==hhhhhhhhhhhhhhhmmmmmhhhhhhhhhmmh=hh.hhhhh...hh...SSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhh~hhhhhhhhhhhhhhhhh...hhh................=...................~===...........hh.hhhhhh................hhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhmmmmhhhhhhhhhmmh=hhh.hhhh..h....hSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhmhhhhhhh=hhhhhhhhhhhhhhhhh....hhh................=..................~.............hhhhhhhhhhhhhh...........hhhhhhhhhh=hhhhhhhhhmhhhhhhhhhhhhmmmmhhhmhhhhhhhh=.hhhhhhhhhh....hSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhh~hhhhhhhhhhhhhhhhhh...hhhhh...............=.................~.........hhh..hh.h..hhhhhh........hh..hhhhhhhhhh=hhhhhhhhhhhmhhhhhhhhhhhmmmmmhmmh====h==hhhhhhhhmhhh...SSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmm====h==hhhhhhhh~hhhhhhhhhhhhhhhhhh...hhhhhh.hh............=.................~......hh.......h....hhhh....hh..hhh.hhhhhhhhhhhh=hhhhhhhhhmmmmhhhhhhhhmmmmmmmhhm=hhh==hmhhhhhhhhhhh....SSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmhh==h===hhhh~=hhhhhhhhhhhhhhhhhhh.......hhhh.............=.................~.......h......hhhhh.hh.....hh.hhhh.hhhhhhhhhhhhh===hhhhhhhmmmmhhhhhmhmmmmhmmmhh=hhhhhhmmhhhhhhhh.hS...SSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmhhhhhh=h===~~hhhhhhhhhhhhhhhhhhhhh.........h..............=................~..........h.....hhhh.hhh..hhh.hhhh..hhhmmmhhhhhhhhhhhhhhhhhmmmmmmmmmmhmmmhmmmmmh=hmmmhhhhhhmhhhhhSSS.SSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmhhhhhhhhh=hhhh=hhhhhhhhhhhhhhhhhhhhh...............hh.........=..............~=...........hhh..hhhh..hhhhhhhhhhhh.hhhhhmmmmhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmhmmmhh=hmmmmhhhhhhhh.h.SSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhh..............h...........=.............~...........hh.hhhhhhh..hhhhhhhmhhhhhhhhhhhmmhhhhhmmhhhhhhhhhhmmmmmmmmmmmmmmhhhhhh=mmhmmmhhhhmhhh.SSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhh.........................=...........~~........hh...hhhhhhh..hhhhhhhhhmhhhhhhhhhhmmhhhmmmmhhhhhhhhhhmmmmmmmmmmmmmmmmhhh==mmmhmmhhhhmhh.hSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhmhhhhhhhhh....=..h...................=.....=~~~~=..........hh..hhhhhh.hhhhhhhhhhhhhhhhhhhhhhmhhhhhmhmhhhhhhhhhhmmmmmmmmmmmmmmmmmm==hhmmmmmmmhhhhh..SSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhmhhhhhhhhhh...=...........hh..........=....~............hh.hh...hhhh.hhhhhhhhhhhhhhhhhhhhhhmhhhhhhmmhhhhhhhhhhhmmmmmmmmmmmmmmmmmm=hmhhhmmmmmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmhmhhmhhhhh=hhhhhhhhhhhhhhhhh.......=h.......h.hh...........=..=~.............hh..hhh......hhhhhhhhhhhhhhhhhhhhhhhhhhhhmhhhhhhhhhhhhmmmmmmmmmmmmmmmmmmhhmhmmmmmmmmhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhmmmhhhh=hhhhhhhhhhhhhhhhh.......=h.........hh...........=...~..................h.hh.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhmhhhhhhmmmmmmhmmmmmmmmmmmmmmmmmmmmhmmmmmmmmmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhmmmhhhhh=hhhhhhhhhhhhhhhh.......=..........hh............=..~................=====hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhmhhhhhmmmmhmmmmmmmmmmmmmmmmmmmmmmmhmmmmmmmhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmhmmmmmmmmmmhmmmmmhhhh=hhhhhhhhhhhhhhhh.......=..........hh............=..=...........======....=h.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhmmhhhhhhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhh.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmhmmmmmmmmmmmmmmmhhhhhh=hhhhhhhhhhhhhhhh.h....=....hh....hhh...........=...~........===........h.==hhhhhhhhhhhhhhhhhhhhhhhhhhhhhmmhhh~~hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmh..hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmhmmmmmhmmmmmmmmmmmmmmmhhhhh=hhhhhhhhhhhhhh.h...h..==...hh.....hh...........=....~.....===.........h.hh.hh.hh.h.hhhhhhhhhhhhh===hhhhhmhhhh~h~hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmhmmmmmhmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhhhh.......==.~..hh..=..hhh..........=....~....==.............hhhhhh......hhhhhhhhhhhh=hhhhhhhmhh~~=hh~hhhmhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmh=mmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhhhh......h=...~..h..=..hhh.........w=....~....=..............hhmhhh.hhh.hhhhhhhhhhhhh=hhhhhhhmhm~hhhhh=hmmhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmhmmmm=mmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhhhhhh..====....~....=.hhhh......wwww=w...=...==............hhhhhhhhhhhhhhhhhhhhmhhhhh=hhhhhhhmmh~hhhmhh~hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mhmmmmmmmh=hmmmmmmmmmmmmhhhhhhhhhhhhhhhhhhhhhh...=h.......~=~~.=hhh......wwwww=ww..~...=.............hhhhhhhhhhhhhhhhhhhhhhhhhh=hhhmhhhmhh~hhhmmmm~hhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmhmmhhhh=hmmmmhmmmmmmmhhhhhhhhhhhhhhhhhhhhhh..==h...........~~=hhh....wwwwww=wwww.~..=............hhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhmh~hhhhmmhm===hhhmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmhhmmhmh=hmmhhhmmmmmmmhhhhhhhhhhhhhhhhhhhh....=h..............~hhh....wwwwww=wwww.~..=..............h.h.h.hhhhhhhhhhhhhhhhhh==hhhhhmhhmh~hhhhhmhhhhh====mmmmmhmmmmmmmmmmmmmmmmmmmmmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmhmmmhhh=mmhhhhmmmmmmmhhhhhhhhhhhhhhhhhhh..===hh..............=hh...wwwwwwww=wwww~===...........hh.hhhh.hhhhhhhhhhhhhhhhh.h=hhhhhmmmmhh~hhmhhhmhhhmmmhh========mhmmmmmmmmmmmmmmhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmhhhmhhhh=mhhhhhhmmmmhhhhhhhhhhhhhhhhhh.h.==hhhh..............~....wwwwwwwww=wwww==.=======...h..h===hmhhhhhhhhhhhhh.hhhhh.=hhhhhhmmmhh~hhmmhhhhhmmmmmmmmm=mmmm==mmmmmmmmmmmmmmmhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhmhhh=hhhhhhhhmmmmmhhhhmhhhhhhhhhhhh..=.hhh..h............~....wwwwwwwww=wwww~..=......=...h.==hh=hhhmhhhhhhhmhhhhhhhhh=hhhhhhhmmmh~mmhhhhhhmmmmmmmmmmm=mmmmm=mmmmmmmmmmmmmmmhhhh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mhhhhmhhh=hhhhhhhhhmmmmhhhhmhhhhhhhhhhhh.==.hhh...............=....wwwww=====wwww~..=.......======hhhh=hmhhhhhhhhhhhmmhm..==hhhhhhhmmhh~mhhhmmhhmmmmmmmm====mmmmm=mmmmmmmmmmmmmmmmmhm..hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhmhh=hhhhhhhhhmmmmhhhhmhhhhhhhhhhhh.=h.hhh.......hh.......~...~=www=ww.wwwww~w.=.........hh.hhhhhhhhh.h.hhhhhhhmmmhm.=hhhhhhmhhhhh~hhhhmmhhmmmmmmmm=mmmmmmmm=mmmmmmmmmmmmmmmmhhh..hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhh=hhmmhhhhhhmmmmhhhhhhhhhhhhhhhh.=..hhhh.......h.=......=~~~w~w==wwwwwwww~w==.......h.h.hhhhhhhhmmhmhhhhhhhhhmhhh.=hhhhhhhhhhhh~hhhmhmmmhmmmmmmmm=mmmmmmmm==mmmmmmmmmmmmmmmh..hhmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhmhhh=hhhhhhhhhhmmmhhhhhhhhhhhhhhh===.hhhhh..........=h..h.....ww~~wwwwwwwwww==........hhhhhhh.hhhhhhhhhhhhhhhhhmhmhh=hhhhhhhhhmh~~=hhmmhmmmhmmmmmmm=mmmmmmmmmmmmmmmmmmmmmmmmmhhhhmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhh=hhhhhmhhhhmmhhhhhmhhhhhhhhh....hhhhh........h..====.....www~wwwwwwwwww~=..........hhhhhhhhhhmhhhhhmhhmhhmhhhmh=hhhhhmhhmhh~hh=hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhhh=hmhhhhhhhhhhhhhhhmhhhhhhhh.....hhhhh.hhhh.........=.....ww~wwwwwwwww~~ww.....h....hhhhhhhhhhhhhhhhhhhhhhmhhhh=hhhhhhhhhhh=hhh=hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmhhh.hmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhmhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhh.hh..hh...h.............=....ww~wwwwwwwww~www.....hhh...hhhhhhhhhhhhhhhhhh.hhhhhhh=h==.hhhhhhh~hhhh===hhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmh...mhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhh.hhhhhh.hhh.....mhh......=....ww~wwwwwwww=wwww....hhh.h..hhhhhhhh.hhhhh.hhhmhhhhhhh==h=hhhhhhh~hhhhhhm=hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.hhhhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhhh====hhhhhhhhhhhhhhhhhhhhh.hhhhhhh..h......hmh.....SS....wwwSwwwwwww~wwww.....hh.hhhhhhhhhh..hhhh...hhmhhhhhh.hhhh===hh~~~hhhmmhh=mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.hhhmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhmmhhhh==hhhhhhhhhhhhhhhhhhhhhh..hhm....h.......h...SSSSSS....S.......~........h..h.hhhhhhhhh.h..hhhhhh.hhhhhh...hhhhhh~~~hhmhhmhhh=mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhh.hhh.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhmmmmhhhhh=hhhhhhhhhhhhhhhhhhhhh.hh.hm....h..h......SSSSSSSSSSSSS.....~~.........hhhhhhhhhhhhh.hh...hhhhhhhhh.hhhhhhhhhh=hh.hhmhhhhmmmhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmhhhh.hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhmmmhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhmh......h......SSSSSSSSSSSSSSS...=...........hhhhhhhhhhh.h....h.h.hhhhhhhhhh.hhhhh=~hhhhhmmmmhmmhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hh..hhmhhhhhhhh~hhhhhhhhhhhhhhhhhhhhhhhhh.....h....hh.....SSSSSSSSSSSSSSS.~..........h.hhhh.hh.hhhhh.h.hhh.mh....hhhhhhhhh~~hhhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmhhhh.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mh..hhhhmhhhmhhh~hhmmmhhhhhhhh.hhhhhhhhhhhh...hh.........SSSSSSSSSSSSSSSSSS.............hhhhhh.hhhhhh...hhhhh....hhh..hhhh~hhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".h.hhmmmhhmhhhhh~hhhhhhhhhhhh.hhhhhhhhhhhh.h..h........SSSSSSSSSSSSSSSSSSSS...........hhhh..hh.hhhh....hh....h....hhhh=~~~hhhhhhhhmmmmmhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhmmmmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..hhmmmmhhhhmmhmm~hhhhhhhhhhhhhhhhhhhhhhhhh.h.hh.......SSSSSSSSSSSSSSSSSSSSSSS.........hhhhh...hhhhhh..h..h.hh.hhh.h.~~hhhhhhhhhmhmmmmmhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmhmhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".hhhhmmhhhhhmhmhh~hhhhhhmmmhhhhhhhhhhhhh.hhh.........SSSSSSSSSSSSSSSSSSSSSSSSS....hhhhhh.h...hhhhhhhh.......hhhhh..~~hhmmhhhmhhmhmmmmmhhhhmhmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmhh.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmhhhhhhhhhhhmmhhh~hhhhhhmmhh...mh..hhhhhhh...==.....SSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh.....h..hh.h..=...hhh..h.~=.hhhmmhhhmmhhmmmmmhhhmmmmmhmmmmmmmmmmmmmmmmmmmhhmhhmmmmmh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hmhhhhhhhmhhhhhhh.=h.hhhmmhhh.h=.hhhhhhhhh.hh..=....SSSSSSSSSSSSSSSSSSSSSSSS......h.hhhh...hh..hhmhh..h=.....h.h.~hhhhhhmhhhhhmhhmmhmmhmmmmmmmhmmmmmmmmmmmmmmmmmmhmmmhhmhmh.=SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".hhhhhhhhhhhhh..h.~.hhhhh.h.h..=hhhhhhh.hh......=...SSSSSSSSSSSSSSSSSSSSSSS....hh.hhhhhh.h.h....hmh...hh=...hhhh~~hhhhhhhhmhhmhhhhhhhhmmmhmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhmmhhmmhhhhh.h.h~hh.hhhh..hh.=hhhhhhhhhh.......=..SSSSSSSSSSSSSSSSSSSSSSSS...hh.hhhhhhhhh..h..hhh..hhhh=.....h=h.hmhhhhhhhhhhmhhhhhhhhmhhhhmmmmmmmmmmmmmmmmhmmmmhmhmmm....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhmhhhmmhhhh.hhh.~h..hhhh.hh.=hhhhhmhhhhhhh.....=.SSSSSSSSSSSSSSSSSSSSSSS....hh.hhhhhhhh.......hh....h.=hh..h.~...hhhhhhhhhhhmmhhmhhhhhhhhhhmmmmmmmmmmmhhhhhmmmmhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhhh..h..h..~hh.hhhhhhh=.hhhhhmhh.hhh.....=.SSSSSSSSSSSSSSSSSSSSSSS....h...hhhhhhh.......hh.......=hh.h~~..hhhh.hhhh.hhmmhhhmhhhhhhhmmmmmmmmmmmmmhhmmmhmmmmhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".hhh.hhhmh.......h~.....hh.hh=hh.hhhhh.hhh.......=SSSSSSSSSSSSSSSSSSSSSSS...hhhh.h.hmhhhh........hh....hh===~~.hhhhmhhhhhhhhhhhmmhhhhhhhhhhmmmmmmmmmmmmmmhmhmmmhmhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...h..hhh.......hh~~~~~...hhh=hhhhmh...h.......SSSSSSSSSSSSSSSSSSSSSSSSS...h.hh....hhhhh..hh...=hhh....hh..~..hhhhhhhh.hhhhmmhhmhhhh.hhhhmmmmmmhmmmmmmmhhhmhmmmmmhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..hhh.hh.h.....h.hh..h.~....h=hhhhmmh.hm......SSSSSSSSSSSSSSSSSSSSSSSSSS...hhhh..hhhhhhh.hh...hh=h.........=.h..hhhhhhhhhhhhhhhh.hhh.hhhhmmmmhmhmmmmmmhhhhhmmh.mmhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".h.hh.h......h.h.h.hhh.~..===.hh.hmm..hh...SSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh...hhhhhhh..hh..hh.=.........~.....hhhhhhhhhhhhhhhh.hh..mmmhmmmmmmhmmmmmhh.hhhhh....hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..hh..........h..hhhhh..=.=.......hh...h..SSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhh....hmhh..hh.hh...=.........=...h.h..hhh.hhh.hhm......hmmmmmmhmmmhmmhmhh=hh.hh..SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..................h.hh..~.=......h......SSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhhh....hhh....h.h...=........~~..hhhhh.hhhh...hhhhh....=mmmmmmmmhmmmmmmhhmh=..hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...................hhhh..~=...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh....hhh.hhh........=........~....hhhh.hhh......hhhh.hh=hmmmmmmmhhhmhmmmhhh.=.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........................~...hh.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........h.h..hh.h..h........=.........=.....hh.h.hh.h.........h=hhhhhhhmmmmmmmmmhhh..=.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=.................~....h......SSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h....h..................S.SS......S..........hh.h......h.==hmhmhhhhhmmmmmmmmhh..=..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=................~....hh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSS.............h.h...........S...SSSSSSSSSSSSSS..hh....hh.........=hmhhh..hmhmmmhmmmmmhh..=SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........=................~....hh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS............h.............SS.SSSSSSSSSSSSSSS.........h.....=..==hmmmhhhhhhhmmmhmmmmh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=.................=.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......h....hh............SSSSSSSSSSSSSSSSSSSS..SS.........=..=..hhmhm=mhhmhmmhhmhmh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........=.................~.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......................SSSSSSSSSSSSSSSSSSSSSSSh.SSSS.......====...hmmmm=hhhhhhmhmmhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=..................~......SSSSSSSSSSSSSSSSSSSSSSSSSSSSS............h.........SSSSSSSSSSSSSSSSSSSSSSSSSS.SS..SS.....=...h..hhhh.=hhhhhhmhmmmhh.h.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........===................~~....SSSSSSSSSSSSSSSSSSSSSSSSSSSS....S....h............SSSSSSSSSSSSSSSSSSSSSSSSSSS..SShSSSSS.==.......hmmmh=hhhhhhhhmmmh..hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........==................=~~~SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....h....mmmh=hh.hhmmmhmhm.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............=....................SSSSSSSSSSSSSSSSSSSSSSSSSSSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS..........hh.=hhhhhmmhhmmhh..=h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........=....................SSSSSSSSSSSSSSSSSSSSSSSSSSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh..=====hhhhhhmmmmmmh...==SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............=..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh.=.h.hhhhhmhmhhhhhhh.h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............=.................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh.=.hhhhhhmhhhhhhhhhhhh.ShSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............S.................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........SSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh.=h.hhhhmhhhhhhmhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SS....S.....SS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh.=hh..hhhmmhhhhmhhmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSS.SS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........h=h..hhhhhhhmhhhhmhmh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........=.hhhhhhhhmmhhhhhhmm...hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h...SSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........==..hhh.hhhmmmhhhhhhm.h.hmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......===..h..hhhmhmmmhhmhhmmmh.mmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......=....h..hhhhhhmhhhhmmmhmm..mmm..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h....=....hh..hhhmhhhhhhmmmhmmmhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hh...=.....h...hhhhmhhhmmmmhmmm.mmhmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......=.......hh.mmhmmhhhmhhmhmmhhmhhhmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hh..=.....h.hhhhhmhhhhhhhhmhhmmhhhhhhmmmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....=......hhhhhhhh..hhhhmhmhmmmhhhhhhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS~~=~=.........h..h...hhhhhmhmhhhhhhhhhhhhmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S..h...==........hh....hhhhhhmhhhhhhhhhhmhmmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........=.h..hhh..hhh..hhhhh.hhhhhhhhhhhhmhmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh.....hhhhhhhh.hh..hhhh.hh.hhhhhhhhhhmmhmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS...mhhhh....hhh.hhh.hh=.hhhhhhhhhhhhhhmhhhhhmmhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh........hh..h.hh.=.h.h.hhhh..hhhhhhhhhhhhhmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...h.h.......hh.......h=..hhhhhhh...hh..hhhhmmhmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh............hh.....h..=h.hhhhhhh..hhh..hhhmhhmhhmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh.h...............hhh.=====....h..hhh.hhhhmhhmhhhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh.h...hhh.hhhh....hh..==.....h....==h.hhhhhmhhmhhmmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh....h.hh..h.=hhhhh.h.hh=hhhmmhhmmhhmmhhmhm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh.....hh...hhhhh....=hhhhh....mh=hhhhhhmmhhhmmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".................SSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh......hhh..hhh....=.hh......hhh=hhhhhhmmh.hhhhmmmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "................=....S.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........mmhh....h.=.hhh......hh=hmhhh.hhmmhhhmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........h.........=.hhh....====hhmmmhhhhmhhhhmhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...............=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h.h....S........=......===hh.hhmmmh.hhhhhhhhhhhmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...............=..........SSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSS....hh.....S......==......=.hhhhhhmmmhhhhhhhhhhmmhmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..............=..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........SS.....=.......=hhh.hh.hmhmhh=hhh.hhhmmhmmhmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............==..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SSSS.....=SS...==.h..hhhhhhhhh=mhhmhhhhmmhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............=.................SSSSSSSSSSSSSSSSSSSSSSSP...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SSSSSS........=.......hhhh====hhhhhhmhhhhmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........===..................SSSSSSSSSSSSSSSSSSSSS......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSSS.S..h...=..hhh.hhhh=hhh..hhhhhhhhhmmmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........=...................S.SSSSSSSSSSSSSSSSSS..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSS.....=...hhhhhhh=hhhhh..hhhhhhmmmhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............................SSSSSSSSSSSSSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S....=....hhh.hm=hhhhhhh.hhhhmmmhhhhmhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............................SSSSSSSSSSSSSSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.=....hh...h=hhhhhhhhh.hhmhhhhhmmhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............................SSSSSSSSSSSSSSSSSSSS...h......h.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....h...hh=hmmhhhhh.hhhmhhhhmhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........................SSSSSSSSSSSSSSSSSSS...hhh.h.........hSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...S.........hh==mhhhhhh..hhhhhmmmmhhhmh.SSSSSSSSSSSSSSSSSSSSSSSSmSSSSSSSSSSSSSSSS",
+      "............................SSSSSSSSSSSSSSSSS....hhh.hh..........SSSSSSS.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........h..hh.hh=hh.hh.h.hhhhhmmmmhhhhmh.SSSSSSSSSSSSSSSSSSSSSSSSmSSSSSSSSSSSSSSS",
+      "...........................SSSSSSSSSSSSSSSS......hh..hh..................h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS....hhh.hhhhh=.h.hh.hmhhhhhmmhhhhmmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........................SS.SSSSSSSSSSSSSS............h............hh....h........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...h.h.h.hhh=.hh.h.hmhhmmhhmhhhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........................SSSSSSSSSSSSSSSS..................hhh............h......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh..h.hh=..h...mhhhhhhhhhhhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........................==SSSSSSSSSSSSSSSS..............hh...h.....hhh........hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....h.h..=...hhhhmhhhhhhhhhhhhmmhmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".....................===.SSSSSSSSSSSSSSSS.................h...hh...hhh........h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS.S.S..m........h.=....hhhhhhhhhhhhhhhhmmmmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".....................=.....SSSSSSSSSSSSSS.P...............hh...h....hh...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSS.P.......hh..=.==hhmhhhh=..hhhhmmmmmmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............==.=====......SSSSSSSSSSSSS...h..................h.................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........hh..==h==hhhhh=hhhmmmmhmmhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............=.==.............=.SSSSSSS....hh.................h.....h..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........==hhh=hhh.=hhhmmmmhhmmhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........===................=..S.S.SS.....hh..................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........hh=.hhh=hhh=hhhhhmhmhmmhhhhm..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........=...................=......=.....hh................h..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSS........h.~.hh.=.hh=mh.hmmhhmmmhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............................=......=.....hh.................h.....h............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...............hh~..hh.=h==.mhhmmh..mhmhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............................=.......=.....h.h..............h......h...SS.S...h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........S....hhh~..h..h==hhhmhmmh.h.hhhhhhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........hh..........................=......................hh.h......SSSSSS..hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........h...hhh.~.....hhhmmmhmmh....hhhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........hh..........................=.......................h..hh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...........h...hhh.~hh...hhhhmhhhhh...hhhhhhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........hhh........................=...............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh.......hh...~.hhhmhhmhmhmhh...hhhhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........hh.........h...............=...........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h...h.hh....~~.h..hhmhhmhhhh...h.hhhhhhm..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h........hh.h................=.......................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S....hh..h.hhh...~.h..hhhhhmh.hh..hh....hhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hh.h...hhhh.......hhhh...............=.................==...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........hh.h~=.hh.hhhhmhh.....hhh...hhh.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".hhhhhhhhhhh..hhhh..h................=..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..S....h..hh..~...hh.hhhhhhh...=..........hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".h.hhhh.hhhh..hhhhhhh.................=...................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.....hh.hh.~.h.hh..hhhhh...==.......h.hhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhhhhh.hhhhhhhh.................=..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S..h....h.~~===.hhhhhhhh...=..........hhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhh.hhhhhhhhhh..................=......=........SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..S.hh....h~....=.h...hh.hh.=.h....h....hhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhh..hhhhhhhhhh.................=.......=.......SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....h.hh~~.hh..h.hhh....hhh=..h....hhhhhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhh.....hhhhhhhhhh..h...........===........=.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hh...~..hhh.hhh.hhhh.h.h=h......hhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhh.........hhhhhh.h.h...........=...........==..hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhh.~...hh..h.hh..hhhhhh=hh.....hhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmh..........hhhhhhhh.hh...h....................=.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhh.~.......h.h...hhhhhhh=h....hhh.hhhhm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mh.............hh..h.hhhhh.....................=.hhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h...~........hhh...hhhhh=......hhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h.....h.....hh.hh.h...h...............SSSS..hmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h....=...hh...hh..hhhh..h=...h..hhmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..=..........h.hh.hhhh.......................SSS...hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......~.hhhhh..h.hhhhhh.hm=.....hhhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..=mmh..hhh..hhhhhh..hh.......................SS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....~.h..hhhh.hhhhhhh.hhm=hhhhhm..hhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "==.mmh..hh...hhhhh............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...~..h.hhhhhhhhmmmhhhhh=hhmmmh....hh...S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "....h........hhhh..h........................h...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....=...hhhhhhhhhmhhhhh..=hhhhm.....h.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............hhh...h.h......................h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...~=...hhmh.hhhmmmhhhh...=..hhh.....h.h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..............h.h..h....................hh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..~.....hhhhhhhmmhhmhmhh.=....h...hhh.hhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...............h.h.h....................h...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSS.~.....hhhhhhhhmmhmhmmh.=..hhh.hhhm...hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "h.h.............................hhh.......hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS=~.....hhh..hhmmhhhhhmh..=hhmhh.hhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...h....hh......h.h.............hh.h......hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhhh..hhhmmhhhhmhh.=.mhhhhhhhhh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h..h.....h..hh...........hhh.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh.....hh...hmhhhmmh.hmmh..=mmhhhhhhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h..hh.......h...........hhh........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhh....hhh...hhhhhmhhhhmh..=.mh.hhhmmmmhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........hm.h..h...........hhh..h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SShhh.....h.h.hhmhmhmhhhhhh..~..hhhhhmmmh.h.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........mhhh.h....=......hhh...hh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhhh.hhhhhhhhhhh.hh~.mhhhhhmmm.hh.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............hhhh......=......h.....h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hh..hhhhhhh..hhhhhhhhmhhhhh~.hhh.hhmmh.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...h........hhhhh....=...............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhh..hhhhh.mhhmhhhhhh.hh=.hhhhhhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........h....hhhh...=...............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh..h.hhhhmmmhh..hhh~.h.hh.hhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "....h..h.h.....hh....=.........h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh.hhhh..h.hmmmmmmmm..hm.~......hmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "h..hh..hh............=......h..h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh.hh.h..mhhhmmmmmhhhh.hh~..h....hhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...h.....hh..........=............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh..h..h.hmhhmmmmmmh....h=...h.hhhhhm.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........h.h.........=..........h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....h.....hhhhhhhmmmmhh....h~hhhhh.hhh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..........h...........=...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...h.....hhhhhhhhmmmmhh...h=.hhhhhmmh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "......h...............=............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.....h..=.mm.hhhhhhmmmmh...~~hhhh.h.hh.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h...........=..=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...........=..mhhhhhhhhmmhhh.~~.hhh...SS..S..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h............=.=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........=...h.mhmhhhhhhhh.~hh.h.hhSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........h...........==.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......==...hhhhhmhhhhhhhh.~m.h.hhSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........h............=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......=..h..hhhhhhh..hh.hSShhhhhhS.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".....................=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SS....=..hhh..hhhhh.....ShS.S.SSh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "......................=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..S....=..h.hh..hhhh..hSh.mSh.S.SS..hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "......................==.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS..=..hhhh..hhhh.S..hhShhhSSSS....h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.",
+      "........................=======SSShhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SS..=.hhhhh.......SS...ShhhhSSSSSS.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.",
+      ".................................hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S..S..SShh..h.hhhh...SS.S.SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh.",
+      "................................hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSS.SS.S...S.hhh..hhSS...hS.SS.SSSSSShSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh...",
+      "................................h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S....S....hhh.h..SS..hhh...hSSSSSSSSSSSSSSSSSSSSSS.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh...hh",
+      "...........=.....................==..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS.....hh..h.SS..h..SS..SSSSSSSSSSSSSSSSSSSSSS.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhhhhh",
+      "..........=...................h.=.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...S..hh.hmSS..hhh.SSS.SSSSSSSSSSSSSSSSSSSSSSh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSShhhh.hhh",
+      "...........=..................===........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..hS..hh.h..S.hhh...SSS.SSSSSSSSSSSSSSSSSSSSS.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhhhhhh",
+      "...........=..............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h..SS..h...SS.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSSSSSSSSSSSSSSSSSSS.SSSSS.hhhhhhhh",
+      "............=..........................SSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..SS.hhh..hS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSSSSSSSSSSSS...hhhh.hhhhmh",
+      "............=.........................=.SSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSS..hh..Sh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSS.hhhhhhhhhhhhhmh",
+      ".............=.......................==...S....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..SSSSSSSSSSSSSSSSSSSSS..hhhhhhhhhhhhhm",
+      ".............==....................==.......SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSS.h..hhhhhhhhhhhh",
+      "...............=...................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSShh....hhhhhhhhh",
+      "...............=..................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSS.hh..h.hhhhhhhh.",
+      "................=............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.....hhhhhhhh.",
+      "................=..........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh........h...hh",
+      "h................=..........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS.....S.SSh.h",
+      "................=..........................SSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SS...SSSSSS.S.",
+      ".................=.....................SSS..SSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hSSSSSSSSSSSSSS",
+      ".................=.....................SSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h..h.h.SSSSSSSSSSSSSS",
+      "..................=.....................SSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS....hhhhSSSSSSSSSSSSSS",
+      "..................=...................S..SSSS.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSS.h..mhm.SSSSSSSSSSSSSS",
+      "...................=...................SS.SSS......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS.hh..mh..SSSSSSSSSSSSS",
+      ".......=..........=....................SS..S.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhh..hh..SSSSSS..SSSSS",
+      "........===........=....................SSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hh....hh.SSSSShhhSSSS",
+      "..........=.......=....................SSSS...S....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....Phh...hhhh...SS.hhhSSSS",
+      "...........=.......=...................SS...S...S...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hhh.mmhhhhhmhhh..hhhh.SSS",
+      "...........=.......=................SS......S....SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...Smmmmhhhhhhmhmhhhhhhhhh..SSSS",
+      "............=.......=...............SS............S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhmmhh..hhhhhhhhhh.hhh.SSS",
+      "..........==........=...............SS.........S..S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhhmmhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...mhhhhmmh...hhhhhhhhhhhh.SSSSS",
+      "..........=..........=.........~~=~.S...........S.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh...h...mmmhhh....h.h.hhhhhhhhSSSSSS",
+      "..........=..........~~~~.....~...~~..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShS.hhhh.hhhh....hhhhhh.h.hhhmmSSSSSSS",
+      "...........=.........=...=~~~~.~.......................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.hhhmh.hh......hhhhhhhmmmhhmh...S.S",
+      "..........=.........=........~=........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hmh..hSSS....hhhmmhhhhhhmh...hhSS",
+      "..........=.............................S..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.hhhSSSS..hhhhhhmhhmhmhhhmhhhSS",
+      "..........=............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhhh.SSSS..hhhmhmhhmmmmhhhh..h.S",
+      "..........=.............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhSSSS...hhhmhhhhmmhhhh..hhh",
+      "..........=.............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSShhSShhhhSSS.h...hhhhhhhhhhhh..hhhS"
+    ]
+  };
 
   // src/hex.js
   var SQRT3 = Math.sqrt(3);
@@ -930,7 +1575,7 @@
   }
 
   // src/modifiers.js
-  var STATS = ["atk", "def", "counter", "move", "range", "moraleLoss", "moraleRegen", "moraleFloor", "moraleStart", "troops"];
+  var STATS = ["atk", "def", "counter", "move", "range", "moraleLoss", "moraleRegen", "moraleFloor", "moraleStart", "troops", "bridge", "wall"];
   function unitSources(unit, data) {
     const out = [];
     const nation = data.nations[unit.nation];
@@ -1019,11 +1664,11 @@
   }
   function unitRange(state2, data, unit, pos = unit) {
     const tile = state2?.map ? tileAt(state2.map, pos.col, pos.row) : null;
-    const height = tile ? data.terrain[tile.terrain].rangeBonus?.[unit.type] ?? 0 : 0;
+    const height = tile && !unit.embarked ? data.terrain[tile.terrain].rangeBonus?.[unit.type] ?? 0 : 0;
     return data.units[unit.type].range + getMods(state2, data, unit, { pos }).range + height;
   }
   function isDismounted(state2, data, unit, pos = unit) {
-    if (unit.type !== "cavalry") return false;
+    if (unit.type !== "cavalry" || unit.embarked) return false;
     const tile = tileAt(state2.map, pos.col, pos.row);
     return !!(tile && data.terrain[tile.terrain].dismount);
   }
@@ -1037,8 +1682,11 @@
     const g = generalOf(unit, data);
     const mods = getMods(state2, data, unit, { ...opts, role: "defend" });
     const tile = tileAt(state2.map, unit.col, unit.row);
-    const terr = data.terrain[tile.terrain];
-    const terrainDef = (terr.def ?? 1) * (terr.defUnit?.[unit.type] ?? 1);
+    const terr2 = data.terrain[tile.terrain];
+    let baseDef = terr2.def ?? 1;
+    if (tile.castle && tile.wallMax) baseDef = 1 + (baseDef - 1) * (tile.wall / tile.wallMax);
+    let terrainDef = baseDef * (terr2.defUnit?.[unit.type] ?? 1);
+    if (unit.embarked) terrainDef = data.ship.def;
     const aptDef = 1 + (apt(g, unit.type) - 1) / 2;
     return data.units[unit.type].def * (0.5 + effStat(g.lead) / 100) * aptDef * terrainDef * (1 + mods.def);
   }
@@ -1052,12 +1700,13 @@
     const aTerrain = data.terrain[tileAt(state2.map, attPos.col, attPos.row).terrain];
     const dTerrain = data.terrain[tileAt(state2.map, def.col, def.row).terrain];
     let mul = data.counter[att.type][def.type];
-    mul *= aTerrain.atk?.[att.type] ?? 1;
+    if (att.embarked) mul *= data.ship.atk[att.type] ?? 0.6;
+    else mul *= aTerrain.atk?.[att.type] ?? 1;
     if (dist === 1) {
-      mul *= dTerrain.charge?.[att.type] ?? 1;
+      if (!def.embarked) mul *= dTerrain.charge?.[att.type] ?? 1;
       mul *= data.units[att.type].adjacentMul ?? 1;
     } else {
-      mul *= RANGED_FALLOFF * (dTerrain.cover ?? 1);
+      mul *= RANGED_FALLOFF * (def.embarked ? 1 : dTerrain.cover ?? 1);
     }
     const morale = 0.6 + 0.4 * (att.morale / 100);
     const troops = opts.attTroops ?? att.troops;
@@ -1127,6 +1776,7 @@
       t.terrain = "castle";
       t.castle = c.name;
       t.owner = c.owner;
+      t.wall = t.wallMax = c.wall ?? 100;
     }
     return map;
   }
@@ -1154,6 +1804,7 @@
         moved: false,
         acted: false,
         dead: false,
+        embarked: false,
         troops: u.troops,
         maxTroops: u.troops,
         morale: 70
@@ -1161,6 +1812,7 @@
       const mods = getMods(null, data, unit, {});
       unit.troops = unit.maxTroops = Math.round(u.troops * (1 + mods.troops));
       unit.morale = Math.min(100, 70 + mods.moraleStart);
+      unit.embarked = isWaterOnly(data, tileAt(state2.map, u.col, u.row));
       state2.units.push(unit);
     });
     return state2;
@@ -1175,28 +1827,54 @@
       return o && isEnemy(o, unit);
     });
   }
+  var terr = (data, tile) => data.terrain[tile.terrain];
+  var isWaterOnly = (data, tile) => !!(terr(data, tile).impassable && terr(data, tile).navigable);
+  var isNavigable = (data, tile) => !!terr(data, tile).navigable;
+  var isLandable = (data, tile, type) => !isWaterOnly(data, tile) && !tile.castle && terr(data, tile).move[type] !== void 0;
   function movePoints(state2, data, unit) {
-    return data.units[unit.type].move + getMods(state2, data, unit, {}).move;
+    const base2 = unit.embarked ? data.ship.move : data.units[unit.type].move;
+    return base2 + getMods(state2, data, unit, {}).move;
+  }
+  function enterCost(data, type, tile) {
+    const t = terr(data, tile);
+    if (t.impassable) return Infinity;
+    return t.move[type] ?? Infinity;
   }
   function explore(state2, data, unit) {
     const mp = movePoints(state2, data, unit);
     const startK = key(unit.col, unit.row);
     const best = /* @__PURE__ */ new Map([[startK, 0]]);
     const prev = /* @__PURE__ */ new Map();
+    const terminal = /* @__PURE__ */ new Set();
     const frontier = [{ col: unit.col, row: unit.row, cost: 0 }];
     while (frontier.length) {
       frontier.sort((a, b) => a.cost - b.cost);
       const cur = frontier.shift();
-      if (cur.cost > best.get(key(cur.col, cur.row))) continue;
-      const isStart = cur.col === unit.col && cur.row === unit.row;
-      if (!isStart) {
+      const ck = key(cur.col, cur.row);
+      if (cur.cost > best.get(ck)) continue;
+      const curTile = tileAt(state2.map, cur.col, cur.row);
+      if (ck !== startK) {
+        if (terminal.has(ck)) continue;
         if (inZoc(state2, unit, cur.col, cur.row)) continue;
-        if (data.terrain[tileAt(state2.map, cur.col, cur.row).terrain].stopOnEnter) continue;
+        if (!unit.embarked && terr(data, curTile).stopOnEnter) continue;
       }
       for (const n of neighbors(cur.col, cur.row)) {
         const t = tileAt(state2.map, n.col, n.row);
         if (!t) continue;
-        const step = enterCost(data, unit.type, t);
+        let step, stop = false;
+        if (unit.embarked) {
+          if (isNavigable(data, t)) step = 2;
+          else if (isLandable(data, t, unit.type)) {
+            step = 0;
+            stop = true;
+          } else continue;
+        } else if (isWaterOnly(data, t)) {
+          if (!terr(data, curTile).port) continue;
+          step = 0;
+          stop = true;
+        } else {
+          step = enterCost(data, unit.type, t);
+        }
         const cost = cur.cost + step;
         if (cost > mp) continue;
         const occ = unitAt(state2, n.col, n.row);
@@ -1204,16 +1882,13 @@
         const k = key(n.col, n.row);
         if (best.has(k) && best.get(k) <= cost) continue;
         best.set(k, cost);
-        prev.set(k, key(cur.col, cur.row));
+        prev.set(k, ck);
+        if (stop) terminal.add(k);
+        else terminal.delete(k);
         frontier.push({ col: n.col, row: n.row, cost });
       }
     }
     return { best, prev };
-  }
-  function enterCost(data, type, tile) {
-    const terr = data.terrain[tile.terrain];
-    if (terr.impassable) return Infinity;
-    return terr.move[type] ?? Infinity;
   }
   function moveRange(state2, data, unit) {
     const result = /* @__PURE__ */ new Map();
@@ -1242,29 +1917,76 @@
     }
     return path;
   }
+  function embarkedAt(data, unit, tile) {
+    return unit.embarked ? isNavigable(data, tile) : isWaterOnly(data, tile);
+  }
+  var EMBARK_DAYS = 1;
   function travelCostMap(state2, data, type, goal) {
-    const dist = /* @__PURE__ */ new Map([[key(goal.col, goal.row), 0]]);
-    const frontier = [{ col: goal.col, row: goal.row, cost: 0 }];
+    const landMp = data.units[type].move, shipMp = data.ship.move;
+    const dist = /* @__PURE__ */ new Map();
+    const frontier = [];
+    const push = (col, row, mode, cost) => {
+      const k = `${key(col, row)}|${mode}`;
+      if (dist.has(k) && dist.get(k) <= cost) return;
+      dist.set(k, cost);
+      frontier.push({ col, row, mode, cost });
+    };
+    push(goal.col, goal.row, "land", 0);
+    push(goal.col, goal.row, "water", 0);
+    for (const n of neighbors(goal.col, goal.row)) {
+      const t = tileAt(state2.map, n.col, n.row);
+      if (!t) continue;
+      if (!isWaterOnly(data, t) && enterCost(data, type, t) !== Infinity) push(n.col, n.row, "land", 0.01);
+      if (isNavigable(data, t)) push(n.col, n.row, "water", 0.01);
+    }
     while (frontier.length) {
       frontier.sort((a, b) => a.cost - b.cost);
       const cur = frontier.shift();
-      if (cur.cost > dist.get(key(cur.col, cur.row))) continue;
+      if (cur.cost > dist.get(`${key(cur.col, cur.row)}|${cur.mode}`)) continue;
       const curTile = tileAt(state2.map, cur.col, cur.row);
-      const isGoal = cur.col === goal.col && cur.row === goal.row;
-      let step = isGoal ? 2 : enterCost(data, type, curTile);
-      if (!isGoal && data.terrain[curTile.terrain].stopOnEnter) step += 6;
-      if (step === Infinity) continue;
       for (const n of neighbors(cur.col, cur.row)) {
         const t = tileAt(state2.map, n.col, n.row);
-        if (!t || enterCost(data, type, t) === Infinity) continue;
-        const cost = cur.cost + step;
-        const k = key(n.col, n.row);
-        if (dist.has(k) && dist.get(k) <= cost) continue;
-        dist.set(k, cost);
-        frontier.push({ col: n.col, row: n.row, cost });
+        if (!t) continue;
+        if (cur.mode === "land") {
+          const c = enterCost(data, type, curTile);
+          if (c !== Infinity && !isWaterOnly(data, t) && enterCost(data, type, t) !== Infinity) {
+            const extra = terr(data, curTile).stopOnEnter ? 1 : 0;
+            push(n.col, n.row, "land", cur.cost + c / landMp + extra);
+          }
+          if (isNavigable(data, t) && isLandable(data, curTile, type)) push(n.col, n.row, "water", cur.cost + EMBARK_DAYS);
+        } else {
+          if (isNavigable(data, t)) push(n.col, n.row, "water", cur.cost + 2 / shipMp);
+          if (terr(data, t).port && isWaterOnly(data, curTile)) push(n.col, n.row, "land", cur.cost + EMBARK_DAYS);
+        }
       }
     }
     return dist;
+  }
+  function travelDays(travel, data, unit, col, row, tile) {
+    const mode = embarkedAt(data, unit, tile) ? "water" : "land";
+    return travel.get(`${key(col, row)}|${mode}`);
+  }
+  var BRIDGE_WORK = 3;
+  function bridgeSites(state2, data, unit) {
+    if (unit.embarked || unit.moved || unit.acted || unit.type === "siege") return [];
+    return neighbors(unit.col, unit.row).map((n) => tileAt(state2.map, n.col, n.row)).filter((t) => t && t.terrain === "river");
+  }
+  function buildBridge(state2, data, unit, tile) {
+    if (state2.winner || unit.nation !== activeNation(state2)) return false;
+    if (!bridgeSites(state2, data, unit).includes(tile)) return false;
+    const work = 1 + getMods(state2, data, unit, {}).bridge;
+    tile.bridgeWork = (tile.bridgeWork || 0) + work;
+    unit.moved = true;
+    unit.acted = true;
+    const name = generalOf(unit, data).name;
+    if (tile.bridgeWork >= BRIDGE_WORK) {
+      tile.terrain = "bridge";
+      delete tile.bridgeWork;
+      log(state2, `${name} \uBD80\uB300\uAC00 \uBD80\uAD50\uB97C \uC644\uC131\uD588\uB2E4 (${tile.col},${tile.row}).`);
+    } else {
+      log(state2, `${name} \uBD80\uB300\uAC00 \uBD80\uAD50\uB97C \uB193\uB294 \uC911 (${tile.bridgeWork}/${BRIDGE_WORK}).`);
+    }
+    return true;
   }
   function attackTargets(state2, data, unit, pos = unit) {
     const range = unitRange(state2, data, unit, pos);
@@ -1277,10 +1999,16 @@
     if (state2.winner || unit.acted || unit.nation !== activeNation(state2)) return false;
     if (unit.col === col && unit.row === row) return true;
     if (!moveRange(state2, data, unit).has(key(col, row))) return false;
+    const t = tileAt(state2.map, col, row);
+    const wasEmbarked = unit.embarked;
     unit.col = col;
     unit.row = row;
     unit.moved = true;
-    const t = tileAt(state2.map, col, row);
+    unit.embarked = embarkedAt(data, unit, t) && (wasEmbarked || isWaterOnly(data, t));
+    if (unit.embarked !== wasEmbarked) {
+      unit.acted = true;
+      log(state2, `${generalOf(unit, data).name} \uBD80\uB300 ${unit.embarked ? "\uC2B9\uC120" : "\uC0C1\uB959"}`);
+    }
     if (t.castle && t.owner !== unit.nation) {
       t.owner = unit.nation;
       log(state2, `${data.nations[unit.nation]?.name ?? unit.nation}\uC774(\uAC00) ${t.castle}\uC744 \uC810\uB839\uD588\uB2E4.`);
@@ -1294,8 +2022,16 @@
     const res = resolveAttack(state2, data, unit, target, state2.rng);
     unit.acted = true;
     unit.moved = true;
+    const tt = tileAt(state2.map, target.col, target.row);
+    if (tt.castle && tt.wall > 0 && !unit.dead) {
+      const mods = getMods(state2, data, unit, {});
+      const wd = Math.round(unit.troops / 5e3 * data.wallDamage[unit.type] * (1 + mods.wall) * (0.8 + state2.rng() * 0.4));
+      tt.wall = Math.max(0, tt.wall - wd);
+      res.wallDmg = wd;
+      if (tt.wall === 0) log(state2, `${tt.castle} \uC131\uBCBD \uBD95\uAD34!`);
+    }
     const an = generalOf(unit, data).name, dn = generalOf(target, data).name;
-    log(state2, `${an}(${data.units[unit.type].name}) \u2192 ${dn}(${data.units[target.type].name}): ${res.crit ? "\uC804\uBC95 \uBC1C\uB3D9! " : ""}\uD53C\uD574 ${res.dmg}${res.counterDmg ? `, \uBC18\uACA9 ${res.counterDmg}` : ""}`);
+    log(state2, `${an}(${data.units[unit.type].name}) \u2192 ${dn}(${data.units[target.type].name}): ${res.crit ? "\uC804\uBC95 \uBC1C\uB3D9! " : ""}\uD53C\uD574 ${res.dmg}${res.counterDmg ? `, \uBC18\uACA9 ${res.counterDmg}` : ""}${res.wallDmg ? `, \uC131\uBCBD -${res.wallDmg}` : ""}`);
     if (target.dead) log(state2, `${dn} \uBD80\uB300 \uAD34\uBA78`);
     if (unit.dead) log(state2, `${an} \uBD80\uB300 \uAD34\uBA78`);
     checkVictory(state2, data);
@@ -1345,6 +2081,7 @@
       const t = tileAt(state2.map, u.col, u.row);
       const supply = data.terrain[t.terrain].supply;
       if (supply && t.owner === u.nation) u.troops = Math.min(u.maxTroops, u.troops + Math.round(u.maxTroops * supply));
+      if (t.castle && t.owner === u.nation && t.wall < t.wallMax) t.wall = Math.min(t.wallMax, t.wall + 2);
     }
   }
 
@@ -1390,7 +2127,10 @@
         });
       }
       const kill = dmg >= target.troops ? 2e3 : 0;
-      const siege = objective && target.col === objective.col && target.row === objective.row ? dmg * 1.5 + 150 : 0;
+      const onObjective = objective && target.col === objective.col && target.row === objective.row;
+      const tt = tileAt(state2.map, target.col, target.row);
+      const wall = tt.castle && tt.wall > 0 ? unit.troops / 5e3 * data.wallDamage[unit.type] * (1 + getMods(state2, data, unit, {}).wall) * 40 * (onObjective ? 2 : 1) : 0;
+      const siege = (onObjective ? dmg * 1.5 + 150 : 0) + wall;
       const danger = dangerAt(state2, data, unit, col, row, kill ? target : null);
       return dmg - 0.9 * ctr + kill + siege - 0.35 * danger;
     });
@@ -1398,6 +2138,11 @@
   function goalFor(state2, data, unit) {
     const objective = captureTarget(state2, unit);
     if (objective && objective.owner !== unit.nation && !unitAt(state2, objective.col, objective.row)) return objective;
+    if (unit.type === "siege") {
+      if (objective && objective.owner !== unit.nation) return objective;
+      const castles = state2.map.tiles.filter((t) => t.castle && t.owner && t.owner !== unit.nation);
+      if (castles.length) return castles.sort((a, b) => distance(unit, a) - distance(unit, b))[0];
+    }
     let best = null, bd = Infinity;
     for (const e of aliveUnits(state2)) {
       if (!isEnemy(e, unit)) continue;
@@ -1436,12 +2181,27 @@
     const goal = goalFor(state2, data, unit);
     if (goal && !unit.hold) {
       const travel = travelCostMap(state2, data, unit.type, goal);
+      const here = travelDays(travel, data, unit, unit.col, unit.row, tileAt(state2.map, unit.col, unit.row)) ?? Infinity;
+      for (const site of bridgeSites(state2, data, unit)) {
+        const work = 1 + getMods(state2, data, unit, {}).bridge;
+        const days = Math.ceil((BRIDGE_WORK - (site.bridgeWork || 0)) / work);
+        let beyond = Infinity;
+        for (const n of neighbors(site.col, site.row)) {
+          const t = tileAt(state2.map, n.col, n.row);
+          if (!t || n.col === unit.col && n.row === unit.row || t.terrain === "river" || t.terrain === "sea") continue;
+          beyond = Math.min(beyond, travel.get(`${key(n.col, n.row)}|land`) ?? Infinity);
+        }
+        if (beyond + days + 1 < here - 1) {
+          buildBridge(state2, data, unit, site);
+          return result;
+        }
+      }
       let pick = null;
       for (const k of reach2.keys()) {
         const [col, row] = k.split(",").map(Number);
-        const t = travel.get(key(col, row)) ?? 9999;
+        const t = travelDays(travel, data, unit, col, row, tileAt(state2.map, col, row)) ?? 99;
         const def = data.terrain[tileAt(state2.map, col, row).terrain].def ?? 1;
-        const cost = t * 120 + dangerAt(state2, data, unit, col, row) * 0.5 - def * 50 + distance({ col, row }, goal) * 5 + state2.rng();
+        const cost = t * 700 + dangerAt(state2, data, unit, col, row) * 0.5 - def * 50 + distance({ col, row }, goal) * 5 + state2.rng();
         if (!pick || cost < pick.cost) pick = { col, row, cost };
       }
       if (pick) go(pick.col, pick.row);
@@ -1486,7 +2246,14 @@
   }
 
   // web/app.js
-  var SCENARIOS = [...labs_default, { ...liaodong645_default, expect: { text: "AI \uB300 AI \uAE30\uC900 \uB2F9\uACFC \uACE0\uAD6C\uB824\uAC00 \uB300\uB7B5 \uBC18\uBC18\uC774 \uB418\uB3C4\uB85D \uB9DE\uCDC4\uC2B5\uB2C8\uB2E4." } }];
+  var FULLMAP = {
+    id: "fullmap",
+    viewer: true,
+    title: "\uC804\uCCB4 \uC9C0\uB3C4 \xB7 \uC2E4\uCE21 \uACE0\uB3C4 (\uC694\uC11C~\uADDC\uC288)",
+    desc: `\uACF5\uAC1C \uACE0\uB3C4 \uB370\uC774\uD130\uB85C \uC790\uB3D9 \uC0DD\uC131\uD55C ${fullmap_default.rows[0].length}\xD7${fullmap_default.rows.length}\uCE78 \uC9C0\uB3C4\uC785\uB2C8\uB2E4(1\uCE78 \u2248 6km). \uC0B0\xB7\uAD6C\uB989\uC740 \uACE0\uB3C4\uC640 \uAE30\uBCF5\uC73C\uB85C, \uAC15\uC740 \uBE57\uBB3C\uC774 \uC2E4\uC81C\uB85C \uD758\uB7EC\uAC00\uB294 \uAE38\uC744 \uACC4\uC0B0\uD574 \uADF8\uB838\uC2B5\uB2C8\uB2E4. \uD070 \uAC15(\uC9C4\uD55C \uD30C\uB791)\uC740 \uAC78\uC5B4\uC11C \uBABB \uAC74\uB108\uACE0 \uC5EC\uC6B8(\uC605\uC740 \uD30C\uB791)\uB85C\uB9CC \uAC74\uB119\uB2C8\uB2E4. \uB9C8\uC6B0\uC2A4 \uD720\uC774\uB098 +/\u2212 \uBC84\uD2BC\uC73C\uB85C \uD655\uB300\uD558\uACE0, \uB04C\uC5B4\uC11C \uC6C0\uC9C1\uC774\uC138\uC694.`,
+    expect: { text: "\uD574\uC548\uC120\uC740 \uD604\uB300 \uAE30\uC900\uC774\uACE0, \uC5ED\uC0AC \uC9C0\uC810 \uC88C\uD45C\uB294 \uCD94\uC815\uC785\uB2C8\uB2E4(\uC810\uC120 \uD14C\uB450\uB9AC = \uC704\uCE58 \uB17C\uC7C1 \uC788\uC74C). \uACE0\uC99D \uD6C4 \uC218\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }
+  };
+  var SCENARIOS = [FULLMAP, ...labs_default, { ...liaodong645_default, expect: { text: "AI \uB300 AI \uAE30\uC900 \uB2F9\uACFC \uACE0\uAD6C\uB824\uAC00 \uB300\uB7B5 \uBC18\uBC18\uC774 \uB418\uB3C4\uB85D \uB9DE\uCDC4\uC2B5\uB2C8\uB2E4." } }];
   var $ = (id) => document.getElementById(id);
   var canvas = $("map");
   var ctx = canvas.getContext("2d");
@@ -1509,6 +2276,16 @@
   }
   function load(index) {
     scen = SCENARIOS[index];
+    const viewer = !!scen.viewer;
+    for (const id of ["auto", "step", "restart", "sim"]) $(id).hidden = viewer;
+    $("side").parentElement.hidden = viewer;
+    $("speed").parentElement.hidden = viewer;
+    $("zoomCtl").hidden = !viewer;
+    if (viewer) {
+      openViewer();
+      return;
+    }
+    viewerState = null;
     fillSides();
     restart();
     $("simout").textContent = "\uC544\uC9C1 \uCE21\uC815\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.";
@@ -1525,6 +2302,8 @@
     $("b-title").textContent = scen.title;
     $("b-desc").textContent = scen.desc;
     $("b-expect").textContent = scen.expect ? `\uAE30\uB300 \uACB0\uACFC: ${scen.expect.text}` : "";
+    $("info").innerHTML = '<h3>\uBD80\uB300</h3><div class="muted">\uBD80\uB300\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB9AC\uAC70\uB098 \uB204\uB974\uC138\uC694.</div>';
+    $("tile").innerHTML = '<h3>\uC9C0\uD615</h3><div class="muted">\uCE78\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB9AC\uBA74 \uBCD1\uC885\uBCC4 \uC774\uB3D9\xB7\uC804\uD22C \uD6A8\uACFC\uAC00 \uB098\uC635\uB2C8\uB2E4.</div>';
     resize();
     updateButtons();
     render();
@@ -1686,6 +2465,25 @@
         ctx.fillStyle = "#10151f";
         ctx.font = `bold ${Math.round(size * 0.42)}px sans-serif`;
         ctx.fillText(t.castle, x, y - size * 0.78);
+        const wr = t.wall / t.wallMax, bw = size * 1.2;
+        ctx.fillStyle = "#10151f";
+        ctx.fillRect(x - bw / 2, y - size * 1.2, bw, 5);
+        ctx.fillStyle = wr > 0.5 ? "#d6b25e" : wr > 0.2 ? "#f2c14e" : "#ef6a5a";
+        ctx.fillRect(x - bw / 2, y - size * 1.2, bw * wr, 5);
+      }
+      if (t.bridgeWork) {
+        ctx.fillStyle = "#10151f";
+        ctx.font = `bold ${Math.round(size * 0.38)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText(`\uBD80\uAD50 ${t.bridgeWork}/3`, x, y);
+      }
+      if (selected && bridgeSites(state, data_default, selected).includes(t)) {
+        hexPath(x, y, size - 3);
+        ctx.strokeStyle = "#d6b25e";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
     if (fx?.path && fx.path.length > 1) {
@@ -1727,6 +2525,19 @@
     if (u.dead) return;
     const { x, y } = center(u.col, u.row);
     const r = size * 0.56;
+    if (u.embarked) {
+      ctx.beginPath();
+      ctx.moveTo(x - r * 1.35, y + r * 0.35);
+      ctx.lineTo(x + r * 1.35, y + r * 0.35);
+      ctx.lineTo(x + r * 0.9, y + r * 0.95);
+      ctx.lineTo(x - r * 0.9, y + r * 0.95);
+      ctx.closePath();
+      ctx.fillStyle = "#7a5a36";
+      ctx.fill();
+      ctx.strokeStyle = "#2a1d10";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = data_default.nations[u.nation].color;
@@ -1749,7 +2560,7 @@
     ctx.fillStyle = ratio > 0.5 ? "#6fcf8e" : ratio > 0.25 ? "#f2c14e" : "#ef6a5a";
     ctx.fillRect(x - bw / 2, y + r + 2, bw * ratio, 4);
     const t = tileAt(state.map, u.col, u.row);
-    const badge = isDismounted(state, data_default, u) ? "\uD558\uB9C8" : t.terrain === "ford" ? "\uB3C4\uD558" : null;
+    const badge = u.embarked ? "\uC2B9\uC120" : isDismounted(state, data_default, u) ? "\uD558\uB9C8" : t.terrain === "ford" ? "\uB3C4\uD558" : null;
     if (badge) {
       ctx.font = `bold ${Math.round(size * 0.36)}px sans-serif`;
       const bwid = ctx.measureText(badge).width + 6;
@@ -1764,6 +2575,7 @@
     const g = generalOf(u, data_default), n = data_default.nations[u.nation], m = getMods(state, data_default, u, {});
     const mp = data_default.units[u.type].move + m.move;
     const status = [];
+    if (u.embarked) status.push('<span class="chip alert">\uBC30 \uC704 \u2014 \uBC29\uC5B4 \xD70.6, \uAD81\uBCD1 \uC678 \uACF5\uACA9 \uC57D\uD654</span>');
     if (isDismounted(state, data_default, u)) status.push('<span class="chip alert">\uD558\uB9C8 \u2014 \uB9D0\uC744 \uB04C\uACE0 \uAC77\uB294 \uC911 (\uACF5\uACA9 \xD70.6, \uBC29\uC5B4 \xD70.8)</span>');
     if (tileAt(state.map, u.col, u.row).terrain === "ford") status.push('<span class="chip alert">\uB3C4\uD558 \uC911 \u2014 \uBC29\uC5B4 \xD70.6, \uACF5\uACA9 \xD70.7</span>');
     const skills = g.skills.map((s) => `<span class="chip" title="${data_default.skills[s].desc}">${data_default.skills[s].name}</span>`).join("");
@@ -1771,7 +2583,10 @@
     <div><b>${g.name}</b> <span class="muted">${g.hanja || ""}</span> \xB7 ${n.name} ${data_default.units[u.type].name}</div>
     <div class="muted" style="font-size:12.5px">${g.note ?? ""}</div>
     <div class="num" style="font-size:13px;margin-top:4px">\uD1B5\uC194 ${g.lead} \xB7 \uBB34\uB825 ${g.war} \xB7 \uC9C0\uB825 ${g.int}</div>
-    <div style="font-size:13px">\uC801\uC131 ${Object.keys(data_default.units).map((t) => `${data_default.units[t].name} <b style="color:${APT_COLOR[g.aptitude[t]]}">${g.aptitude[t]}</b>`).join(" \xB7 ")}</div>
+    <div style="font-size:13px">\uC801\uC131 ${Object.keys(data_default.units).map((t) => {
+      const a = g.aptitude[t] ?? "B";
+      return `${data_default.units[t].name} <b style="color:${APT_COLOR[a]}">${a}</b>`;
+    }).join(" \xB7 ")}</div>
     ${skills ? `<div>${skills}</div>` : ""}
     ${n.buff ? `<div><span class="chip" title="${n.buff.desc}">\uAD6D\uAC00 \uBC84\uD504: ${n.buff.name}</span></div>` : ""}
     ${status.join("")}
@@ -1782,11 +2597,12 @@
     <div class="muted num" style="font-size:12.5px">\uC774\uB3D9\uB825 ${mp} (\uD3C9\uC9C0 ${Math.floor(mp / 2)}\uCE78) \xB7 \uC0AC\uAC70\uB9AC ${unitRange(state, data_default, u)}${u.hold ? " \xB7 \uC9C4\uC9C0 \uACE0\uC218" : ""}</div>`;
   }
   function tileCard(t) {
-    const terr = data_default.terrain[t.terrain];
-    const rows = Object.entries(data_default.units).map(([id, ut]) => `<div>${ut.name}: ${moveText(terr, id, ut).replace(/<[^>]+>/g, "")}</div>`).join("");
-    return `<h3>\uC9C0\uD615</h3><div><b>${t.castle ? `${t.castle} (\uC131)` : terr.name}</b> \xB7 \uBC29\uC5B4 \xD7${terr.def}</div>
+    const terr2 = data_default.terrain[t.terrain];
+    const rows = Object.entries(data_default.units).map(([id, ut]) => `<div>${ut.name}: ${moveText(terr2, id, ut).replace(/<[^>]+>/g, "")}</div>`).join("");
+    const wallLine = t.castle ? `<div class="num" style="font-size:13px">\uC131\uBCBD ${t.wall} / ${t.wallMax} \u2192 \uD604\uC7AC \uBC29\uC5B4 \xD7${(1 + (terr2.def - 1) * t.wall / t.wallMax).toFixed(2)}</div>` : "";
+    return `<h3>\uC9C0\uD615</h3><div><b>${t.castle ? `${t.castle} (\uC131)` : terr2.name}</b> \xB7 \uBC29\uC5B4 \xD7${terr2.def}</div>${wallLine}
     <div style="font-size:13px">${rows}</div>
-    <div class="muted" style="font-size:12.5px;margin-top:4px">${terr.note ?? ""}</div>`;
+    <div class="muted" style="font-size:12.5px;margin-top:4px">${terr2.note ?? ""}</div>`;
   }
   function renderPanels() {
     const n = activeNation(state);
@@ -1811,24 +2627,24 @@
     log2.textContent = state.log.slice(-80).join("\n") || "\uC544\uC9C1 \uAD50\uC804\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
     log2.scrollTop = log2.scrollHeight;
   }
-  function moveText(terr, id, ut) {
-    if (terr.impassable || terr.move[id] === void 0) return '<span class="no">\uBC30 \uD544\uC694 \xB7 \uC9C4\uC785 \uBD88\uAC00</span>';
-    const cost = terr.move[id];
+  function moveText(terr2, id, ut) {
+    if (terr2.impassable || terr2.move[id] === void 0) return '<span class="no">\uBC30 \uD544\uC694 \xB7 \uC9C4\uC785 \uBD88\uAC00</span>';
+    const cost = terr2.move[id];
     const per = Math.floor(ut.move / cost);
     let s = `<b>${per}</b>\uCE78/\uC77C`;
-    if (terr.stopOnEnter) s = "<b>1</b>\uCE78 \uD6C4 \uC815\uC9C0";
-    if (terr.dismount && id === "cavalry") s += " \xB7 \uD558\uB9C8(\uB9D0\uC744 \uB04C\uACE0 \uAC78\uC74C)";
+    if (terr2.stopOnEnter) s = "<b>1</b>\uCE78 \uD6C4 \uC815\uC9C0";
+    if (terr2.dismount && id === "cavalry") s += " \xB7 \uD558\uB9C8(\uB9D0\uC744 \uB04C\uACE0 \uAC78\uC74C)";
     return s;
   }
-  function effectText(terr, id) {
+  function effectText(terr2, id) {
     const out = [];
     const pct = (v) => v >= 1 ? `<span class="up">\xD7${v}</span>` : `<span class="down">\xD7${v}</span>`;
-    if (terr.atk?.[id]) out.push(`\uACF5\uACA9 ${pct(terr.atk[id])}`);
-    if (terr.charge?.[id]) out.push(`\uC774 \uCE78\uC73C\uB85C \uB3CC\uC785 ${pct(terr.charge[id])}`);
-    const def = (terr.def ?? 1) * (terr.defUnit?.[id] ?? 1);
-    if (!terr.impassable && def !== 1) out.push(`\uBC29\uC5B4 ${pct(Math.round(def * 100) / 100)}`);
-    if (terr.rangeBonus?.[id]) out.push(`<span class="up">\uC0AC\uAC70\uB9AC +${terr.rangeBonus[id]}</span>`);
-    if (terr.cover) out.push(`\uBC1B\uB294 \uC0AC\uACA9 ${pct(terr.cover)}`);
+    if (terr2.atk?.[id]) out.push(`\uACF5\uACA9 ${pct(terr2.atk[id])}`);
+    if (terr2.charge?.[id]) out.push(`\uC774 \uCE78\uC73C\uB85C \uB3CC\uC785 ${pct(terr2.charge[id])}`);
+    const def = (terr2.def ?? 1) * (terr2.defUnit?.[id] ?? 1);
+    if (!terr2.impassable && def !== 1) out.push(`\uBC29\uC5B4 ${pct(Math.round(def * 100) / 100)}`);
+    if (terr2.rangeBonus?.[id]) out.push(`<span class="up">\uC0AC\uAC70\uB9AC +${terr2.rangeBonus[id]}</span>`);
+    if (terr2.cover) out.push(`\uBC1B\uB294 \uC0AC\uACA9 ${pct(terr2.cover)}`);
     return out.join(" \xB7 ");
   }
   function buildTables() {
@@ -1839,8 +2655,8 @@
       const weak = Object.entries(data_default.counter[id]).filter(([, v]) => v < 1).map(([k]) => U[k].name).join(", ");
       const rangeNote = u.range > 1 ? `${u.range} (\uAC70\uB9AC 2 \uC0AC\uACA9 \xD70.85\xB7\uBC18\uACA9 \uC5C6\uC74C, \uBD99\uC73C\uBA74 \xD7${u.adjacentMul})` : "1 (\uADFC\uC811)";
       return `<tr><td>${u.name}</td><td class="num">${u.move}</td><td class="num">${Math.floor(u.move / 2)}\uCE78 \u2248 ${Math.floor(u.move / 2) * 6}km</td>
-        <td>${Math.floor(u.move / mtn.move[id])}\uCE78${id === "cavalry" ? " (\uD558\uB9C8)" : ""}</td><td>${rangeNote}</td>
-        <td class="num">${u.atk} / ${u.def}</td><td>${strong} \xD71.2 / ${weak} \xD70.85</td></tr>`;
+        <td>${mtn.move[id] ? `${Math.floor(u.move / mtn.move[id])}\uCE78${id === "cavalry" ? " (\uD558\uB9C8)" : ""}` : '<span style="color:var(--bad)">\uC9C4\uC785 \uBD88\uAC00</span>'}</td><td>${rangeNote}</td>
+        <td class="num">${u.atk} / ${u.def}</td><td>${id === "siege" ? `\uC131\uBCBD \uD53C\uD574 ${data_default.wallDamage.siege} (\uCC3D\uBCD1 ${data_default.wallDamage.spear}) \xB7 \uBAA8\uB4E0 \uBCD1\uC885\uC5D0 \xD71.2\uB85C \uB2F9\uD568` : `${strong} \xD71.2 / ${weak || "-"} \xD70.85`}</td></tr>`;
     }).join("");
     $("terrainTable").innerHTML = `<tr><th>\uC9C0\uD615</th>${Object.values(U).map((u) => `<th>${u.name}</th>`).join("")}<th>\uC124\uBA85</th></tr>` + Object.values(data_default.terrain).map((t) => `<tr><td><span class="sw" style="background:${t.color}"></span>${t.name}</td>
       ${Object.entries(U).map(([id, u]) => `<td class="cell">${moveText(t, id, u)}<br><span class="muted" style="font-size:12.5px">${effectText(t, id)}</span></td>`).join("")}
@@ -1866,6 +2682,140 @@
     $("simbar").hidden = false;
     $("simbar").innerHTML = parts.map(({ s, p }) => `<i style="width:${p * 100}%;background:${data_default.nations[s].color}"></i>`).join("");
   }
+  var viewerState = null;
+  var VS = 5;
+  function openViewer() {
+    gen++;
+    $("b-title").textContent = scen.title;
+    $("b-desc").textContent = scen.desc;
+    $("b-expect").textContent = scen.expect.text;
+    $("turn").textContent = `${fullmap_default.rows[0].length} \xD7 ${fullmap_default.rows.length}\uCE78 \xB7 \uC5ED\uC0AC \uC9C0\uC810 ${fullmap_default.sites.length}\uACF3`;
+    $("simout").textContent = "";
+    $("simbar").hidden = true;
+    const map = buildMap({ rows: fullmap_default.rows, castles: [], territory: [] }, data_default);
+    const off = document.createElement("canvas");
+    const ow = Math.ceil(VS * Math.sqrt(3) * (map.w + 0.5)), oh = Math.ceil(VS * (1.5 * map.h + 0.5));
+    off.width = ow;
+    off.height = oh;
+    const o = off.getContext("2d");
+    for (const t of map.tiles) {
+      const p = toPixel(t.col, t.row, VS);
+      const x = p.x + VS * Math.sqrt(3) / 2, y = p.y + VS;
+      o.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 180 * (60 * i - 30);
+        const px = x + (VS + 0.4) * Math.cos(a), py = y + (VS + 0.4) * Math.sin(a);
+        i ? o.lineTo(px, py) : o.moveTo(px, py);
+      }
+      o.fillStyle = data_default.terrain[t.terrain].color;
+      o.fill();
+    }
+    const w = 900, h = Math.round(900 * oh / ow);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.aspectRatio = `${w} / ${h}`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas._w = w;
+    canvas._h = h;
+    viewerState = { map, off, ow, oh, scale: w / ow, ox: 0, oy: 0, hover: null };
+    renderViewer();
+    $("info").innerHTML = "<h3>\uC5ED\uC0AC \uC9C0\uC810</h3>" + fullmap_default.sites.map((st) => `<div style="font-size:13px"><span style="color:${data_default.nations[st.nation]?.color ?? "var(--dim)"}">\u25CF</span> ${st.name} <span class="muted">${SITE_TYPE[st.type]} \xB7 ${CONF[st.confidence]}</span></div>`).join("");
+    $("tile").innerHTML = '<h3>\uC9C0\uD615</h3><div class="muted">\uCE78\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB9AC\uC138\uC694.</div>';
+    $("log").textContent = "\uC804\uCCB4 \uC9C0\uB3C4 \uBCF4\uAE30\uC5D0\uC11C\uB294 \uC804\uD22C\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.";
+  }
+  var SITE_TYPE = { capital: "\uB3C4\uC131", castle: "\uC131", port: "\uD56D\uAD6C", battle: "\uC804\uC7A5" };
+  var CONF = { high: "\uC704\uCE58 \uD655\uC2E4", mid: "\uC720\uB825\uC124", low: "\uB17C\uC7C1 \uC911" };
+  function renderViewer() {
+    const v = viewerState;
+    ctx.fillStyle = "#0d1320";
+    ctx.fillRect(0, 0, canvas._w, canvas._h);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(v.off, v.ox, v.oy, v.ow * v.scale, v.oh * v.scale);
+    const k = v.scale;
+    for (const st of fullmap_default.sites) {
+      const p = toPixel(st.col, st.row, VS);
+      const x = v.ox + (p.x + VS * Math.sqrt(3) / 2) * k, y = v.oy + (p.y + VS) * k;
+      if (x < -50 || y < -20 || x > canvas._w + 50 || y > canvas._h + 20) continue;
+      const r = st.type === "capital" ? 6 : 4.5;
+      ctx.beginPath();
+      if (st.type === "castle" || st.type === "capital") ctx.rect(x - r, y - r, r * 2, r * 2);
+      else ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = data_default.nations[st.nation]?.color ?? "#e9e2cf";
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#10151f";
+      if (st.confidence === "low") ctx.setLineDash([2, 2]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (k > 0.55 || st.type === "capital") {
+        ctx.font = `bold ${st.type === "capital" ? 13 : 11.5}px sans-serif`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(16,21,31,.85)";
+        ctx.strokeText(st.name, x + r + 3, y);
+        ctx.fillStyle = "#fff";
+        ctx.fillText(st.name, x + r + 3, y);
+      }
+    }
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(233,226,207,.8)";
+    ctx.fillText(`\uCD95\uCC99 \xD7${k.toFixed(2)} \xB7 1\uCE78 \u2248 6km`, 10, canvas._h - 10);
+  }
+  function viewerHex(evt) {
+    const v = viewerState, r = canvas.getBoundingClientRect();
+    const x = ((evt.clientX - r.left) * (canvas._w / r.width) - v.ox) / v.scale;
+    const y = ((evt.clientY - r.top) * (canvas._h / r.height) - v.oy) / v.scale;
+    const row = Math.round((y - VS) / (1.5 * VS));
+    const col = Math.round((x - VS * Math.sqrt(3) / 2) / (VS * Math.sqrt(3)) - 0.5 * (row & 1));
+    return tileAt(v.map, col, row);
+  }
+  function zoomAt(f, cx = canvas._w / 2, cy = canvas._h / 2) {
+    const v = viewerState;
+    const ns = Math.min(4, Math.max(canvas._w / v.ow * 0.9, v.scale * f));
+    v.ox = cx - (cx - v.ox) * (ns / v.scale);
+    v.oy = cy - (cy - v.oy) * (ns / v.scale);
+    v.scale = ns;
+    renderViewer();
+  }
+  var drag = null;
+  canvas.addEventListener("wheel", (e) => {
+    if (!viewerState) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, (e.clientX - r.left) * (canvas._w / r.width), (e.clientY - r.top) * (canvas._h / r.height));
+  }, { passive: false });
+  canvas.addEventListener("pointerdown", (e) => {
+    if (viewerState) {
+      drag = { x: e.clientX, y: e.clientY };
+      canvas.setPointerCapture(e.pointerId);
+    }
+  });
+  canvas.addEventListener("pointerup", () => {
+    drag = null;
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!viewerState) return;
+    if (drag) {
+      const r = canvas.getBoundingClientRect(), f = canvas._w / r.width;
+      viewerState.ox += (e.clientX - drag.x) * f;
+      viewerState.oy += (e.clientY - drag.y) * f;
+      drag = { x: e.clientX, y: e.clientY };
+      renderViewer();
+      return;
+    }
+    const t = viewerHex(e);
+    if (!t) return;
+    const m = fullmap_default.meta;
+    const xkm = m.hexKm * (t.col + 0.5 * (t.row & 1)) + m.hexKm / 2, ykm = 1.5 * (m.hexKm / Math.sqrt(3)) * t.row;
+    const lon = m.lon0 + xkm / m.kmLon, lat = m.lat1 - ykm / m.kmLat;
+    const site = fullmap_default.sites.find((st) => st.col === t.col && st.row === t.row);
+    $("tile").innerHTML = tileCard(t) + `<div class="muted num" style="font-size:12px">\uCE78 (${t.col}, ${t.row}) \xB7 \uBD81\uC704 ${lat.toFixed(2)}\xB0 \uB3D9\uACBD ${lon.toFixed(2)}\xB0</div>` + (site ? `<div style="margin-top:4px"><b>${site.name}</b> <span class="muted">${SITE_TYPE[site.type]} \xB7 ${CONF[site.confidence]}</span></div>` : "");
+  });
+  $("zin").onclick = () => viewerState && zoomAt(1.5);
+  $("zout").onclick = () => viewerState && zoomAt(1 / 1.5);
   function hexAt(evt) {
     const r = canvas.getBoundingClientRect();
     const x = (evt.clientX - r.left) * (canvas._w / r.width);
@@ -1883,11 +2833,13 @@
   }
   var myTurn = () => !state.winner && !busy && player() !== "none" && activeNation(state) === player();
   canvas.addEventListener("mousemove", (e) => {
+    if (viewerState) return;
     const t = hexAt(e);
     hover = t ? { tile: t, unit: unitAt(state, t.col, t.row) } : null;
     renderPanels();
   });
   canvas.addEventListener("click", (e) => {
+    if (viewerState) return;
     const t = hexAt(e);
     if (!t) return;
     hover = { tile: t, unit: unitAt(state, t.col, t.row) };
@@ -1896,7 +2848,11 @@
       return;
     }
     const u = hover.unit;
-    if (u && u.nation === player() && !u.acted) {
+    if (selected && !u && bridgeSites(state, data_default, selected).includes(t)) {
+      buildBridge(state, data_default, selected, t);
+      selected = null;
+      reach = null;
+    } else if (u && u.nation === player() && !u.acted) {
       selected = u;
       reach = moveRange(state, data_default, u);
       fx = null;

@@ -1,6 +1,8 @@
 import data from '../src/data/index.js';
 import scenario645 from '../src/data/scenarios/liaodong645.js';
 import labs from '../src/data/scenarios/labs.js';
+import fullmap from '../src/data/maps/fullmap.js';
+import { buildMap, bridgeSites, buildBridge } from '../src/game.js';
 import {
   createGame, moveRange, attackTargets, moveUnit, attack, waitUnit, endTurn, unitAt, activeNation, findPath,
 } from '../src/game.js';
@@ -10,7 +12,14 @@ import { getMods, tileAt } from '../src/modifiers.js';
 import { runMany } from '../src/sim.js';
 import { toPixel, key, distance } from '../src/hex.js';
 
-const SCENARIOS = [...labs, { ...scenario645, expect: { text: 'AI 대 AI 기준 당과 고구려가 대략 반반이 되도록 맞췄습니다.' } }];
+const FULLMAP = {
+  id: 'fullmap', viewer: true, title: '전체 지도 · 실측 고도 (요서~규슈)',
+  desc: `공개 고도 데이터로 자동 생성한 ${fullmap.rows[0].length}×${fullmap.rows.length}칸 지도입니다(1칸 ≈ 6km). `
+    + '산·구릉은 고도와 기복으로, 강은 빗물이 실제로 흘러가는 길을 계산해 그렸습니다. 큰 강(진한 파랑)은 걸어서 못 건너고 여울(옅은 파랑)로만 건넙니다. '
+    + '마우스 휠이나 +/− 버튼으로 확대하고, 끌어서 움직이세요.',
+  expect: { text: '해안선은 현대 기준이고, 역사 지점 좌표는 추정입니다(점선 테두리 = 위치 논쟁 있음). 고증 후 수정이 필요합니다.' },
+};
+const SCENARIOS = [FULLMAP, ...labs, { ...scenario645, expect: { text: 'AI 대 AI 기준 당과 고구려가 대략 반반이 되도록 맞췄습니다.' } }];
 const $ = (id) => document.getElementById(id);
 const canvas = $('map');
 const ctx = canvas.getContext('2d');
@@ -31,6 +40,12 @@ function fillSides() {
 
 function load(index) {
   scen = SCENARIOS[index];
+  const viewer = !!scen.viewer;
+  for (const id of ['auto', 'step', 'restart', 'sim']) $(id).hidden = viewer;
+  $('side').parentElement.hidden = viewer; $('speed').parentElement.hidden = viewer;
+  $('zoomCtl').hidden = !viewer;
+  if (viewer) { openViewer(); return; }
+  viewerState = null;
   fillSides();
   restart();
   $('simout').textContent = '아직 측정하지 않았습니다.';
@@ -45,6 +60,8 @@ function restart() {
   $('b-title').textContent = scen.title;
   $('b-desc').textContent = scen.desc;
   $('b-expect').textContent = scen.expect ? `기대 결과: ${scen.expect.text}` : '';
+  $('info').innerHTML = '<h3>부대</h3><div class="muted">부대에 마우스를 올리거나 누르세요.</div>';
+  $('tile').innerHTML = '<h3>지형</h3><div class="muted">칸에 마우스를 올리면 병종별 이동·전투 효과가 나옵니다.</div>';
   resize();
   updateButtons();
   render();
@@ -178,6 +195,18 @@ function render() {
       ctx.fillText('城', x, y - size * .08);
       ctx.fillStyle = '#10151f'; ctx.font = `bold ${Math.round(size * .42)}px sans-serif`;
       ctx.fillText(t.castle, x, y - size * .78);
+      // 성벽 내구도 막대
+      const wr = t.wall / t.wallMax, bw = size * 1.2;
+      ctx.fillStyle = '#10151f'; ctx.fillRect(x - bw / 2, y - size * 1.2, bw, 5);
+      ctx.fillStyle = wr > 0.5 ? '#d6b25e' : wr > 0.2 ? '#f2c14e' : '#ef6a5a';
+      ctx.fillRect(x - bw / 2, y - size * 1.2, bw * wr, 5);
+    }
+    if (t.bridgeWork) {
+      ctx.fillStyle = '#10151f'; ctx.font = `bold ${Math.round(size * .38)}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.fillText(`부교 ${t.bridgeWork}/3`, x, y);
+    }
+    if (selected && bridgeSites(state, data, selected).includes(t)) {
+      hexPath(x, y, size - 3); ctx.strokeStyle = '#d6b25e'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
     }
   }
   // 행동 연출
@@ -210,6 +239,12 @@ function drawUnit(u, targets) {
   if (u.dead) return;
   const { x, y } = center(u.col, u.row);
   const r = size * 0.56;
+  if (u.embarked) { // 배
+    ctx.beginPath();
+    ctx.moveTo(x - r * 1.35, y + r * 0.35); ctx.lineTo(x + r * 1.35, y + r * 0.35);
+    ctx.lineTo(x + r * 0.9, y + r * 0.95); ctx.lineTo(x - r * 0.9, y + r * 0.95); ctx.closePath();
+    ctx.fillStyle = '#7a5a36'; ctx.fill(); ctx.strokeStyle = '#2a1d10'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fillStyle = data.nations[u.nation].color; ctx.fill();
   ctx.lineWidth = u === selected ? 3 : targets.has(u.id) ? 3 : 1.5;
@@ -226,7 +261,7 @@ function drawUnit(u, targets) {
   ctx.fillRect(x - bw / 2, y + r + 2, bw * ratio, 4);
   // 상태 표시: 하마, 도하
   const t = tileAt(state.map, u.col, u.row);
-  const badge = isDismounted(state, data, u) ? '하마' : t.terrain === 'ford' ? '도하' : null;
+  const badge = u.embarked ? '승선' : isDismounted(state, data, u) ? '하마' : t.terrain === 'ford' ? '도하' : null;
   if (badge) {
     ctx.font = `bold ${Math.round(size * .36)}px sans-serif`;
     const bwid = ctx.measureText(badge).width + 6;
@@ -242,6 +277,7 @@ function unitCard(u) {
   const g = generalOf(u, data), n = data.nations[u.nation], m = getMods(state, data, u, {});
   const mp = data.units[u.type].move + m.move;
   const status = [];
+  if (u.embarked) status.push('<span class="chip alert">배 위 — 방어 ×0.6, 궁병 외 공격 약화</span>');
   if (isDismounted(state, data, u)) status.push('<span class="chip alert">하마 — 말을 끌고 걷는 중 (공격 ×0.6, 방어 ×0.8)</span>');
   if (tileAt(state.map, u.col, u.row).terrain === 'ford') status.push('<span class="chip alert">도하 중 — 방어 ×0.6, 공격 ×0.7</span>');
   const skills = g.skills.map((s) => `<span class="chip" title="${data.skills[s].desc}">${data.skills[s].name}</span>`).join('');
@@ -249,7 +285,7 @@ function unitCard(u) {
     <div><b>${g.name}</b> <span class="muted">${g.hanja || ''}</span> · ${n.name} ${data.units[u.type].name}</div>
     <div class="muted" style="font-size:12.5px">${g.note ?? ''}</div>
     <div class="num" style="font-size:13px;margin-top:4px">통솔 ${g.lead} · 무력 ${g.war} · 지력 ${g.int}</div>
-    <div style="font-size:13px">적성 ${Object.keys(data.units).map((t) => `${data.units[t].name} <b style="color:${APT_COLOR[g.aptitude[t]]}">${g.aptitude[t]}</b>`).join(' · ')}</div>
+    <div style="font-size:13px">적성 ${Object.keys(data.units).map((t) => { const a = g.aptitude[t] ?? 'B'; return `${data.units[t].name} <b style="color:${APT_COLOR[a]}">${a}</b>`; }).join(' · ')}</div>
     ${skills ? `<div>${skills}</div>` : ''}
     ${n.buff ? `<div><span class="chip" title="${n.buff.desc}">국가 버프: ${n.buff.name}</span></div>` : ''}
     ${status.join('')}
@@ -263,7 +299,8 @@ function unitCard(u) {
 function tileCard(t) {
   const terr = data.terrain[t.terrain];
   const rows = Object.entries(data.units).map(([id, ut]) => `<div>${ut.name}: ${moveText(terr, id, ut).replace(/<[^>]+>/g, '')}</div>`).join('');
-  return `<h3>지형</h3><div><b>${t.castle ? `${t.castle} (성)` : terr.name}</b> · 방어 ×${terr.def}</div>
+  const wallLine = t.castle ? `<div class="num" style="font-size:13px">성벽 ${t.wall} / ${t.wallMax} → 현재 방어 ×${(1 + (terr.def - 1) * t.wall / t.wallMax).toFixed(2)}</div>` : '';
+  return `<h3>지형</h3><div><b>${t.castle ? `${t.castle} (성)` : terr.name}</b> · 방어 ×${terr.def}</div>${wallLine}
     <div style="font-size:13px">${rows}</div>
     <div class="muted" style="font-size:12.5px;margin-top:4px">${terr.note ?? ''}</div>`;
 }
@@ -325,8 +362,8 @@ function buildTables() {
       const weak = Object.entries(data.counter[id]).filter(([, v]) => v < 1).map(([k]) => U[k].name).join(', ');
       const rangeNote = u.range > 1 ? `${u.range} (거리 2 사격 ×0.85·반격 없음, 붙으면 ×${u.adjacentMul})` : '1 (근접)';
       return `<tr><td>${u.name}</td><td class="num">${u.move}</td><td class="num">${Math.floor(u.move / 2)}칸 ≈ ${Math.floor(u.move / 2) * 6}km</td>
-        <td>${Math.floor(u.move / mtn.move[id])}칸${id === 'cavalry' ? ' (하마)' : ''}</td><td>${rangeNote}</td>
-        <td class="num">${u.atk} / ${u.def}</td><td>${strong} ×1.2 / ${weak} ×0.85</td></tr>`;
+        <td>${mtn.move[id] ? `${Math.floor(u.move / mtn.move[id])}칸${id === 'cavalry' ? ' (하마)' : ''}` : '<span style="color:var(--bad)">진입 불가</span>'}</td><td>${rangeNote}</td>
+        <td class="num">${u.atk} / ${u.def}</td><td>${id === 'siege' ? `성벽 피해 ${data.wallDamage.siege} (창병 ${data.wallDamage.spear}) · 모든 병종에 ×1.2로 당함` : `${strong} ×1.2 / ${weak || '-'} ×0.85`}</td></tr>`;
     }).join('');
   $('terrainTable').innerHTML = `<tr><th>지형</th>${Object.values(U).map((u) => `<th>${u.name}</th>`).join('')}<th>설명</th></tr>`
     + Object.values(data.terrain).map((t) => `<tr><td><span class="sw" style="background:${t.color}"></span>${t.name}</td>
@@ -356,6 +393,127 @@ async function simulate() {
   $('simbar').innerHTML = parts.map(({ s, p }) => `<i style="width:${p * 100}%;background:${data.nations[s].color}"></i>`).join('');
 }
 
+// ── 전체 지도 보기 ───────────────────────────────
+let viewerState = null;
+const VS = 5; // 오프스크린 헥스 크기(px)
+
+function openViewer() {
+  gen++;
+  $('b-title').textContent = scen.title;
+  $('b-desc').textContent = scen.desc;
+  $('b-expect').textContent = scen.expect.text;
+  $('turn').textContent = `${fullmap.rows[0].length} × ${fullmap.rows.length}칸 · 역사 지점 ${fullmap.sites.length}곳`;
+  $('simout').textContent = ''; $('simbar').hidden = true;
+  const map = buildMap({ rows: fullmap.rows, castles: [], territory: [] }, data);
+  const off = document.createElement('canvas');
+  const ow = Math.ceil(VS * Math.sqrt(3) * (map.w + 0.5)), oh = Math.ceil(VS * (1.5 * map.h + 0.5));
+  off.width = ow; off.height = oh;
+  const o = off.getContext('2d');
+  for (const t of map.tiles) {
+    const p = toPixel(t.col, t.row, VS);
+    const x = p.x + VS * Math.sqrt(3) / 2, y = p.y + VS;
+    o.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI / 180 * (60 * i - 30);
+      const px = x + (VS + 0.4) * Math.cos(a), py = y + (VS + 0.4) * Math.sin(a);
+      i ? o.lineTo(px, py) : o.moveTo(px, py);
+    }
+    o.fillStyle = data.terrain[t.terrain].color; o.fill();
+  }
+  // 화면 크기
+  const w = 900, h = Math.round(900 * oh / ow);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.aspectRatio = `${w} / ${h}`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas._w = w; canvas._h = h;
+  viewerState = { map, off, ow, oh, scale: w / ow, ox: 0, oy: 0, hover: null };
+  renderViewer();
+  $('info').innerHTML = '<h3>역사 지점</h3>' + fullmap.sites.map((st) =>
+    `<div style="font-size:13px"><span style="color:${data.nations[st.nation]?.color ?? 'var(--dim)'}">●</span> ${st.name} `
+    + `<span class="muted">${SITE_TYPE[st.type]} · ${CONF[st.confidence]}</span></div>`).join('');
+  $('tile').innerHTML = '<h3>지형</h3><div class="muted">칸에 마우스를 올리세요.</div>';
+  $('log').textContent = '전체 지도 보기에서는 전투가 없습니다.';
+}
+
+const SITE_TYPE = { capital: '도성', castle: '성', port: '항구', battle: '전장' };
+const CONF = { high: '위치 확실', mid: '유력설', low: '논쟁 중' };
+
+function renderViewer() {
+  const v = viewerState;
+  ctx.fillStyle = '#0d1320'; ctx.fillRect(0, 0, canvas._w, canvas._h);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(v.off, v.ox, v.oy, v.ow * v.scale, v.oh * v.scale);
+  const k = v.scale;
+  for (const st of fullmap.sites) {
+    const p = toPixel(st.col, st.row, VS);
+    const x = v.ox + (p.x + VS * Math.sqrt(3) / 2) * k, y = v.oy + (p.y + VS) * k;
+    if (x < -50 || y < -20 || x > canvas._w + 50 || y > canvas._h + 20) continue;
+    const r = st.type === 'capital' ? 6 : 4.5;
+    ctx.beginPath();
+    if (st.type === 'castle' || st.type === 'capital') ctx.rect(x - r, y - r, r * 2, r * 2); else ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = data.nations[st.nation]?.color ?? '#e9e2cf'; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = '#10151f';
+    if (st.confidence === 'low') ctx.setLineDash([2, 2]);
+    ctx.stroke(); ctx.setLineDash([]);
+    if (k > 0.55 || st.type === 'capital') {
+      ctx.font = `bold ${st.type === 'capital' ? 13 : 11.5}px sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(16,21,31,.85)'; ctx.strokeText(st.name, x + r + 3, y);
+      ctx.fillStyle = '#fff'; ctx.fillText(st.name, x + r + 3, y);
+    }
+  }
+  ctx.font = '12px sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(233,226,207,.8)';
+  ctx.fillText(`축척 ×${k.toFixed(2)} · 1칸 ≈ 6km`, 10, canvas._h - 10);
+}
+
+function viewerHex(evt) {
+  const v = viewerState, r = canvas.getBoundingClientRect();
+  const x = ((evt.clientX - r.left) * (canvas._w / r.width) - v.ox) / v.scale;
+  const y = ((evt.clientY - r.top) * (canvas._h / r.height) - v.oy) / v.scale;
+  const row = Math.round((y - VS) / (1.5 * VS));
+  const col = Math.round((x - VS * Math.sqrt(3) / 2) / (VS * Math.sqrt(3)) - 0.5 * (row & 1));
+  return tileAt(v.map, col, row);
+}
+
+function zoomAt(f, cx = canvas._w / 2, cy = canvas._h / 2) {
+  const v = viewerState;
+  const ns = Math.min(4, Math.max(canvas._w / v.ow * 0.9, v.scale * f));
+  v.ox = cx - (cx - v.ox) * (ns / v.scale);
+  v.oy = cy - (cy - v.oy) * (ns / v.scale);
+  v.scale = ns;
+  renderViewer();
+}
+
+let drag = null;
+canvas.addEventListener('wheel', (e) => {
+  if (!viewerState) return;
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, (e.clientX - r.left) * (canvas._w / r.width), (e.clientY - r.top) * (canvas._h / r.height));
+}, { passive: false });
+canvas.addEventListener('pointerdown', (e) => { if (viewerState) { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); } });
+canvas.addEventListener('pointerup', () => { drag = null; });
+canvas.addEventListener('pointermove', (e) => {
+  if (!viewerState) return;
+  if (drag) {
+    const r = canvas.getBoundingClientRect(), f = canvas._w / r.width;
+    viewerState.ox += (e.clientX - drag.x) * f; viewerState.oy += (e.clientY - drag.y) * f;
+    drag = { x: e.clientX, y: e.clientY };
+    renderViewer();
+    return;
+  }
+  const t = viewerHex(e);
+  if (!t) return;
+  const m = fullmap.meta;
+  const xkm = m.hexKm * (t.col + 0.5 * (t.row & 1)) + m.hexKm / 2, ykm = 1.5 * (m.hexKm / Math.sqrt(3)) * t.row;
+  const lon = m.lon0 + xkm / m.kmLon, lat = m.lat1 - ykm / m.kmLat;
+  const site = fullmap.sites.find((st) => st.col === t.col && st.row === t.row);
+  $('tile').innerHTML = tileCard(t) + `<div class="muted num" style="font-size:12px">칸 (${t.col}, ${t.row}) · 북위 ${lat.toFixed(2)}° 동경 ${lon.toFixed(2)}°</div>`
+    + (site ? `<div style="margin-top:4px"><b>${site.name}</b> <span class="muted">${SITE_TYPE[site.type]} · ${CONF[site.confidence]}</span></div>` : '');
+});
+$('zin').onclick = () => viewerState && zoomAt(1.5);
+$('zout').onclick = () => viewerState && zoomAt(1 / 1.5);
+
 // ── 입력 ─────────────────────────────────────────
 function hexAt(evt) {
   const r = canvas.getBoundingClientRect();
@@ -373,18 +531,23 @@ function hexAt(evt) {
 const myTurn = () => !state.winner && !busy && player() !== 'none' && activeNation(state) === player();
 
 canvas.addEventListener('mousemove', (e) => {
+  if (viewerState) return;
   const t = hexAt(e);
   hover = t ? { tile: t, unit: unitAt(state, t.col, t.row) } : null;
   renderPanels();
 });
 
 canvas.addEventListener('click', (e) => {
+  if (viewerState) return;
   const t = hexAt(e);
   if (!t) return;
   hover = { tile: t, unit: unitAt(state, t.col, t.row) };
   if (!myTurn()) { renderPanels(); return; }
   const u = hover.unit;
-  if (u && u.nation === player() && !u.acted) {
+  if (selected && !u && bridgeSites(state, data, selected).includes(t)) {
+    buildBridge(state, data, selected, t);
+    selected = null; reach = null;
+  } else if (u && u.nation === player() && !u.acted) {
     selected = u; reach = moveRange(state, data, u); fx = null;
   } else if (selected && u && u.nation !== player()) {
     const ranged = distance(u, selected) > 1;
