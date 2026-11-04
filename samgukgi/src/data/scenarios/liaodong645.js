@@ -1,6 +1,6 @@
 // M1 수직 슬라이스: 645년 요동 전역 (안시성 포위 직전)
 // 지형·성 위치는 '개략 배치'다. 실측 고도 데이터 기반 지도는 M2에서 만든다.
-// 문자: . 평지 / h 구릉 / m 산악 / f 숲 / w 습지(요택) / ~ 하천(요하) / S 바다(발해만)
+// 문자: . 평지 / h 구릉 / m 산악 / f 숲 / w 습지(요택) / ~ 강(요하, 배 없이 도하 불가) / = 여울·나루 / S 바다(발해만)
 // 서쪽(왼쪽)이 요하·요택, 동쪽(오른쪽)이 천산산맥 방향, 아래쪽이 남쪽.
 export default {
   id: 'liaodong645',
@@ -9,14 +9,14 @@ export default {
   desc: '당 태종이 개모성·요동성·백암성을 함락하고 안시성으로 향한다. 고연수·고혜진의 구원군이 다가온다.',
   rows: [
     '...www~....hhhmmmmmmmm',
-    '...www~.....hhmmmmmmmm',
+    '...www=.....hhmmmmmmmm',
     '..www~~......hhmmmmmmm',
     '..www~.......hhhmmmmmm',
     '..www~........hhmmmmmm',
     '..www~.....f..hhmmmmmm',
     '..ww~~....ff..hhhmmmmm',
     '..ww~.....f....hhmmmmm',
-    '..ww~..........hhmmmmm',
+    '..ww=..........hhmmmmm',
     '.www~.........hhhmmmmm',
     'SSww~.......hhhmmmmmmm',
     'SSSS~~.....hhhmmmmmmmm',

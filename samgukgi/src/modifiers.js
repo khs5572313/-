@@ -27,7 +27,7 @@ function isNearWater(map, data, col, row) {
   const cells = [{ col, row }, ...neighbors(col, row)];
   return cells.some(({ col: c, row: r }) => {
     const t = tileAt(map, c, r);
-    return t && (t.terrain === 'sea' || t.terrain === 'river');
+    return t && (t.terrain === 'sea' || t.terrain === 'river' || t.terrain === 'ford');
   });
 }
 

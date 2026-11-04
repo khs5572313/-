@@ -3,6 +3,12 @@
 // historicity: '사서'(정사 기록) | '후대전승'(이름·일화가 후대 문헌) | '가상'
 // aptitude: 병종 적성 S/A/B/C/D
 export default {
+  // ── 병종 실험실 전용 ─────────────────
+  lab_std: { name: '표준 장수', hanja: '', nation: 'lab_a', born: null, died: null, historicity: '가상',
+    note: '병종·지형만 비교하기 위한 기준 장수 (전 능력치 70, 적성 B, 특기 없음)',
+    lead: 70, war: 70, int: 70, pol: 70, cha: 70,
+    aptitude: { cavalry: 'B', spear: 'B', archer: 'B' }, skills: [] },
+
   // ── 당 ──────────────────────────────
   li_shimin: { name: '이세민', hanja: '李世民', nation: 'tang', born: 598, died: 649, historicity: '사서',
     note: '당 태종. 645년 고구려 친정', lead: 95, war: 80, int: 88, pol: 92, cha: 97,
@@ -36,7 +42,7 @@ export default {
     aptitude: { cavalry: 'C', spear: 'B', archer: 'A' }, skills: ['gangno'] },
   yeon_gaesomun: { name: '연개소문', hanja: '淵蓋蘇文', nation: 'goguryeo', born: null, died: null, historicity: '사서',
     note: '642년 정변으로 집권. 사망 연도는 665년·666년 설이 갈림', lead: 95, war: 92, int: 85, pol: 80, cha: 85,
-    aptitude: { cavalry: 'S', spear: 'A', archer: 'A' }, skills: ['gaema', 'dolgyeok'] },
+    aptitude: { cavalry: 'S', spear: 'A', archer: 'A' }, skills: ['gaema', 'gisa'] },
   eulji_mundeok: { name: '을지문덕', hanja: '乙支文德', nation: 'goguryeo', born: null, died: null, historicity: '사서',
     note: '612년 살수대첩', lead: 95, war: 80, int: 98, pol: 85, cha: 88,
     aptitude: { cavalry: 'A', spear: 'A', archer: 'A' }, skills: ['bulgul'] },

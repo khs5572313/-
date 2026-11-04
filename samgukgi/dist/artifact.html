@@ -1,0 +1,1954 @@
+<title>삼국기 병종 실험실</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  /* 레이아웃: 쪽빛 군령 탁자 — 지도가 주인공, 오른쪽에 장부(부대·지형·기록), 아래에 병종·지형 상성표 */
+  :root {
+    --night: #121a2a;      /* 쪽빛 바탕 */
+    --board: #19243a;      /* 장부 패널 */
+    --rule: #2d3c5a;       /* 괘선 */
+    --ink: #e9e2cf;        /* 한지빛 글자 */
+    --dim: #97a3ba;        /* 흐린 글자 */
+    --brass: #d6b25e;      /* 놋쇠 강조 */
+    --celadon: #8cc2a7;    /* 청자색 보조 */
+    --good: #6fcf8e; --warn: #f2c14e; --bad: #ef6a5a;
+    --f-display: "Song Myung", "Nanum Myeongjo", serif;
+    --f-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --f-num: "IBM Plex Mono", ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--night); color: var(--ink); }
+  body { font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+  .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; max-width: 1380px; margin: 0 auto; display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+  header h1 { font-family: var(--f-display); font-weight: 400; font-size: 30px; margin: 0; letter-spacing: 3px; color: var(--brass); }
+  header h1 small { font-size: 15px; color: var(--dim); letter-spacing: 1px; margin-left: 6px; }
+  header .tag { color: var(--dim); font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls label { color: var(--dim); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  select, button { font: inherit; font-size: 14px; color: var(--ink); background: var(--board); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--brass); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  button.primary { background: var(--brass); color: var(--night); border-color: var(--brass); font-weight: bold; }
+  button[disabled] { opacity: .45; cursor: default; }
+  .brief { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: start; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding-block: 12px; }
+  .brief h2 { font-family: var(--f-display); font-weight: 400; font-size: 21px; margin: 0 0 4px; text-wrap: balance; }
+  .brief p { margin: 0; max-width: 68ch; color: var(--ink); }
+  .brief .expect { color: var(--celadon); font-size: 14px; margin-top: 6px; }
+  .status { text-align: right; font-family: var(--f-num); font-size: 13px; color: var(--dim); min-width: 220px; display: grid; gap: 6px; justify-items: end; }
+  .status .turn { font-size: 15px; color: var(--ink); }
+  .status .winner { color: var(--brass); font-family: var(--f-display); font-size: 20px; }
+  .simbar { width: 220px; height: 10px; border-radius: 5px; background: var(--rule); overflow: hidden; display: flex; }
+  .simbar i { display: block; height: 100%; }
+  @media (max-width: 720px) { .brief { grid-template-columns: 1fr; } .status { text-align: left; justify-items: start; } }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  .map { background: #0d1320; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: auto; max-width: 100%; touch-action: manipulation; }
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--board); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .panel h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: 2px; color: var(--brass); font-weight: normal; }
+  .muted { color: var(--dim); }
+  .num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 4px; background: var(--rule); font-size: 12px; margin: 2px 3px 0 0; }
+  .chip.alert { background: var(--warn); color: var(--night); }
+  .bar { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; margin: 2px 0 6px; }
+  .bar i { display: block; height: 100%; }
+  #log { max-height: 240px; overflow: auto; font-size: 12.5px; white-space: pre-wrap; font-family: var(--f-body); }
+  .tables { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .tables h2 { font-family: var(--f-display); font-weight: 400; font-size: 20px; margin: 4px 0 6px; }
+  .tables p.lead { margin: 0 0 8px; color: var(--dim); max-width: 75ch; font-size: 14px; }
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  th { color: var(--brass); font-weight: normal; letter-spacing: 1px; font-size: 12.5px; background: var(--board); white-space: nowrap; }
+  td .sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+  td.cell b { font-family: var(--f-num); font-weight: 600; }
+  td.cell .no { color: var(--bad); }
+  td.cell .up { color: var(--good); }
+  td.cell .down { color: var(--warn); }
+  .help { font-size: 13px; color: var(--dim); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>三國記<small>삼국기 · 병종 실험실</small></h1>
+    <span class="tag">M1 프로토타입 — 1칸 ≈ 6km, 1턴 ≈ 하루. 모든 실험은 같은 능력치의 ‘표준 장수’로 병종과 지형만 비교합니다.</span>
+  </header>
+
+  <div class="controls">
+    <label for="scenario">전장 <select id="scenario"></select></label>
+    <label for="side">진영 <select id="side"></select></label>
+    <label for="speed">속도 <select id="speed">
+      <option value="900">느리게</option>
+      <option value="450" selected>보통</option>
+      <option value="150">빠르게</option>
+    </select></label>
+    <button id="auto" class="primary">▶ 자동 진행</button>
+    <button id="step">한 턴만</button>
+    <button id="restart">처음부터</button>
+    <button id="sim">100판 돌려 승률 보기</button>
+  </div>
+
+  <section class="brief">
+    <div>
+      <h2 id="b-title"></h2>
+      <p id="b-desc"></p>
+      <p class="expect" id="b-expect"></p>
+    </div>
+    <div class="status">
+      <div class="turn" id="turn"></div>
+      <div id="simout" class="muted">아직 측정하지 않았습니다.</div>
+      <div class="simbar" id="simbar" hidden></div>
+    </div>
+  </section>
+
+  <main>
+    <div class="map"><canvas id="map"></canvas></div>
+    <aside>
+      <div class="panel" id="info"><h3>부대</h3><div class="muted">부대에 마우스를 올리거나 누르세요.</div></div>
+      <div class="panel" id="tile"><h3>지형</h3><div class="muted">칸에 마우스를 올리면 병종별 이동·전투 효과가 나옵니다.</div></div>
+      <div class="panel"><h3>전투 기록</h3><div id="log"></div></div>
+      <div class="panel help">
+        흰 점선은 이동 경로, 빨간 실선은 근접 공격, 주황 점선은 원거리 사격입니다.
+        진영을 고르면 직접 조종할 수 있습니다. 아군 부대를 누르고, 파란 칸으로 이동한 뒤, 빨간 테두리 적을 누르면 공격합니다.
+      </div>
+    </aside>
+  </main>
+
+  <section class="tables">
+    <div>
+      <h2>병종표</h2>
+      <p class="lead">이동력은 ‘평지 1칸 = 2’ 단위입니다. 2 단위로 쪼개 두어야 산·숲·습지에서 병종마다 속도가 달라지는 것을 정밀하게 표현할 수 있습니다.</p>
+      <div class="scroll"><table id="unitTable"></table></div>
+    </div>
+    <div>
+      <h2>지형 상성표</h2>
+      <p class="lead">칸 안의 굵은 숫자는 하루에 갈 수 있는 칸 수, 아래는 그 지형에서의 전투 보정입니다. 강과 바다는 배가 없으면 건널 수 없고, 여울·나루로 돌아가야 합니다.</p>
+      <div class="scroll"><table id="terrainTable"></table></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // src/data/terrain.js
+  var terrain_default = {
+    plains: {
+      name: "\uD3C9\uC9C0",
+      char: ".",
+      color: "#c7d39a",
+      move: { cavalry: 2, spear: 2, archer: 2 },
+      def: 1,
+      note: "\uAE30\uC900 \uC9C0\uD615. \uAE30\uBCD1\uC774 \uAC10\uC810 \uC5C6\uC774 \uC81C \uC18D\uB3C4(\uD558\uB8E8 5\uCE78)\uB97C \uB0B4\uB294 \uC720\uC77C\uD55C \uC9C0\uD615"
+    },
+    hills: {
+      name: "\uAD6C\uB989",
+      char: "h",
+      color: "#b8a774",
+      move: { cavalry: 4, spear: 3, archer: 3 },
+      def: 1.15,
+      atk: { archer: 1.15 },
+      note: "\uC5B8\uB355 \uC704 \uAD81\uBCD1 \uACF5\uACA9 \xD71.15"
+    },
+    mountain: {
+      name: "\uC0B0\uC545",
+      char: "m",
+      color: "#8a7b62",
+      move: { cavalry: 10, spear: 5, archer: 5 },
+      def: 1.3,
+      atk: { cavalry: 0.6 },
+      charge: { cavalry: 0.6 },
+      defUnit: { cavalry: 0.8 },
+      rangeBonus: { archer: 1 },
+      dismount: true,
+      note: "\uAE30\uBCD1\uC740 \uB9D0\uC744 \uB04C\uACE0 \uAC78\uC5B4 \uD558\uB8E8 1\uCE78(\uD558\uB9C8). \uD558\uB9C8 \uAE30\uBCD1 \uACF5\uACA9 \xD70.6\xB7\uBC29\uC5B4 \xD70.8. \uC0B0 \uC704 \uAD81\uBCD1 \uC0AC\uAC70\uB9AC +1"
+    },
+    forest: {
+      name: "\uC232",
+      char: "f",
+      color: "#6f9658",
+      move: { cavalry: 5, spear: 3, archer: 3 },
+      def: 1.15,
+      atk: { archer: 0.85 },
+      charge: { cavalry: 0.8 },
+      cover: 0.75,
+      note: "\uC232 \uC548\uC758 \uBD80\uB300\uB97C \uD5A5\uD55C \uC0AC\uACA9 \xD70.75(\uC5C4\uD3D0). \uAE30\uBCD1 \uB3CC\uC785 \xD70.8"
+    },
+    marsh: {
+      name: "\uC2B5\uC9C0(\uC694\uD0DD)",
+      char: "w",
+      color: "#86a99c",
+      move: { cavalry: 8, spear: 4, archer: 4 },
+      def: 0.85,
+      atk: { cavalry: 0.7 },
+      charge: { cavalry: 0.7 },
+      note: "\uB9D0\uBC1C\uAD7D\uC774 \uBE60\uC9C4\uB2E4. \uAE30\uBCD1 \uC774\uB3D9 4\uBC30, \uAE30\uBCD1 \uC804\uD22C \xD70.7"
+    },
+    ford: {
+      name: "\uC5EC\uC6B8\xB7\uB098\uB8E8",
+      char: "=",
+      color: "#9cc3d9",
+      move: { cavalry: 4, spear: 4, archer: 4 },
+      def: 0.6,
+      stopOnEnter: true,
+      atk: { cavalry: 0.7, spear: 0.7, archer: 0.7 },
+      note: "\uAC74\uB110 \uC218 \uC788\uB294 \uC595\uC740 \uACF3. \uB4E4\uC5B4\uAC00\uBA74 \uADF8 \uD134 \uC774\uB3D9 \uC885\uB8CC. \uBB3C\uC18D \uBD80\uB300 \uBC29\uC5B4 \xD70.6\xB7\uACF5\uACA9 \xD70.7 (\uBC18\uB3C4\uC774\uACA9)"
+    },
+    river: {
+      name: "\uAC15",
+      char: "~",
+      color: "#5b93c9",
+      move: {},
+      def: 1,
+      impassable: true,
+      note: "\uBC30\uAC00 \uC5C6\uC73C\uBA74 \uAC74\uB110 \uC218 \uC5C6\uB2E4. \uC5EC\uC6B8\xB7\uB098\uB8E8\uB85C \uB3CC\uC544\uAC00\uC57C \uD55C\uB2E4 (\uBC30\xB7\uBD80\uAD50\uB294 M2)"
+    },
+    sea: {
+      name: "\uBC14\uB2E4",
+      char: "S",
+      color: "#36649b",
+      move: {},
+      def: 1,
+      impassable: true,
+      note: "\uBC30\uAC00 \uC5C6\uC73C\uBA74 \uC9C4\uC785 \uBD88\uAC00 (\uC218\uAD70\uC740 M2)"
+    },
+    castle: {
+      name: "\uC131",
+      char: "C",
+      color: "#c9a64e",
+      move: { cavalry: 2, spear: 2, archer: 2 },
+      def: 1.7,
+      charge: { cavalry: 0.7 },
+      rangeBonus: { archer: 1 },
+      supply: 0.03,
+      note: "\uBC29\uC5B4 \xD71.7, \uC131\uBCBD \uC704 \uAD81\uBCD1 \uC0AC\uAC70\uB9AC +1, \uAE30\uBCD1 \uB3CC\uC785 \xD70.7, \uC790\uAD6D \uC131 \uBCF4\uAE09 3%/\uD134"
+    }
+  };
+
+  // src/data/units.js
+  var units = {
+    cavalry: { name: "\uAE30\uBCD1", short: "\uAE30", atk: 1.15, def: 0.9, move: 10, range: 1 },
+    spear: { name: "\uCC3D\uBCD1", short: "\uCC3D", atk: 1, def: 1.15, move: 6, range: 1 },
+    // 궁병: 사거리 2. 거리 2 사격은 반격을 받지 않지만 화력 85%(combat.js RANGED_FALLOFF).
+    // 인접(거리 1)하면 근접전에 말려들어 공격력 75%.
+    archer: { name: "\uAD81\uBCD1", short: "\uAD81", atk: 1, def: 0.8, move: 6, range: 2, adjacentMul: 0.75 }
+  };
+  var counter = {
+    cavalry: { cavalry: 1, spear: 0.85, archer: 1.2 },
+    spear: { cavalry: 1.2, spear: 1, archer: 0.85 },
+    archer: { cavalry: 0.85, spear: 1.2, archer: 1 }
+  };
+
+  // src/data/nations.js
+  var nations_default = {
+    // 병종 실험실 전용: 버프 없는 중립 세력
+    lab_a: { name: "\uCCAD\uAD70", color: "#3b82c4", buff: null },
+    lab_b: { name: "\uC801\uAD70", color: "#c4473b", buff: null },
+    goguryeo: {
+      name: "\uACE0\uAD6C\uB824",
+      color: "#b8392f",
+      buff: {
+        name: "\uC0B0\uC131\uC758 \uB098\uB77C",
+        desc: "\uC790\uAD6D \uC601\uD1A0\uC758 \uC131\xB7\uC0B0\uC545\xB7\uAD6C\uB989\uC5D0\uC11C \uBC29\uC5B4 +15%, \uC790\uAD6D \uC601\uD1A0\uC5D0\uC11C \uC0AC\uAE30 \uAC10\uC18C -15%",
+        mods: [
+          { stat: "def", value: 0.15, cond: { ownTerritory: true, terrain: ["castle", "mountain", "hills"] } },
+          { stat: "moraleLoss", value: -0.15, cond: { ownTerritory: true } }
+        ]
+      }
+    },
+    baekje: {
+      name: "\uBC31\uC81C",
+      color: "#2f6fb8",
+      buff: {
+        name: "\uD574\uC0C1 \uC655\uAD6D",
+        desc: "\uBC14\uB2E4\xB7\uAC15\uC5D0 \uB2FF\uC740 \uCE78\uC5D0\uC11C \uACF5\uACA9 +10%, \uC774\uB3D9\uB825 +2MP(\uD3C9\uC9C0 1\uCE78) (\uC218\uAD70 \uCCB4\uACC4\uB294 M2\uC5D0\uC11C \uD655\uC7A5)",
+        mods: [
+          { stat: "atk", value: 0.1, cond: { nearWater: true } },
+          { stat: "move", value: 2, cond: { nearWater: true } }
+        ]
+      }
+    },
+    silla: {
+      name: "\uC2E0\uB77C",
+      color: "#d19a12",
+      buff: {
+        name: "\uD654\uB791\uB3C4",
+        desc: "\uC0AC\uAE30\uAC00 30 \uBC11\uC73C\uB85C \uB5A8\uC5B4\uC9C0\uC9C0 \uC54A\uC74C(\uC0AC\uAE30 \uBD95\uAD34 \uD328\uC8FC \uC5C6\uC74C), \uD134\uB9C8\uB2E4 \uC0AC\uAE30 \uD68C\uBCF5 +3",
+        mods: [
+          { stat: "moraleFloor", value: 30 },
+          { stat: "moraleRegen", value: 3 }
+        ]
+      }
+    },
+    sui: {
+      name: "\uC218",
+      color: "#5d6f80",
+      buff: {
+        name: "\uB300\uC6B4\uD558\uC758 \uB300\uAD70",
+        desc: "\uBCD1\uB825 +25%, \uC790\uAD6D \uC601\uD1A0 \uBC16\uC5D0\uC11C \uC0AC\uAE30 \uAC10\uC18C +20% (\uC6D0\uC815 \uD53C\uB85C)",
+        mods: [
+          { stat: "troops", value: 0.25 },
+          { stat: "moraleLoss", value: 0.2, cond: { ownTerritory: false } }
+        ]
+      }
+    },
+    tang: {
+      name: "\uB2F9",
+      color: "#6b3fa0",
+      buff: {
+        name: "\uC911\uC6D0\uC758 \uB300\uAD70",
+        desc: "\uBCD1\uB825 +20%, \uC790\uAD6D \uC601\uD1A0 \uBC16\uC5D0\uC11C \uC0AC\uAE30 \uAC10\uC18C +15% (\uC6D0\uC815 \uD53C\uB85C)",
+        mods: [
+          { stat: "troops", value: 0.2 },
+          { stat: "moraleLoss", value: 0.15, cond: { ownTerritory: false } }
+        ]
+      }
+    },
+    wa: {
+      name: "\uC65C",
+      color: "#9a4f86",
+      buff: {
+        name: "\uBC14\uB2E4 \uAC74\uB108\uC628 \uC6D0\uAD70",
+        desc: "\uBC14\uB2E4\xB7\uD558\uCC9C\uC5D0 \uB2FF\uC740 \uCE78\uC5D0\uC11C \uACF5\uACA9 +8%",
+        mods: [{ stat: "atk", value: 0.08, cond: { nearWater: true } }]
+      }
+    },
+    mohe: {
+      name: "\uB9D0\uAC08",
+      color: "#4f8a5b",
+      buff: {
+        name: "\uBC31\uC0B0\uC758 \uAE30\uB9C8",
+        desc: "\uBAA8\uB4E0 \uBD80\uB300 \uC774\uB3D9\uB825 +2MP(\uD3C9\uC9C0 1\uCE78)",
+        mods: [{ stat: "move", value: 2 }]
+      }
+    }
+  };
+
+  // src/data/skills.js
+  var skills_default = {
+    gaema: {
+      name: "\uAC1C\uB9C8\uBB34\uC0AC",
+      desc: "\uAE30\uBCD1 \uC9C0\uD718 \uC2DC \uACF5\uACA9 +20%, \uBC29\uC5B4 +10%",
+      mods: [
+        { stat: "atk", value: 0.2, cond: { unitType: "cavalry" } },
+        { stat: "def", value: 0.1, cond: { unitType: "cavalry" } }
+      ]
+    },
+    dolgyeok: {
+      name: "\uB3CC\uACA9",
+      desc: "\uAE30\uBCD1\uC774 \uC774\uB3D9\uD55C \uB4A4 \uACF5\uACA9\uD558\uBA74 \uACF5\uACA9 +15%",
+      mods: [{ stat: "atk", value: 0.15, cond: { unitType: "cavalry", afterMove: true, role: "attack" } }]
+    },
+    jilpung: {
+      name: "\uC9C8\uD48D",
+      desc: "\uAE30\uBCD1 \uC9C0\uD718 \uC2DC \uC774\uB3D9\uB825 +2MP(\uD3C9\uC9C0 1\uCE78)",
+      mods: [{ stat: "move", value: 2, cond: { unitType: "cavalry" } }]
+    },
+    gisa: {
+      name: "\uAE30\uC0AC(\u9A0E\u5C04)",
+      desc: "\uAE30\uBCD1 \uC9C0\uD718 \uC2DC \uB9D0 \uC704\uC5D0\uC11C \uD65C\uC744 \uC3F4 \uC0AC\uAC70\uB9AC 2 (\uAC70\uB9AC 2 \uC0AC\uACA9\uC740 \uD654\uB825 85%)",
+      mods: [{ stat: "range", value: 1, cond: { unitType: "cavalry" } }]
+    },
+    jangchang: {
+      name: "\uC7A5\uCC3D\uC9C4",
+      desc: "\uCC3D\uBCD1 \uC9C0\uD718 \uC2DC \uAE30\uBCD1 \uC0C1\uB300 \uBC29\uC5B4 +10%, \uBC18\uACA9 +30%",
+      mods: [
+        { stat: "def", value: 0.1, cond: { unitType: "spear", vsUnitType: "cavalry" } },
+        { stat: "counter", value: 0.3, cond: { unitType: "spear", vsUnitType: "cavalry" } }
+      ]
+    },
+    gangno: {
+      name: "\uAC15\uB178",
+      desc: "\uAD81\uBCD1 \uC9C0\uD718 \uC2DC \uC0AC\uAC70\uB9AC +1",
+      mods: [{ stat: "range", value: 1, cond: { unitType: "archer" } }]
+    },
+    singung: {
+      name: "\uC2E0\uAD81",
+      desc: "\uAD81\uBCD1 \uC9C0\uD718 \uC2DC \uACF5\uACA9 +20%",
+      mods: [{ stat: "atk", value: 0.2, cond: { unitType: "archer" } }]
+    },
+    cheolbyeok: {
+      name: "\uCCA0\uBCBD",
+      desc: "\uC131\uC5D0\uC11C \uBC29\uC5B4 +25% (\uBCD1\uC885 \uBB34\uAD00)",
+      mods: [{ stat: "def", value: 0.25, cond: { terrain: ["castle"] } }]
+    },
+    hwarang: {
+      name: "\uD654\uB791",
+      desc: "\uC2DC\uC791 \uC0AC\uAE30 +10, \uC0AC\uAE30 \uAC10\uC18C -20%",
+      mods: [{ stat: "moraleStart", value: 10 }, { stat: "moraleLoss", value: -0.2 }]
+    },
+    bulgul: {
+      name: "\uBD88\uAD74",
+      desc: "\uC0AC\uAE30 \uAC10\uC18C -30%",
+      mods: [{ stat: "moraleLoss", value: -0.3 }]
+    },
+    gyeolsa: {
+      name: "\uACB0\uC0AC",
+      desc: "\uBCD1\uB825\uC774 30% \uBBF8\uB9CC\uC774\uBA74 \uACF5\uACA9 +25%",
+      mods: [{ stat: "atk", value: 0.25, cond: { troopsBelow: 0.3 } }]
+    }
+  };
+
+  // src/data/generals.js
+  var generals_default = {
+    // ── 병종 실험실 전용 ─────────────────
+    lab_std: {
+      name: "\uD45C\uC900 \uC7A5\uC218",
+      hanja: "",
+      nation: "lab_a",
+      born: null,
+      died: null,
+      historicity: "\uAC00\uC0C1",
+      note: "\uBCD1\uC885\xB7\uC9C0\uD615\uB9CC \uBE44\uAD50\uD558\uAE30 \uC704\uD55C \uAE30\uC900 \uC7A5\uC218 (\uC804 \uB2A5\uB825\uCE58 70, \uC801\uC131 B, \uD2B9\uAE30 \uC5C6\uC74C)",
+      lead: 70,
+      war: 70,
+      int: 70,
+      pol: 70,
+      cha: 70,
+      aptitude: { cavalry: "B", spear: "B", archer: "B" },
+      skills: []
+    },
+    // ── 당 ──────────────────────────────
+    li_shimin: {
+      name: "\uC774\uC138\uBBFC",
+      hanja: "\u674E\u4E16\u6C11",
+      nation: "tang",
+      born: 598,
+      died: 649,
+      historicity: "\uC0AC\uC11C",
+      note: "\uB2F9 \uD0DC\uC885. 645\uB144 \uACE0\uAD6C\uB824 \uCE5C\uC815",
+      lead: 95,
+      war: 80,
+      int: 88,
+      pol: 92,
+      cha: 97,
+      aptitude: { cavalry: "S", spear: "A", archer: "A" },
+      skills: ["dolgyeok", "jilpung"]
+    },
+    li_shiji: {
+      name: "\uC774\uC138\uC801",
+      hanja: "\u674E\u4E16\u52E3",
+      nation: "tang",
+      born: 594,
+      died: 669,
+      historicity: "\uC0AC\uC11C",
+      note: "645\uB144 \uC694\uB3D9\uB3C4 \uD589\uAD70\uB300\uCD1D\uAD00, 668\uB144 \uD3C9\uC591\uC131 \uD568\uB77D",
+      lead: 93,
+      war: 85,
+      int: 85,
+      pol: 70,
+      cha: 80,
+      aptitude: { cavalry: "A", spear: "S", archer: "A" },
+      skills: ["jangchang"]
+    },
+    zhangsun_wuji: {
+      name: "\uC7A5\uC190\uBB34\uAE30",
+      hanja: "\u9577\u5B6B\u7121\u5FCC",
+      nation: "tang",
+      born: null,
+      died: 659,
+      historicity: "\uC0AC\uC11C",
+      note: "645\uB144 \uC8FC\uD544\uC0B0 \uC804\uD22C\uC5D0\uC11C \uC6B0\uD68C \uAE30\uB3D9",
+      lead: 78,
+      war: 55,
+      int: 90,
+      pol: 92,
+      cha: 78,
+      aptitude: { cavalry: "B", spear: "B", archer: "A" },
+      skills: []
+    },
+    xue_rengui: {
+      name: "\uC124\uC778\uADC0",
+      hanja: "\u859B\u4EC1\u8CB4",
+      nation: "tang",
+      born: 614,
+      died: 683,
+      historicity: "\uC0AC\uC11C",
+      note: "645\uB144 \uC8FC\uD544\uC0B0 \uC804\uD22C\uC5D0\uC11C \uB450\uAC01",
+      lead: 82,
+      war: 96,
+      int: 60,
+      pol: 50,
+      cha: 72,
+      aptitude: { cavalry: "S", spear: "A", archer: "S" },
+      skills: ["singung", "dolgyeok"]
+    },
+    li_daozong: {
+      name: "\uC774\uB3C4\uC885",
+      hanja: "\u674E\u9053\u5B97",
+      nation: "tang",
+      born: null,
+      died: 653,
+      historicity: "\uC0AC\uC11C",
+      note: "\uC548\uC2DC\uC131 \uACF5\uB7B5 \uB54C \uD1A0\uC0B0 \uCD95\uC870 \uC9C0\uD718",
+      lead: 80,
+      war: 76,
+      int: 74,
+      pol: 70,
+      cha: 75,
+      aptitude: { cavalry: "B", spear: "A", archer: "B" },
+      skills: []
+    },
+    // ── 고구려 ───────────────────────────
+    ansi_lord: {
+      name: "\uC548\uC2DC\uC131\uC8FC",
+      hanja: "\u5B89\u5E02\u57CE\u4E3B",
+      nation: "goguryeo",
+      born: null,
+      died: null,
+      historicity: "\uD6C4\uB300\uC804\uC2B9",
+      note: '\uC0BC\uAD6D\uC0AC\uAE30\uB294 \uC131\uC8FC \uC774\uB984\uC744 \uC801\uC9C0 \uC54A\uC74C. "\uC591\uB9CC\uCD98"\uC774\uB77C\uB294 \uC774\uB984\uC740 \uD6C4\uB300(\uC870\uC120) \uBB38\uD5CC \uC804\uC2B9',
+      lead: 96,
+      war: 75,
+      int: 88,
+      pol: 70,
+      cha: 92,
+      aptitude: { cavalry: "B", spear: "S", archer: "S" },
+      skills: ["cheolbyeok", "bulgul"]
+    },
+    go_yeonsu: {
+      name: "\uACE0\uC5F0\uC218",
+      hanja: "\u9AD8\u5EF6\u58FD",
+      nation: "goguryeo",
+      born: null,
+      died: null,
+      historicity: "\uC0AC\uC11C",
+      note: "645\uB144 \uBD81\uBD80 \uC695\uC0B4, \uC548\uC2DC\uC131 \uAD6C\uC6D0\uAD70 \uC9C0\uD718 \uD6C4 \uC8FC\uD544\uC0B0\uC5D0\uC11C \uD56D\uBCF5",
+      lead: 78,
+      war: 72,
+      int: 55,
+      pol: 60,
+      cha: 65,
+      aptitude: { cavalry: "A", spear: "B", archer: "B" },
+      skills: ["gaema"]
+    },
+    go_hyejin: {
+      name: "\uACE0\uD61C\uC9C4",
+      hanja: "\u9AD8\u60E0\u771E",
+      nation: "goguryeo",
+      born: null,
+      died: null,
+      historicity: "\uC0AC\uC11C",
+      note: "645\uB144 \uB0A8\uBD80 \uC695\uC0B4, \uACE0\uC5F0\uC218\uC640 \uD568\uAED8 \uAD6C\uC6D0\uAD70 \uC9C0\uD718",
+      lead: 75,
+      war: 70,
+      int: 65,
+      pol: 60,
+      cha: 62,
+      aptitude: { cavalry: "A", spear: "A", archer: "B" },
+      skills: []
+    },
+    ansi_vice: {
+      name: "\uC548\uC2DC\uC131 \uBD80\uC7A5",
+      hanja: "",
+      nation: "goguryeo",
+      born: null,
+      died: null,
+      historicity: "\uAC00\uC0C1",
+      note: "\uD504\uB85C\uD1A0\uD0C0\uC785\uC6A9 \uAC00\uC0C1 \uBB34\uC7A5",
+      lead: 68,
+      war: 70,
+      int: 60,
+      pol: 50,
+      cha: 60,
+      aptitude: { cavalry: "C", spear: "B", archer: "A" },
+      skills: ["gangno"]
+    },
+    yeon_gaesomun: {
+      name: "\uC5F0\uAC1C\uC18C\uBB38",
+      hanja: "\u6DF5\u84CB\u8607\u6587",
+      nation: "goguryeo",
+      born: null,
+      died: null,
+      historicity: "\uC0AC\uC11C",
+      note: "642\uB144 \uC815\uBCC0\uC73C\uB85C \uC9D1\uAD8C. \uC0AC\uB9DD \uC5F0\uB3C4\uB294 665\uB144\xB7666\uB144 \uC124\uC774 \uAC08\uB9BC",
+      lead: 95,
+      war: 92,
+      int: 85,
+      pol: 80,
+      cha: 85,
+      aptitude: { cavalry: "S", spear: "A", archer: "A" },
+      skills: ["gaema", "gisa"]
+    },
+    eulji_mundeok: {
+      name: "\uC744\uC9C0\uBB38\uB355",
+      hanja: "\u4E59\u652F\u6587\u5FB7",
+      nation: "goguryeo",
+      born: null,
+      died: null,
+      historicity: "\uC0AC\uC11C",
+      note: "612\uB144 \uC0B4\uC218\uB300\uCCA9",
+      lead: 95,
+      war: 80,
+      int: 98,
+      pol: 85,
+      cha: 88,
+      aptitude: { cavalry: "A", spear: "A", archer: "A" },
+      skills: ["bulgul"]
+    },
+    // ── 신라 ────────────────────────────
+    kim_yusin: {
+      name: "\uAE40\uC720\uC2E0",
+      hanja: "\u91D1\u5EBE\u4FE1",
+      nation: "silla",
+      born: 595,
+      died: 673,
+      historicity: "\uC0AC\uC11C",
+      note: "660\uB144 \uD669\uC0B0\uBC8C \uC804\uD22C \uC2E0\uB77C\uAD70 \uC9C0\uD718",
+      lead: 96,
+      war: 90,
+      int: 88,
+      pol: 80,
+      cha: 90,
+      aptitude: { cavalry: "S", spear: "S", archer: "A" },
+      skills: ["hwarang", "dolgyeok"]
+    },
+    kim_chunchu: {
+      name: "\uAE40\uCD98\uCD94",
+      hanja: "\u91D1\u6625\u79CB",
+      nation: "silla",
+      born: 603,
+      died: 661,
+      historicity: "\uC0AC\uC11C",
+      note: "\uD0DC\uC885 \uBB34\uC5F4\uC655. \uB098\uB2F9\uB3D9\uB9F9 \uC678\uAD50",
+      lead: 70,
+      war: 50,
+      int: 92,
+      pol: 96,
+      cha: 95,
+      aptitude: { cavalry: "C", spear: "B", archer: "B" },
+      skills: []
+    },
+    gwanchang: {
+      name: "\uAD00\uCC3D",
+      hanja: "\u5B98\u660C",
+      nation: "silla",
+      born: 645,
+      died: 660,
+      historicity: "\uC0AC\uC11C",
+      note: "\uD669\uC0B0\uBC8C \uC804\uD22C\uC5D0\uC11C 16\uC138\uB85C \uC804\uC0AC\uD55C \uD654\uB791",
+      lead: 55,
+      war: 75,
+      int: 40,
+      pol: 30,
+      cha: 80,
+      aptitude: { cavalry: "A", spear: "B", archer: "C" },
+      skills: ["hwarang"]
+    },
+    // ── 백제 ────────────────────────────
+    gyebaek: {
+      name: "\uACC4\uBC31",
+      hanja: "\u968E\u4F2F",
+      nation: "baekje",
+      born: null,
+      died: 660,
+      historicity: "\uC0AC\uC11C",
+      note: "660\uB144 \uD669\uC0B0\uBC8C \uC804\uD22C \uACB0\uC0AC\uB300 5\uCC9C",
+      lead: 92,
+      war: 93,
+      int: 75,
+      pol: 60,
+      cha: 88,
+      aptitude: { cavalry: "A", spear: "S", archer: "A" },
+      skills: ["bulgul", "gyeolsa"]
+    },
+    uija: {
+      name: "\uC758\uC790\uC655",
+      hanja: "\u7FA9\u6148\u738B",
+      nation: "baekje",
+      born: null,
+      died: 660,
+      historicity: "\uC0AC\uC11C",
+      note: "\uBC31\uC81C \uB9C8\uC9C0\uB9C9 \uC655. 660\uB144 \uB2F9\uC73C\uB85C \uB04C\uB824\uAC00 \uC0AC\uB9DD",
+      lead: 75,
+      war: 70,
+      int: 80,
+      pol: 82,
+      cha: 78,
+      aptitude: { cavalry: "B", spear: "B", archer: "B" },
+      skills: []
+    },
+    seongchung: {
+      name: "\uC131\uCDA9",
+      hanja: "\u6210\u5FE0",
+      nation: "baekje",
+      born: null,
+      died: 656,
+      historicity: "\uC0AC\uC11C",
+      note: "\uC88C\uD3C9. 656\uB144 \uC625\uC0AC",
+      lead: 60,
+      war: 40,
+      int: 92,
+      pol: 90,
+      cha: 85,
+      aptitude: { cavalry: "C", spear: "C", archer: "B" },
+      skills: []
+    },
+    heukchi_sangji: {
+      name: "\uD751\uCE58\uC0C1\uC9C0",
+      hanja: "\u9ED1\u9F52\u5E38\u4E4B",
+      nation: "baekje",
+      born: 630,
+      died: 689,
+      historicity: "\uC0AC\uC11C",
+      note: "\uBC31\uC81C \uBD80\uD765\uAD70 \u2192 \uC774\uD6C4 \uB2F9 \uC7A5\uC218",
+      lead: 88,
+      war: 90,
+      int: 75,
+      pol: 60,
+      cha: 82,
+      aptitude: { cavalry: "S", spear: "A", archer: "A" },
+      skills: ["jilpung"]
+    }
+  };
+
+  // src/data/index.js
+  var data_default = { terrain: terrain_default, units, counter, nations: nations_default, skills: skills_default, generals: generals_default };
+
+  // src/data/scenarios/liaodong645.js
+  var liaodong645_default = {
+    id: "liaodong645",
+    title: "645 \uC694\uB3D9 \uC804\uC5ED \u2014 \uC548\uC2DC\uC131",
+    year: 645,
+    desc: "\uB2F9 \uD0DC\uC885\uC774 \uAC1C\uBAA8\uC131\xB7\uC694\uB3D9\uC131\xB7\uBC31\uC554\uC131\uC744 \uD568\uB77D\uD558\uACE0 \uC548\uC2DC\uC131\uC73C\uB85C \uD5A5\uD55C\uB2E4. \uACE0\uC5F0\uC218\xB7\uACE0\uD61C\uC9C4\uC758 \uAD6C\uC6D0\uAD70\uC774 \uB2E4\uAC00\uC628\uB2E4.",
+    rows: [
+      "...www~....hhhmmmmmmmm",
+      "...www=.....hhmmmmmmmm",
+      "..www~~......hhmmmmmmm",
+      "..www~.......hhhmmmmmm",
+      "..www~........hhmmmmmm",
+      "..www~.....f..hhmmmmmm",
+      "..ww~~....ff..hhhmmmmm",
+      "..ww~.....f....hhmmmmm",
+      "..ww=..........hhmmmmm",
+      ".www~.........hhhmmmmm",
+      "SSww~.......hhhmmmmmmm",
+      "SSSS~~.....hhhmmmmmmmm",
+      "SSSSSS~....hhmmmmmmmmm",
+      "SSSSSSS....hhmmmmmmmmm",
+      "SSSSSSSS...hhhmmmmmmmm",
+      "SSSSSSSSS...hhmmmmmmmm"
+    ],
+    // 영토: 요하 서쪽은 당, 동쪽은 고구려 (성은 아래에서 개별 지정)
+    territory: [
+      { nation: "tang", minCol: 0, maxCol: 4 },
+      { nation: "goguryeo", minCol: 5, maxCol: 99 }
+    ],
+    castles: [
+      { name: "\uC2E0\uC131", col: 12, row: 1, owner: "goguryeo" },
+      { name: "\uAC1C\uBAA8\uC131", col: 8, row: 3, owner: "tang" },
+      { name: "\uC694\uB3D9\uC131", col: 9, row: 6, owner: "tang" },
+      { name: "\uBC31\uC554\uC131", col: 13, row: 6, owner: "tang" },
+      { name: "\uC548\uC2DC\uC131", col: 10, row: 10, owner: "goguryeo" },
+      { name: "\uAC74\uC548\uC131", col: 10, row: 13, owner: "goguryeo" }
+    ],
+    sides: ["tang", "goguryeo"],
+    units: [
+      // 당군: 요동성·개모성 일대에서 남하 (안시성까지 5~7칸)
+      { general: "li_shimin", nation: "tang", type: "cavalry", troops: 6e3, col: 9, row: 5 },
+      { general: "li_shiji", nation: "tang", type: "spear", troops: 6e3, col: 10, row: 5 },
+      { general: "zhangsun_wuji", nation: "tang", type: "archer", troops: 5e3, col: 9, row: 4 },
+      { general: "xue_rengui", nation: "tang", type: "cavalry", troops: 5e3, col: 12, row: 5 },
+      { general: "li_daozong", nation: "tang", type: "spear", troops: 6e3, col: 8, row: 4 },
+      // 고구려: 안시성 수비대(농성) + 동쪽 구릉의 구원군
+      { general: "ansi_lord", nation: "goguryeo", type: "spear", troops: 6e3, col: 10, row: 10, hold: true },
+      { general: "ansi_vice", nation: "goguryeo", type: "archer", troops: 4e3, col: 12, row: 11 },
+      { general: "go_yeonsu", nation: "goguryeo", type: "cavalry", troops: 6e3, col: 15, row: 8 },
+      { general: "go_hyejin", nation: "goguryeo", type: "spear", troops: 6e3, col: 13, row: 10 }
+    ],
+    victory: [
+      { nation: "tang", type: "capture", castle: "\uC548\uC2DC\uC131" },
+      { nation: "goguryeo", type: "survive", turns: 15 }
+      // AI 대 AI 당 승률 ≈ 50% 로 맞춘 값 (tools/balance.js)
+    ]
+  };
+
+  // src/data/scenarios/labs.js
+  var W = 16;
+  var plains = () => Array(9).fill(".".repeat(W));
+  var std = (nation, type, col, row, extra = {}) => ({ general: "lab_std", nation, type, troops: 5e3, col, row, ...extra });
+  var base = (o) => ({ territory: [], castles: [], sides: ["lab_a", "lab_b"], turnLimit: 25, ...o });
+  var labs_default = [
+    base({
+      id: "lab-mixed",
+      title: "\uC2E4\uD5D8 1 \xB7 \uD63C\uC131 3:3 (\uD3C9\uC9C0)",
+      desc: "\uC591\uCABD \uBAA8\uB450 \uAE30\uBCD1\xB7\uCC3D\uBCD1\xB7\uAD81\uBCD1 1\uBD80\uB300\uC529. AI\uAC00 \uC0C1\uC131\uC5D0 \uB9DE\uB294 \uC0C1\uB300\uB97C \uACE8\uB77C \uBD99\uB294\uC9C0 \uBD05\uB2C8\uB2E4.",
+      expect: { winner: null, text: "\uB300\uCE6D \uAD6C\uC131\uC774\uBBC0\uB85C \uC2B9\uB960 50% \uC548\uD30E\uC774 \uC815\uC0C1\uC785\uB2C8\uB2E4." },
+      rows: plains(),
+      units: [
+        std("lab_a", "cavalry", 2, 2),
+        std("lab_a", "spear", 2, 4),
+        std("lab_a", "archer", 1, 6),
+        // 짝수 행에서 col → 15−col 이면 헥스 격자에서도 정확한 좌우 대칭
+        std("lab_b", "cavalry", 13, 2),
+        std("lab_b", "spear", 13, 4),
+        std("lab_b", "archer", 14, 6)
+      ]
+    }),
+    base({
+      id: "lab-cav-arc",
+      title: "\uC2E4\uD5D8 2 \xB7 \uAE30\uBCD1 vs \uAD81\uBCD1 (\uD3C9\uC9C0)",
+      desc: "\uAE30\uBCD1 2 \uB300 \uAD81\uBCD1 2. \uAE30\uBCD1\uC740 \uD558\uB8E8 5\uCE78, \uAD81\uBCD1\uC740 3\uCE78. \uAD81\uBCD1\uC774 \uD55C \uBC88 \uC3D8\uB294 \uC0AC\uC774 \uAE30\uBCD1\uC774 \uAC70\uB9AC\uB97C \uC881\uD600 \uB36E\uCE69\uB2C8\uB2E4.",
+      expect: { winner: "lab_a", text: "\uAE30\uBCD1(\uCCAD\uAD70) \uC6B0\uC138" },
+      rows: plains(),
+      units: [
+        std("lab_a", "cavalry", 2, 3),
+        std("lab_a", "cavalry", 2, 5),
+        std("lab_b", "archer", 13, 3),
+        std("lab_b", "archer", 13, 5)
+      ]
+    }),
+    base({
+      id: "lab-spr-cav",
+      title: "\uC2E4\uD5D8 3 \xB7 \uCC3D\uBCD1 vs \uAE30\uBCD1 (\uD3C9\uC9C0)",
+      desc: "\uCC3D\uBCD1 2 \uB300 \uAE30\uBCD1 2. \uAE30\uBCD1\uC774 \uBA3C\uC800 \uB3CC\uACA9\uD574 \uC640\uB3C4 \uCC3D\uBCD1\uC758 \uBC29\uC5B4\uC640 \uBC18\uACA9(\xD71.2)\uC5D0 \uB9C9\uD799\uB2C8\uB2E4.",
+      expect: { winner: "lab_a", text: "\uCC3D\uBCD1(\uCCAD\uAD70) \uC6B0\uC138" },
+      rows: plains(),
+      units: [
+        std("lab_a", "spear", 2, 3),
+        std("lab_a", "spear", 2, 5),
+        std("lab_b", "cavalry", 13, 3),
+        std("lab_b", "cavalry", 13, 5)
+      ]
+    }),
+    base({
+      id: "lab-arc-spr",
+      title: "\uC2E4\uD5D8 4 \xB7 \uAD81\uBCD1 vs \uCC3D\uBCD1 (\uD3C9\uC9C0)",
+      desc: "\uAD81\uBCD1 2 \uB300 \uCC3D\uBCD1 2. \uB458 \uB2E4 \uD558\uB8E8 3\uCE78\uC774\uB77C \uAD81\uBCD1\uC774 \uAC70\uB9AC 2\uC5D0\uC11C \uBC18\uACA9 \uC5C6\uC774 \uBA3C\uC800 \uC3E9\uB2C8\uB2E4.",
+      expect: { winner: "lab_a", text: "\uAD81\uBCD1(\uCCAD\uAD70) \uC6B0\uC138" },
+      rows: plains(),
+      units: [
+        std("lab_a", "archer", 2, 3),
+        std("lab_a", "archer", 2, 5),
+        std("lab_b", "spear", 13, 3),
+        std("lab_b", "spear", 13, 5)
+      ]
+    }),
+    base({
+      id: "lab-mountain",
+      title: "\uC2E4\uD5D8 5 \xB7 \uC0B0\uB9E5 \uB3CC\uD30C (\uAE30\uBCD1\uC758 \uD558\uB9C8 \uD589\uAD70)",
+      desc: "\uCCAD\uAD70 \uAE30\uBCD1\xB7\uCC3D\uBCD1\uC774 \uC0B0\uB9E5 \uB108\uBA38\uC758 \uAD81\uBCD1\uC744 \uACF5\uACA9\uD569\uB2C8\uB2E4. \uAE30\uBCD1\uC740 \uC0B0\uC5D0\uC11C \uB9D0\uC744 \uB04C\uACE0 \uAC78\uC5B4 \uD558\uB8E8 1\uCE78\uBC16\uC5D0 \uBABB \uAC00\uBBC0\uB85C, \uB9E8 \uC544\uB798 \uAD6C\uB989 \uACE0\uAC1C\uB85C \uD06C\uAC8C \uB3CC\uC544\uAC00\uB294\uC9C0 \uC0B0\uC744 \uB118\uB294\uC9C0 \uC9C0\uCF1C\uBCF4\uC138\uC694. \uC0B0 \uC18D \uD558\uB9C8 \uAE30\uBCD1\uC740 \uACF5\uACA9 \xD70.6, \uBC29\uC5B4 \xD70.8\uC785\uB2C8\uB2E4.",
+      expect: { winner: null, text: "\uAD00\uCC30\uC6A9. \uAE30\uBCD1\uC758 \uC6B0\uD68C \uACBD\uB85C\uC640 \uCC3D\uBCD1\uC758 \uC0B0\uAE38 \uD589\uAD70 \uC18D\uB3C4 \uCC28\uC774\uB97C \uD655\uC778\uD569\uB2C8\uB2E4." },
+      rows: [
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....mmmmm......",
+        ".....hhhhh......"
+      ],
+      units: [
+        std("lab_a", "cavalry", 1, 2),
+        std("lab_a", "spear", 2, 3),
+        std("lab_b", "archer", 13, 2, { hold: true }),
+        std("lab_b", "archer", 13, 4, { hold: true })
+      ]
+    }),
+    base({
+      id: "lab-ford",
+      title: "\uC2E4\uD5D8 6 \xB7 \uB3C4\uD558 \uC804\uD22C (\uBC18\uB3C4\uC774\uACA9)",
+      desc: "\uAC15\uC740 \uBC30 \uC5C6\uC774 \uAC74\uB110 \uC218 \uC5C6\uACE0, \uAC00\uC6B4\uB370 \uC5EC\uC6B8 \uD55C \uACF3\uC73C\uB85C\uB9CC \uAC74\uB119\uB2C8\uB2E4. \uC5EC\uC6B8\uC5D0 \uB4E4\uC5B4\uAC00\uBA74 \uADF8 \uD134\uC740 \uBA48\uCD94\uACE0 \uBB3C\uC18D\uC5D0\uC11C \uBC29\uC5B4 \xD70.6\uC774 \uB429\uB2C8\uB2E4. \uCCAD\uAD70 4\uBD80\uB300(2\uB9CC)\uAC00 \uAC15\uC744 \uC9C0\uD0A4\uB294 \uC801\uAD70 3\uBD80\uB300(1\uB9CC5\uCC9C)\uB97C \uCE69\uB2C8\uB2E4. \uBA3C\uC800 \uC5EC\uC6B8\uC5D0 \uB4E4\uC5B4\uC120 \uBD80\uB300\uAC00 \uC5B4\uB5BB\uAC8C \uB418\uB294\uC9C0, \uBCD1\uB825\uC774 \uB9CE\uC544\uB3C4 \uAC15\uC744 \uAC74\uB108\uB294 \uCABD\uC774 \uBD88\uB9AC\uD55C\uC9C0 \uC9C0\uCF1C\uBCF4\uC138\uC694.",
+      expect: { winner: "lab_b", text: "\uC218\uBE44(\uC801\uAD70) \uC6B0\uC138. \uC5EC\uC6B8 \uD55C \uACF3\uC73C\uB85C \uBAB0\uB9AC\uBA74 \uC22B\uC790\uAC00 \uB9CE\uC544\uB3C4 \uBD88\uB9AC\uD569\uB2C8\uB2E4." },
+      rows: [
+        ".......~........",
+        ".......~........",
+        ".......~........",
+        ".......~........",
+        ".......=........",
+        ".......~........",
+        ".......~........",
+        ".......~........",
+        ".......~........"
+      ],
+      units: [
+        std("lab_a", "spear", 3, 3),
+        std("lab_a", "spear", 3, 5),
+        std("lab_a", "cavalry", 2, 4),
+        std("lab_a", "archer", 1, 3),
+        // 창병은 여울 출구를 막고, 궁병 둘은 여울을 거리 2에서 겨눈다
+        std("lab_b", "spear", 8, 4, { hold: true }),
+        std("lab_b", "archer", 8, 2, { hold: true }),
+        std("lab_b", "archer", 8, 6, { hold: true })
+      ]
+    }),
+    base({
+      id: "lab-highground",
+      title: "\uC2E4\uD5D8 7 \xB7 \uACE0\uC9C0\uC758 \uAD81\uBCD1",
+      desc: "\uC801\uAD70 \uAD81\uBCD1 2\uBD80\uB300\uAC00 \uC0B0 \uC704\uC5D0 \uC9C4\uC744 \uCCE4\uC2B5\uB2C8\uB2E4. \uC0B0 \uC704 \uAD81\uBCD1\uC740 \uC0AC\uAC70\uB9AC\uAC00 3\uC73C\uB85C \uB298\uACE0, \uC0B0\uC744 \uC624\uB974\uB294 \uCC3D\uBCD1\uC740 \uD558\uB8E8 1\uCE78\uC785\uB2C8\uB2E4. \uD3C9\uC9C0\uB77C\uBA74 \uC774\uAE30\uB294 \uCC3D\uBCD1 2\uBD80\uB300\uAC00 \uC0B0\uC744 \uC624\uB974\uBA70 \uBC84\uD2F8 \uC218 \uC788\uC744\uAE4C\uC694?",
+      expect: { winner: "lab_b", text: "\uACE0\uC9C0 \uAD81\uBCD1(\uC801\uAD70) \uC6B0\uC138. \uD3C9\uC9C0 \uC0C1\uC131\uC774 \uC9C0\uD615\uC73C\uB85C \uB4A4\uC9D1\uD788\uB294\uC9C0 \uD655\uC778\uD569\uB2C8\uB2E4." },
+      rows: [
+        "................",
+        "..........mm....",
+        ".........mmmm...",
+        ".........mmmm...",
+        ".........mmmm...",
+        "..........mm....",
+        "................",
+        "................",
+        "................"
+      ],
+      units: [
+        std("lab_a", "spear", 2, 2),
+        std("lab_a", "spear", 2, 6),
+        std("lab_b", "archer", 10, 3, { hold: true }),
+        std("lab_b", "archer", 11, 4, { hold: true })
+      ]
+    })
+  ];
+
+  // src/hex.js
+  var SQRT3 = Math.sqrt(3);
+  var DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+  function toCube(col, row) {
+    const q = col - (row - (row & 1)) / 2;
+    return { q, r: row, s: -q - row };
+  }
+  function fromCube(q, r) {
+    return { col: q + (r - (r & 1)) / 2, row: r };
+  }
+  function neighbors(col, row) {
+    const { q, r } = toCube(col, row);
+    return DIRS.map(([dq, dr]) => fromCube(q + dq, r + dr));
+  }
+  function distance(a, b) {
+    const A = toCube(a.col, a.row);
+    const B = toCube(b.col, b.row);
+    return Math.max(Math.abs(A.q - B.q), Math.abs(A.r - B.r), Math.abs(A.s - B.s));
+  }
+  function toPixel(col, row, size2) {
+    return { x: size2 * SQRT3 * (col + 0.5 * (row & 1)), y: size2 * 1.5 * row };
+  }
+  function key(col, row) {
+    return `${col},${row}`;
+  }
+
+  // src/modifiers.js
+  var STATS = ["atk", "def", "counter", "move", "range", "moraleLoss", "moraleRegen", "moraleFloor", "moraleStart", "troops"];
+  function unitSources(unit, data) {
+    const out = [];
+    const nation = data.nations[unit.nation];
+    if (nation?.buff) for (const m of nation.buff.mods) out.push({ ...m, src: nation.buff.name });
+    const general = unit.generalId ? data.generals[unit.generalId] : null;
+    if (general) {
+      for (const id of general.skills) {
+        const skill = data.skills[id];
+        if (skill) for (const m of skill.mods) out.push({ ...m, src: skill.name });
+      }
+    }
+    return out;
+  }
+  function tileAt(map, col, row) {
+    if (!map || col < 0 || row < 0 || col >= map.w || row >= map.h) return null;
+    return map.tiles[row * map.w + col];
+  }
+  function isNearWater(map, data, col, row) {
+    const cells = [{ col, row }, ...neighbors(col, row)];
+    return cells.some(({ col: c, row: r }) => {
+      const t = tileAt(map, c, r);
+      return t && (t.terrain === "sea" || t.terrain === "river" || t.terrain === "ford");
+    });
+  }
+  function condOk(cond, ctx2) {
+    if (!cond) return true;
+    const { unit, tile } = ctx2;
+    if (cond.unitType && cond.unitType !== unit.type) return false;
+    if (cond.vsUnitType && (!ctx2.vs || ctx2.vs.type !== cond.vsUnitType)) return false;
+    if (cond.terrain && (!tile || !cond.terrain.includes(tile.terrain))) return false;
+    if (cond.ownTerritory !== void 0 && (!tile || tile.owner === unit.nation !== cond.ownTerritory)) return false;
+    if (cond.role && cond.role !== ctx2.role) return false;
+    if (cond.afterMove !== void 0 && cond.afterMove !== !!ctx2.moved) return false;
+    if (cond.nearWater !== void 0 && cond.nearWater !== !!ctx2.nearWater) return false;
+    if (cond.troopsBelow !== void 0 && !(unit.troops / unit.maxTroops < cond.troopsBelow)) return false;
+    return true;
+  }
+  function getMods(state2, data, unit, opts = {}) {
+    const totals = Object.fromEntries(STATS.map((s) => [s, 0]));
+    const pos = opts.pos || unit;
+    const map = state2?.map;
+    const tile = map ? tileAt(map, pos.col, pos.row) : null;
+    const ctx2 = {
+      unit,
+      tile,
+      role: opts.role,
+      vs: opts.vs,
+      moved: opts.moved ?? unit.moved,
+      nearWater: map ? isNearWater(map, data, pos.col, pos.row) : false
+    };
+    for (const m of unitSources(unit, data)) {
+      if (condOk(m.cond, ctx2)) totals[m.stat] += m.value;
+    }
+    return totals;
+  }
+
+  // src/combat.js
+  var APT = { S: 1.12, A: 1.06, B: 1, C: 0.9, D: 0.8 };
+  var BASE_RATE = 0.12;
+  var COUNTER_RATE = 0.5;
+  var MORALE_SHOCK = 60;
+  var RAND_SPREAD = 0.25;
+  var CRIT_MUL = 1.5;
+  var RANGED_FALLOFF = 0.85;
+  function critChance(general) {
+    return 0.05 + Math.max(0, effStat(general.int) - 50) / 500;
+  }
+  var DEFAULT_GENERAL = {
+    name: "\uBB34\uBA85 \uC7A5\uC218",
+    lead: 50,
+    war: 50,
+    int: 50,
+    pol: 50,
+    cha: 50,
+    aptitude: { cavalry: "C", spear: "B", archer: "B" },
+    skills: []
+  };
+  function effStat(s) {
+    return s <= 70 ? s : 70 + (s - 70) * 0.6;
+  }
+  function generalOf(unit, data) {
+    return unit.generalId && data.generals[unit.generalId] || DEFAULT_GENERAL;
+  }
+  function apt(general, type) {
+    return APT[general.aptitude?.[type] ?? "B"];
+  }
+  function unitRange(state2, data, unit, pos = unit) {
+    const tile = state2?.map ? tileAt(state2.map, pos.col, pos.row) : null;
+    const height = tile ? data.terrain[tile.terrain].rangeBonus?.[unit.type] ?? 0 : 0;
+    return data.units[unit.type].range + getMods(state2, data, unit, { pos }).range + height;
+  }
+  function isDismounted(state2, data, unit, pos = unit) {
+    if (unit.type !== "cavalry") return false;
+    const tile = tileAt(state2.map, pos.col, pos.row);
+    return !!(tile && data.terrain[tile.terrain].dismount);
+  }
+  function attackPower(state2, data, unit, opts = {}) {
+    const g = generalOf(unit, data);
+    const mods = getMods(state2, data, unit, opts);
+    const stat = (effStat(g.war) * 0.6 + effStat(g.lead) * 0.4) / 100;
+    return data.units[unit.type].atk * (0.5 + stat) * apt(g, unit.type) * (1 + mods.atk);
+  }
+  function defensePower(state2, data, unit, opts = {}) {
+    const g = generalOf(unit, data);
+    const mods = getMods(state2, data, unit, { ...opts, role: "defend" });
+    const tile = tileAt(state2.map, unit.col, unit.row);
+    const terr = data.terrain[tile.terrain];
+    const terrainDef = (terr.def ?? 1) * (terr.defUnit?.[unit.type] ?? 1);
+    const aptDef = 1 + (apt(g, unit.type) - 1) / 2;
+    return data.units[unit.type].def * (0.5 + effStat(g.lead) / 100) * aptDef * terrainDef * (1 + mods.def);
+  }
+  function computeDamage(state2, data, att, def, opts = {}) {
+    const role = opts.role || "attack";
+    const attPos = opts.attPos || att;
+    const dist = distance(attPos, def);
+    const aOpts = { role, vs: def, pos: attPos, moved: opts.moved ?? att.moved };
+    const atkP = attackPower(state2, data, att, aOpts);
+    const defP = defensePower(state2, data, def, { vs: att });
+    const aTerrain = data.terrain[tileAt(state2.map, attPos.col, attPos.row).terrain];
+    const dTerrain = data.terrain[tileAt(state2.map, def.col, def.row).terrain];
+    let mul = data.counter[att.type][def.type];
+    mul *= aTerrain.atk?.[att.type] ?? 1;
+    if (dist === 1) {
+      mul *= dTerrain.charge?.[att.type] ?? 1;
+      mul *= data.units[att.type].adjacentMul ?? 1;
+    } else {
+      mul *= RANGED_FALLOFF * (dTerrain.cover ?? 1);
+    }
+    const morale = 0.6 + 0.4 * (att.morale / 100);
+    const troops = opts.attTroops ?? att.troops;
+    let dmg = troops * BASE_RATE * (atkP / defP) * mul * morale * (opts.rand ?? 1);
+    if (role === "counter") {
+      dmg *= COUNTER_RATE * (1 + getMods(state2, data, att, aOpts).counter);
+    }
+    return Math.max(0, Math.min(def.troops, Math.round(dmg)));
+  }
+  function canCounter(state2, data, defender, attPos) {
+    return distance(attPos, defender) <= unitRange(state2, data, defender);
+  }
+  function applyDamage(state2, data, target, dmg) {
+    const before = Math.max(1, target.troops);
+    target.troops = Math.max(0, target.troops - dmg);
+    const mods = getMods(state2, data, target, {});
+    const shock = dmg / before * MORALE_SHOCK * Math.max(0.1, 1 + mods.moraleLoss);
+    target.morale = Math.max(mods.moraleFloor, target.morale - shock);
+    if (target.troops <= 0 || target.morale <= 0) target.dead = true;
+  }
+  function resolveAttack(state2, data, att, def, rng) {
+    const roll = () => rng ? 1 - RAND_SPREAD + rng() * 2 * RAND_SPREAD : 1;
+    const crit = rng ? rng() < critChance(generalOf(att, data)) : false;
+    const dmg = Math.min(def.troops, Math.round(
+      computeDamage(state2, data, att, def, { role: "attack", rand: roll() }) * (crit ? CRIT_MUL : 1)
+    ));
+    applyDamage(state2, data, def, dmg);
+    let counterDmg = 0;
+    if (!def.dead && canCounter(state2, data, def, att)) {
+      counterDmg = computeDamage(state2, data, def, att, { role: "counter", rand: roll(), moved: false });
+      applyDamage(state2, data, att, counterDmg);
+    }
+    if (!att.dead && dmg > counterDmg) att.morale = Math.min(100, att.morale + 3);
+    return { dmg, counterDmg, crit };
+  }
+
+  // src/rng.js
+  function createRng(seed = 1) {
+    let a = seed >>> 0;
+    return function rng() {
+      a = a + 1831565813 >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // src/game.js
+  function buildMap(scenario, data) {
+    const h = scenario.rows.length;
+    const w = scenario.rows[0].length;
+    const byChar = Object.fromEntries(Object.entries(data.terrain).map(([id, t]) => [t.char, id]));
+    const tiles = [];
+    for (let row = 0; row < h; row++) {
+      if (scenario.rows[row].length !== w) throw new Error(`\uB9F5 ${row}\uD589 \uAE38\uC774 \uBD88\uC77C\uCE58`);
+      for (let col = 0; col < w; col++) {
+        const terrain = byChar[scenario.rows[row][col]];
+        if (!terrain) throw new Error(`\uC54C \uC218 \uC5C6\uB294 \uC9C0\uD615 \uBB38\uC790 '${scenario.rows[row][col]}' (${col},${row})`);
+        const rule = (scenario.territory || []).find((t) => col >= t.minCol && col <= t.maxCol);
+        tiles.push({ col, row, terrain, owner: terrain === "sea" ? null : rule?.nation ?? null });
+      }
+    }
+    const map = { w, h, tiles };
+    for (const c of scenario.castles || []) {
+      const t = tileAt(map, c.col, c.row);
+      t.terrain = "castle";
+      t.castle = c.name;
+      t.owner = c.owner;
+    }
+    return map;
+  }
+  function createGame(scenario, data, seed = 1) {
+    const state2 = {
+      scenario,
+      map: buildMap(scenario, data),
+      units: [],
+      sides: scenario.sides,
+      activeIndex: 0,
+      turn: 1,
+      rng: createRng(seed),
+      log: [],
+      winner: null
+    };
+    scenario.units.forEach((u, i) => {
+      const unit = {
+        id: i,
+        nation: u.nation,
+        generalId: u.general ?? null,
+        type: u.type,
+        col: u.col,
+        row: u.row,
+        hold: !!u.hold,
+        moved: false,
+        acted: false,
+        dead: false,
+        troops: u.troops,
+        maxTroops: u.troops,
+        morale: 70
+      };
+      const mods = getMods(null, data, unit, {});
+      unit.troops = unit.maxTroops = Math.round(u.troops * (1 + mods.troops));
+      unit.morale = Math.min(100, 70 + mods.moraleStart);
+      state2.units.push(unit);
+    });
+    return state2;
+  }
+  var activeNation = (state2) => state2.sides[state2.activeIndex];
+  var aliveUnits = (state2, nation) => state2.units.filter((u) => !u.dead && (!nation || u.nation === nation));
+  var unitAt = (state2, col, row) => state2.units.find((u) => !u.dead && u.col === col && u.row === row) || null;
+  var isEnemy = (a, b) => a.nation !== b.nation;
+  function inZoc(state2, unit, col, row) {
+    return neighbors(col, row).some(({ col: c, row: r }) => {
+      const o = unitAt(state2, c, r);
+      return o && isEnemy(o, unit);
+    });
+  }
+  function movePoints(state2, data, unit) {
+    return data.units[unit.type].move + getMods(state2, data, unit, {}).move;
+  }
+  function explore(state2, data, unit) {
+    const mp = movePoints(state2, data, unit);
+    const startK = key(unit.col, unit.row);
+    const best = /* @__PURE__ */ new Map([[startK, 0]]);
+    const prev = /* @__PURE__ */ new Map();
+    const frontier = [{ col: unit.col, row: unit.row, cost: 0 }];
+    while (frontier.length) {
+      frontier.sort((a, b) => a.cost - b.cost);
+      const cur = frontier.shift();
+      if (cur.cost > best.get(key(cur.col, cur.row))) continue;
+      const isStart = cur.col === unit.col && cur.row === unit.row;
+      if (!isStart) {
+        if (inZoc(state2, unit, cur.col, cur.row)) continue;
+        if (data.terrain[tileAt(state2.map, cur.col, cur.row).terrain].stopOnEnter) continue;
+      }
+      for (const n of neighbors(cur.col, cur.row)) {
+        const t = tileAt(state2.map, n.col, n.row);
+        if (!t) continue;
+        const step = enterCost(data, unit.type, t);
+        const cost = cur.cost + step;
+        if (cost > mp) continue;
+        const occ = unitAt(state2, n.col, n.row);
+        if (occ && isEnemy(occ, unit)) continue;
+        const k = key(n.col, n.row);
+        if (best.has(k) && best.get(k) <= cost) continue;
+        best.set(k, cost);
+        prev.set(k, key(cur.col, cur.row));
+        frontier.push({ col: n.col, row: n.row, cost });
+      }
+    }
+    return { best, prev };
+  }
+  function enterCost(data, type, tile) {
+    const terr = data.terrain[tile.terrain];
+    if (terr.impassable) return Infinity;
+    return terr.move[type] ?? Infinity;
+  }
+  function moveRange(state2, data, unit) {
+    const result = /* @__PURE__ */ new Map();
+    if (unit.hold || unit.moved) {
+      result.set(key(unit.col, unit.row), 0);
+      return result;
+    }
+    const { best } = explore(state2, data, unit);
+    for (const [k, cost] of best) {
+      const [c, r] = k.split(",").map(Number);
+      const occ = unitAt(state2, c, r);
+      if (!occ || occ === unit) result.set(k, cost);
+    }
+    return result;
+  }
+  function findPath(state2, data, unit, col, row) {
+    if (unit.col === col && unit.row === row) return [{ col, row }];
+    const { prev } = explore(state2, data, unit);
+    let k = key(col, row);
+    if (!prev.has(k)) return null;
+    const path = [];
+    while (k) {
+      const [c, r] = k.split(",").map(Number);
+      path.unshift({ col: c, row: r });
+      k = prev.get(k);
+    }
+    return path;
+  }
+  function travelCostMap(state2, data, type, goal) {
+    const dist = /* @__PURE__ */ new Map([[key(goal.col, goal.row), 0]]);
+    const frontier = [{ col: goal.col, row: goal.row, cost: 0 }];
+    while (frontier.length) {
+      frontier.sort((a, b) => a.cost - b.cost);
+      const cur = frontier.shift();
+      if (cur.cost > dist.get(key(cur.col, cur.row))) continue;
+      const curTile = tileAt(state2.map, cur.col, cur.row);
+      const isGoal = cur.col === goal.col && cur.row === goal.row;
+      let step = isGoal ? 2 : enterCost(data, type, curTile);
+      if (!isGoal && data.terrain[curTile.terrain].stopOnEnter) step += 6;
+      if (step === Infinity) continue;
+      for (const n of neighbors(cur.col, cur.row)) {
+        const t = tileAt(state2.map, n.col, n.row);
+        if (!t || enterCost(data, type, t) === Infinity) continue;
+        const cost = cur.cost + step;
+        const k = key(n.col, n.row);
+        if (dist.has(k) && dist.get(k) <= cost) continue;
+        dist.set(k, cost);
+        frontier.push({ col: n.col, row: n.row, cost });
+      }
+    }
+    return dist;
+  }
+  function attackTargets(state2, data, unit, pos = unit) {
+    const range = unitRange(state2, data, unit, pos);
+    return aliveUnits(state2).filter((o) => isEnemy(o, unit) && distance(pos, o) <= range);
+  }
+  function log(state2, msg) {
+    state2.log.push(`[${state2.turn}\uD134] ${msg}`);
+  }
+  function moveUnit(state2, data, unit, col, row) {
+    if (state2.winner || unit.acted || unit.nation !== activeNation(state2)) return false;
+    if (unit.col === col && unit.row === row) return true;
+    if (!moveRange(state2, data, unit).has(key(col, row))) return false;
+    unit.col = col;
+    unit.row = row;
+    unit.moved = true;
+    const t = tileAt(state2.map, col, row);
+    if (t.castle && t.owner !== unit.nation) {
+      t.owner = unit.nation;
+      log(state2, `${data.nations[unit.nation]?.name ?? unit.nation}\uC774(\uAC00) ${t.castle}\uC744 \uC810\uB839\uD588\uB2E4.`);
+      checkVictory(state2, data);
+    }
+    return true;
+  }
+  function attack(state2, data, unit, target) {
+    if (state2.winner || unit.acted || unit.nation !== activeNation(state2)) return null;
+    if (!attackTargets(state2, data, unit).includes(target)) return null;
+    const res = resolveAttack(state2, data, unit, target, state2.rng);
+    unit.acted = true;
+    unit.moved = true;
+    const an = generalOf(unit, data).name, dn = generalOf(target, data).name;
+    log(state2, `${an}(${data.units[unit.type].name}) \u2192 ${dn}(${data.units[target.type].name}): ${res.crit ? "\uC804\uBC95 \uBC1C\uB3D9! " : ""}\uD53C\uD574 ${res.dmg}${res.counterDmg ? `, \uBC18\uACA9 ${res.counterDmg}` : ""}`);
+    if (target.dead) log(state2, `${dn} \uBD80\uB300 \uAD34\uBA78`);
+    if (unit.dead) log(state2, `${an} \uBD80\uB300 \uAD34\uBA78`);
+    checkVictory(state2, data);
+    return res;
+  }
+  function waitUnit(state2, unit) {
+    unit.acted = true;
+    unit.moved = true;
+  }
+  function checkVictory(state2, data) {
+    if (state2.winner) return state2.winner;
+    for (const v of state2.scenario.victory || []) {
+      if (v.type === "capture") {
+        const t = state2.map.tiles.find((x) => x.castle === v.castle);
+        if (t && t.owner === v.nation) state2.winner = v.nation;
+      }
+    }
+    if (!state2.winner) {
+      const alive = state2.sides.filter((n) => aliveUnits(state2, n).length > 0);
+      if (alive.length === 1) state2.winner = alive[0];
+    }
+    if (state2.winner) log(state2, `\uC2B9\uB9AC: ${data?.nations[state2.winner]?.name ?? state2.winner}`);
+    return state2.winner;
+  }
+  function endTurn(state2, data) {
+    if (state2.winner) return;
+    state2.activeIndex = (state2.activeIndex + 1) % state2.sides.length;
+    if (state2.activeIndex === 0) {
+      state2.turn += 1;
+      const limit = (state2.scenario.victory || []).find((v) => v.type === "survive");
+      if (limit && state2.turn > limit.turns) {
+        state2.winner = limit.nation;
+        log(state2, `\uC81C\uD55C \uD134 \uC885\uB8CC \u2014 \uC2B9\uB9AC: ${data.nations[limit.nation]?.name ?? limit.nation}`);
+        return;
+      }
+      if (state2.scenario.turnLimit && state2.turn > state2.scenario.turnLimit) {
+        state2.timeout = true;
+        return;
+      }
+    }
+    const nation = activeNation(state2);
+    for (const u of aliveUnits(state2, nation)) {
+      u.moved = false;
+      u.acted = false;
+      const m = getMods(state2, data, u, {});
+      u.morale = Math.min(100, Math.max(m.moraleFloor, u.morale + 2 + m.moraleRegen));
+      const t = tileAt(state2.map, u.col, u.row);
+      const supply = data.terrain[t.terrain].supply;
+      if (supply && t.owner === u.nation) u.troops = Math.min(u.maxTroops, u.troops + Math.round(u.maxTroops * supply));
+    }
+  }
+
+  // src/ai.js
+  function withPos(unit, col, row, fn) {
+    const oc = unit.col, or = unit.row;
+    unit.col = col;
+    unit.row = row;
+    try {
+      return fn();
+    } finally {
+      unit.col = oc;
+      unit.row = or;
+    }
+  }
+  function dangerAt(state2, data, unit, col, row, ignore = null) {
+    return withPos(unit, col, row, () => {
+      let sum = 0;
+      for (const e of aliveUnits(state2)) {
+        if (!isEnemy(e, unit) || e === ignore) continue;
+        const reach2 = (e.hold ? 0 : Math.floor(movePoints(state2, data, e) / 2)) + data.units[e.type].range + 1;
+        if (distance(e, unit) > reach2) continue;
+        sum += computeDamage(state2, data, e, unit, { role: "attack", attPos: e, moved: true });
+      }
+      return sum;
+    });
+  }
+  function captureTarget(state2, unit) {
+    const v = (state2.scenario.victory || []).find((x) => x.type === "capture" && x.nation === unit.nation);
+    return v ? state2.map.tiles.find((t) => t.castle === v.castle) : null;
+  }
+  function scoreAttack(state2, data, unit, target, col, row) {
+    const moved = unit.moved || col !== unit.col || row !== unit.row;
+    const objective = captureTarget(state2, unit);
+    return withPos(unit, col, row, () => {
+      const dmg = computeDamage(state2, data, unit, target, { role: "attack", moved });
+      let ctr = 0;
+      if (dmg < target.troops && canCounter(state2, data, target, unit)) {
+        ctr = computeDamage(state2, data, target, unit, {
+          role: "counter",
+          moved: false,
+          attTroops: target.troops - dmg
+        });
+      }
+      const kill = dmg >= target.troops ? 2e3 : 0;
+      const siege = objective && target.col === objective.col && target.row === objective.row ? dmg * 1.5 + 150 : 0;
+      const danger = dangerAt(state2, data, unit, col, row, kill ? target : null);
+      return dmg - 0.9 * ctr + kill + siege - 0.35 * danger;
+    });
+  }
+  function goalFor(state2, data, unit) {
+    const objective = captureTarget(state2, unit);
+    if (objective && objective.owner !== unit.nation && !unitAt(state2, objective.col, objective.row)) return objective;
+    let best = null, bd = Infinity;
+    for (const e of aliveUnits(state2)) {
+      if (!isEnemy(e, unit)) continue;
+      const d = distance(unit, e);
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
+  }
+  function actUnit(state2, data, unit) {
+    const result = { unit, from: { col: unit.col, row: unit.row }, path: null, target: null, ranged: false };
+    if (unit.dead || unit.acted) return result;
+    const reach2 = moveRange(state2, data, unit);
+    let best = null;
+    for (const k of reach2.keys()) {
+      const [col, row] = k.split(",").map(Number);
+      const targets = withPos(unit, col, row, () => attackTargets(state2, data, unit, { col, row }));
+      for (const t of targets) {
+        const s = scoreAttack(state2, data, unit, t, col, row) + state2.rng() * 0.01;
+        if (!best || s > best.score) best = { score: s, col, row, target: t };
+      }
+    }
+    const go = (col, row) => {
+      result.path = findPath(state2, data, unit, col, row);
+      moveUnit(state2, data, unit, col, row);
+    };
+    if (best && best.score > -0.35 * dangerAt(state2, data, unit, unit.col, unit.row) + 1) {
+      go(best.col, best.row);
+      result.target = best.target;
+      result.ranged = distance(unit, best.target) > 1;
+      result.res = attack(state2, data, unit, best.target);
+      return result;
+    }
+    const goal = goalFor(state2, data, unit);
+    if (goal && !unit.hold) {
+      const travel = travelCostMap(state2, data, unit.type, goal);
+      let pick = null;
+      for (const k of reach2.keys()) {
+        const [col, row] = k.split(",").map(Number);
+        const t = travel.get(key(col, row)) ?? 9999;
+        const def = data.terrain[tileAt(state2.map, col, row).terrain].def ?? 1;
+        const cost = t * 120 + dangerAt(state2, data, unit, col, row) * 0.5 - def * 50 + distance({ col, row }, goal) * 5 + state2.rng();
+        if (!pick || cost < pick.cost) pick = { col, row, cost };
+      }
+      if (pick) go(pick.col, pick.row);
+    }
+    waitUnit(state2, unit);
+    return result;
+  }
+  function aiOrder(state2, data) {
+    return aliveUnits(state2, activeNation(state2)).sort((a, b) => data.units[b.type].range - data.units[a.type].range);
+  }
+  function runAiTurn(state2, data) {
+    for (const u of aiOrder(state2, data)) {
+      if (state2.winner) return;
+      actUnit(state2, data, u);
+    }
+  }
+
+  // src/sim.js
+  function playOut(state2, data, maxSteps = 400) {
+    let steps = 0;
+    while (!state2.winner && !state2.timeout && steps++ < maxSteps) {
+      runAiTurn(state2, data);
+      endTurn(state2, data);
+    }
+    return state2.winner || judge(state2);
+  }
+  function judge(state2) {
+    const score = (n) => aliveUnits(state2, n).reduce((s, u) => s + u.troops / u.maxTroops, 0);
+    const [a, b] = state2.sides;
+    if (Math.abs(score(a) - score(b)) < 1e-9) return "draw";
+    return score(a) > score(b) ? a : b;
+  }
+  function runMany(scenario, data, n, seed0 = 1, { swapFirst = true } = {}) {
+    const wins = {};
+    for (let i = 0; i < n; i++) {
+      const s = swapFirst && i % 2 ? { ...scenario, sides: [...scenario.sides].reverse() } : scenario;
+      const w = playOut(createGame(s, data, seed0 + i), data);
+      wins[w] = (wins[w] || 0) + 1;
+    }
+    for (const k of Object.keys(wins)) wins[k] /= n;
+    return wins;
+  }
+
+  // web/app.js
+  var SCENARIOS = [...labs_default, { ...liaodong645_default, expect: { text: "AI \uB300 AI \uAE30\uC900 \uB2F9\uACFC \uACE0\uAD6C\uB824\uAC00 \uB300\uB7B5 \uBC18\uBC18\uC774 \uB418\uB3C4\uB85D \uB9DE\uCDC4\uC2B5\uB2C8\uB2E4." } }];
+  var $ = (id) => document.getElementById(id);
+  var canvas = $("map");
+  var ctx = canvas.getContext("2d");
+  var PAD = 14;
+  var scen;
+  var state;
+  var size;
+  var selected = null;
+  var reach = null;
+  var hover = null;
+  var fx = null;
+  var auto = false;
+  var busy = false;
+  var gen = 0;
+  function fillSelectors() {
+    $("scenario").innerHTML = SCENARIOS.map((s, i) => `<option value="${i}">${s.title}</option>`).join("");
+  }
+  function fillSides() {
+    $("side").innerHTML = '<option value="none">\uAD00\uC804 (AI \uB300 AI)</option>' + scen.sides.map((n) => `<option value="${n}">${data_default.nations[n].name} \uC9C1\uC811 \uC870\uC885</option>`).join("");
+  }
+  function load(index) {
+    scen = SCENARIOS[index];
+    fillSides();
+    restart();
+    $("simout").textContent = "\uC544\uC9C1 \uCE21\uC815\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.";
+    $("simbar").hidden = true;
+  }
+  function restart() {
+    gen++;
+    auto = false;
+    busy = false;
+    state = createGame(scen, data_default, Math.random() * 1e9 | 0);
+    selected = null;
+    reach = null;
+    fx = null;
+    $("b-title").textContent = scen.title;
+    $("b-desc").textContent = scen.desc;
+    $("b-expect").textContent = scen.expect ? `\uAE30\uB300 \uACB0\uACFC: ${scen.expect.text}` : "";
+    resize();
+    updateButtons();
+    render();
+    if (player() !== "none" && activeNation(state) !== player()) playAiTurn(gen);
+  }
+  function resize() {
+    const w0 = Math.sqrt(3) * (state.map.w + 0.5);
+    const h0 = 1.5 * (state.map.h - 1) + 2;
+    size = Math.max(18, Math.min(34, 900 / w0));
+    const w = size * w0 + PAD * 2, h = size * h0 + PAD * 2;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.aspectRatio = `${w} / ${h}`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas._w = w;
+    canvas._h = h;
+  }
+  var player = () => $("side").value;
+  var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  var delay = () => Number($("speed").value);
+  async function playAiTurn(g) {
+    busy = true;
+    updateButtons();
+    for (const u of aiOrder(state, data_default)) {
+      if (g !== gen || state.winner) break;
+      if (u.dead || u.acted) continue;
+      fx = actUnit(state, data_default, u);
+      render();
+      await sleep(delay());
+    }
+    if (g !== gen) return;
+    fx = null;
+    endTurn(state, data_default);
+    busy = false;
+    render();
+    updateButtons();
+    if (!state.winner && !state.timeout && player() !== "none" && activeNation(state) !== player()) {
+      await sleep(delay());
+      if (g === gen) playAiTurn(g);
+    }
+  }
+  async function runAuto() {
+    const g = gen;
+    while (auto && g === gen && !state.winner && !state.timeout) {
+      await playAiTurn(g);
+      await sleep(delay() / 2);
+    }
+    auto = false;
+    updateButtons();
+  }
+  function updateButtons() {
+    const human = player() !== "none";
+    const over = !!(state.winner || state.timeout);
+    $("auto").textContent = auto ? "\u23F8 \uBA48\uCDA4" : "\u25B6 \uC790\uB3D9 \uC9C4\uD589";
+    $("auto").disabled = human || over;
+    $("step").disabled = human || over || busy;
+  }
+  var center = (col, row) => {
+    const p = toPixel(col, row, size);
+    return { x: p.x + PAD + size * Math.sqrt(3) / 2, y: p.y + PAD + size };
+  };
+  function hexPath(x, y, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI / 180 * (60 * i - 30);
+      const px = x + r * Math.cos(a), py = y + r * Math.sin(a);
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+  }
+  function glyph(t, x, y) {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const fs = Math.round(size * 0.5);
+    ctx.font = `${fs}px sans-serif`;
+    if (t.terrain === "mountain") {
+      ctx.fillStyle = "rgba(40,28,15,.45)";
+      ctx.fillText("\u25B2", x, y);
+    }
+    if (t.terrain === "hills") {
+      ctx.fillStyle = "rgba(60,45,20,.35)";
+      ctx.fillText("\u2312", x, y + 2);
+    }
+    if (t.terrain === "forest") {
+      ctx.fillStyle = "rgba(10,45,10,.5)";
+      ctx.fillText("\u2663", x, y);
+    }
+    if (t.terrain === "marsh") {
+      ctx.fillStyle = "rgba(20,60,60,.5)";
+      ctx.fillText("\u2248", x, y);
+    }
+    if (t.terrain === "river" || t.terrain === "sea") {
+      ctx.fillStyle = "rgba(255,255,255,.25)";
+      ctx.fillText("\u3030", x, y);
+    }
+    if (t.terrain === "ford") {
+      ctx.strokeStyle = "rgba(30,60,90,.7)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x - size * 0.5, y);
+      ctx.lineTo(x + size * 0.5, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  function arrow(from, to, color, dashed, head = true) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 3;
+    if (dashed) ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (head) {
+      const a = Math.atan2(to.y - from.y, to.x - from.x), l = 10;
+      ctx.beginPath();
+      ctx.moveTo(to.x, to.y);
+      ctx.lineTo(to.x - l * Math.cos(a - 0.45), to.y - l * Math.sin(a - 0.45));
+      ctx.lineTo(to.x - l * Math.cos(a + 0.45), to.y - l * Math.sin(a + 0.45));
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  function render() {
+    ctx.clearRect(0, 0, canvas._w, canvas._h);
+    const targets = selected && !selected.acted ? new Set(attackTargets(state, data_default, selected).map((u) => u.id)) : /* @__PURE__ */ new Set();
+    for (const t of state.map.tiles) {
+      const { x, y } = center(t.col, t.row);
+      hexPath(x, y, size);
+      ctx.fillStyle = data_default.terrain[t.terrain].color;
+      ctx.fill();
+      if (t.owner && data_default.nations[t.owner] && !data_default.terrain[t.terrain].impassable) {
+        ctx.fillStyle = data_default.nations[t.owner].color + "1f";
+        ctx.fill();
+      }
+      ctx.strokeStyle = "rgba(0,0,0,.2)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      glyph(t, x, y);
+      if (reach && reach.has(key(t.col, t.row))) {
+        hexPath(x, y, size - 2);
+        ctx.fillStyle = "rgba(80,150,255,.35)";
+        ctx.fill();
+      }
+      if (t.castle) {
+        ctx.fillStyle = data_default.nations[t.owner]?.color ?? "#777";
+        ctx.fillRect(x - size * 0.38, y - size * 0.38, size * 0.76, size * 0.6);
+        ctx.fillStyle = "#fff";
+        ctx.font = `bold ${Math.round(size * 0.42)}px serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("\u57CE", x, y - size * 0.08);
+        ctx.fillStyle = "#10151f";
+        ctx.font = `bold ${Math.round(size * 0.42)}px sans-serif`;
+        ctx.fillText(t.castle, x, y - size * 0.78);
+      }
+    }
+    if (fx?.path && fx.path.length > 1) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.9)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      fx.path.forEach((p, i) => {
+        const c = center(p.col, p.row);
+        i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+    for (const u of state.units) drawUnit(u, targets);
+    if (fx?.target) {
+      const a = center(fx.unit.col, fx.unit.row), b = center(fx.target.col, fx.target.row);
+      arrow(a, b, fx.ranged ? "#ffa23a" : "#ff4d3d", fx.ranged);
+      if (fx.res) {
+        ctx.font = `bold ${Math.round(size * 0.55)}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.textAlign = "center";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#10151f";
+        const txt = `${fx.res.crit ? "\uC804\uBC95! " : ""}-${fx.res.dmg}`;
+        ctx.strokeText(txt, b.x, b.y - size * 0.95);
+        ctx.fillStyle = fx.res.crit ? "#ffd34d" : "#fff";
+        ctx.fillText(txt, b.x, b.y - size * 0.95);
+        if (fx.res.counterDmg) {
+          ctx.strokeText(`\uBC18\uACA9 -${fx.res.counterDmg}`, a.x, a.y + size * 1.15);
+          ctx.fillStyle = "#ffb0a8";
+          ctx.fillText(`\uBC18\uACA9 -${fx.res.counterDmg}`, a.x, a.y + size * 1.15);
+        }
+      }
+    }
+    renderPanels();
+  }
+  function drawUnit(u, targets) {
+    if (u.dead) return;
+    const { x, y } = center(u.col, u.row);
+    const r = size * 0.56;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = data_default.nations[u.nation].color;
+    ctx.fill();
+    ctx.lineWidth = u === selected ? 3 : targets.has(u.id) ? 3 : 1.5;
+    ctx.strokeStyle = u === selected ? "#fff" : targets.has(u.id) ? "#ff3b30" : fx?.unit === u ? "#ffd34d" : "#0b0f18";
+    ctx.stroke();
+    if (u.acted && u.nation === activeNation(state)) {
+      ctx.fillStyle = "rgba(0,0,0,.4)";
+      ctx.fill();
+    }
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${Math.round(size * 0.5)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(data_default.units[u.type].short, x, y + 1);
+    const ratio = u.troops / u.maxTroops, bw = size * 1.1;
+    ctx.fillStyle = "#0b0f18";
+    ctx.fillRect(x - bw / 2, y + r + 2, bw, 4);
+    ctx.fillStyle = ratio > 0.5 ? "#6fcf8e" : ratio > 0.25 ? "#f2c14e" : "#ef6a5a";
+    ctx.fillRect(x - bw / 2, y + r + 2, bw * ratio, 4);
+    const t = tileAt(state.map, u.col, u.row);
+    const badge = isDismounted(state, data_default, u) ? "\uD558\uB9C8" : t.terrain === "ford" ? "\uB3C4\uD558" : null;
+    if (badge) {
+      ctx.font = `bold ${Math.round(size * 0.36)}px sans-serif`;
+      const bwid = ctx.measureText(badge).width + 6;
+      ctx.fillStyle = "#f2c14e";
+      ctx.fillRect(x - bwid / 2, y - r - size * 0.42, bwid, size * 0.4);
+      ctx.fillStyle = "#10151f";
+      ctx.fillText(badge, x, y - r - size * 0.22);
+    }
+  }
+  var APT_COLOR = { S: "#ffd34d", A: "#6fcf8e", B: "#e9e2cf", C: "#97a3ba", D: "#7a859b" };
+  function unitCard(u) {
+    const g = generalOf(u, data_default), n = data_default.nations[u.nation], m = getMods(state, data_default, u, {});
+    const mp = data_default.units[u.type].move + m.move;
+    const status = [];
+    if (isDismounted(state, data_default, u)) status.push('<span class="chip alert">\uD558\uB9C8 \u2014 \uB9D0\uC744 \uB04C\uACE0 \uAC77\uB294 \uC911 (\uACF5\uACA9 \xD70.6, \uBC29\uC5B4 \xD70.8)</span>');
+    if (tileAt(state.map, u.col, u.row).terrain === "ford") status.push('<span class="chip alert">\uB3C4\uD558 \uC911 \u2014 \uBC29\uC5B4 \xD70.6, \uACF5\uACA9 \xD70.7</span>');
+    const skills = g.skills.map((s) => `<span class="chip" title="${data_default.skills[s].desc}">${data_default.skills[s].name}</span>`).join("");
+    return `<h3>\uBD80\uB300</h3>
+    <div><b>${g.name}</b> <span class="muted">${g.hanja || ""}</span> \xB7 ${n.name} ${data_default.units[u.type].name}</div>
+    <div class="muted" style="font-size:12.5px">${g.note ?? ""}</div>
+    <div class="num" style="font-size:13px;margin-top:4px">\uD1B5\uC194 ${g.lead} \xB7 \uBB34\uB825 ${g.war} \xB7 \uC9C0\uB825 ${g.int}</div>
+    <div style="font-size:13px">\uC801\uC131 ${Object.keys(data_default.units).map((t) => `${data_default.units[t].name} <b style="color:${APT_COLOR[g.aptitude[t]]}">${g.aptitude[t]}</b>`).join(" \xB7 ")}</div>
+    ${skills ? `<div>${skills}</div>` : ""}
+    ${n.buff ? `<div><span class="chip" title="${n.buff.desc}">\uAD6D\uAC00 \uBC84\uD504: ${n.buff.name}</span></div>` : ""}
+    ${status.join("")}
+    <div class="num" style="margin-top:6px">\uBCD1\uB825 ${u.troops.toLocaleString()} / ${u.maxTroops.toLocaleString()}</div>
+    <div class="bar"><i style="width:${u.troops / u.maxTroops * 100}%;background:var(--good)"></i></div>
+    <div class="num">\uC0AC\uAE30 ${Math.round(u.morale)}</div>
+    <div class="bar"><i style="width:${u.morale}%;background:var(--celadon)"></i></div>
+    <div class="muted num" style="font-size:12.5px">\uC774\uB3D9\uB825 ${mp} (\uD3C9\uC9C0 ${Math.floor(mp / 2)}\uCE78) \xB7 \uC0AC\uAC70\uB9AC ${unitRange(state, data_default, u)}${u.hold ? " \xB7 \uC9C4\uC9C0 \uACE0\uC218" : ""}</div>`;
+  }
+  function tileCard(t) {
+    const terr = data_default.terrain[t.terrain];
+    const rows = Object.entries(data_default.units).map(([id, ut]) => `<div>${ut.name}: ${moveText(terr, id, ut).replace(/<[^>]+>/g, "")}</div>`).join("");
+    return `<h3>\uC9C0\uD615</h3><div><b>${t.castle ? `${t.castle} (\uC131)` : terr.name}</b> \xB7 \uBC29\uC5B4 \xD7${terr.def}</div>
+    <div style="font-size:13px">${rows}</div>
+    <div class="muted" style="font-size:12.5px;margin-top:4px">${terr.note ?? ""}</div>`;
+  }
+  function renderPanels() {
+    const n = activeNation(state);
+    if (state.winner) $("turn").innerHTML = `<span class="winner">\uC2B9\uB9AC \xB7 ${data_default.nations[state.winner].name}</span>`;
+    else if (state.timeout) $("turn").innerHTML = '<span class="winner">\uC81C\uD55C \uD134 \uC885\uB8CC</span>';
+    else {
+      const lim = scen.victory?.find((v) => v.type === "survive")?.turns ?? scen.turnLimit;
+      $("turn").innerHTML = `${state.turn}\uD134 / ${lim}\uD134 \xB7 <b style="color:${data_default.nations[n].color}">${data_default.nations[n].name}</b> \uCC28\uB840`;
+    }
+    const shown = hover?.unit ?? selected ?? fx?.unit;
+    if (shown) $("info").innerHTML = unitCard(shown);
+    if (selected && hover?.unit && hover.unit.nation !== selected.nation && !selected.acted) {
+      const t = hover.unit;
+      const dmg = computeDamage(state, data_default, selected, t, { role: "attack" });
+      const ctr = dmg < t.troops && canCounter(state, data_default, t, selected) ? computeDamage(state, data_default, t, selected, { role: "counter", moved: false, attTroops: t.troops - dmg }) : 0;
+      $("info").innerHTML += `<div style="margin-top:8px;border-top:1px solid var(--rule);padding-top:6px">
+      <b>\uAD50\uC804 \uC608\uCE21</b> \u2192 ${generalOf(t, data_default).name}<br>\uC608\uC0C1 \uD53C\uD574 <b class="num">${dmg}</b> \xB7 \uC608\uC0C1 \uBC18\uACA9 <b class="num">${ctr}</b>
+      <span class="muted">(\xB125%, \uC804\uBC95 1.5\uBC30)</span></div>`;
+    }
+    if (hover?.tile) $("tile").innerHTML = tileCard(hover.tile);
+    const log2 = $("log");
+    log2.textContent = state.log.slice(-80).join("\n") || "\uC544\uC9C1 \uAD50\uC804\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
+    log2.scrollTop = log2.scrollHeight;
+  }
+  function moveText(terr, id, ut) {
+    if (terr.impassable || terr.move[id] === void 0) return '<span class="no">\uBC30 \uD544\uC694 \xB7 \uC9C4\uC785 \uBD88\uAC00</span>';
+    const cost = terr.move[id];
+    const per = Math.floor(ut.move / cost);
+    let s = `<b>${per}</b>\uCE78/\uC77C`;
+    if (terr.stopOnEnter) s = "<b>1</b>\uCE78 \uD6C4 \uC815\uC9C0";
+    if (terr.dismount && id === "cavalry") s += " \xB7 \uD558\uB9C8(\uB9D0\uC744 \uB04C\uACE0 \uAC78\uC74C)";
+    return s;
+  }
+  function effectText(terr, id) {
+    const out = [];
+    const pct = (v) => v >= 1 ? `<span class="up">\xD7${v}</span>` : `<span class="down">\xD7${v}</span>`;
+    if (terr.atk?.[id]) out.push(`\uACF5\uACA9 ${pct(terr.atk[id])}`);
+    if (terr.charge?.[id]) out.push(`\uC774 \uCE78\uC73C\uB85C \uB3CC\uC785 ${pct(terr.charge[id])}`);
+    const def = (terr.def ?? 1) * (terr.defUnit?.[id] ?? 1);
+    if (!terr.impassable && def !== 1) out.push(`\uBC29\uC5B4 ${pct(Math.round(def * 100) / 100)}`);
+    if (terr.rangeBonus?.[id]) out.push(`<span class="up">\uC0AC\uAC70\uB9AC +${terr.rangeBonus[id]}</span>`);
+    if (terr.cover) out.push(`\uBC1B\uB294 \uC0AC\uACA9 ${pct(terr.cover)}`);
+    return out.join(" \xB7 ");
+  }
+  function buildTables() {
+    const U = data_default.units;
+    const mtn = data_default.terrain.mountain;
+    $("unitTable").innerHTML = `<tr><th>\uBCD1\uC885</th><th>\uC774\uB3D9\uB825</th><th>\uD3C9\uC9C0 \uD558\uB8E8</th><th>\uC0B0 \uD558\uB8E8</th><th>\uC0AC\uAC70\uB9AC</th><th>\uACF5\uACA9\xB7\uBC29\uC5B4</th><th>\uAC15\uD55C \uC0C1\uB300 / \uC57D\uD55C \uC0C1\uB300</th></tr>` + Object.entries(U).map(([id, u]) => {
+      const strong = Object.entries(data_default.counter[id]).filter(([, v]) => v > 1).map(([k]) => U[k].name).join(", ");
+      const weak = Object.entries(data_default.counter[id]).filter(([, v]) => v < 1).map(([k]) => U[k].name).join(", ");
+      const rangeNote = u.range > 1 ? `${u.range} (\uAC70\uB9AC 2 \uC0AC\uACA9 \xD70.85\xB7\uBC18\uACA9 \uC5C6\uC74C, \uBD99\uC73C\uBA74 \xD7${u.adjacentMul})` : "1 (\uADFC\uC811)";
+      return `<tr><td>${u.name}</td><td class="num">${u.move}</td><td class="num">${Math.floor(u.move / 2)}\uCE78 \u2248 ${Math.floor(u.move / 2) * 6}km</td>
+        <td>${Math.floor(u.move / mtn.move[id])}\uCE78${id === "cavalry" ? " (\uD558\uB9C8)" : ""}</td><td>${rangeNote}</td>
+        <td class="num">${u.atk} / ${u.def}</td><td>${strong} \xD71.2 / ${weak} \xD70.85</td></tr>`;
+    }).join("");
+    $("terrainTable").innerHTML = `<tr><th>\uC9C0\uD615</th>${Object.values(U).map((u) => `<th>${u.name}</th>`).join("")}<th>\uC124\uBA85</th></tr>` + Object.values(data_default.terrain).map((t) => `<tr><td><span class="sw" style="background:${t.color}"></span>${t.name}</td>
+      ${Object.entries(U).map(([id, u]) => `<td class="cell">${moveText(t, id, u)}<br><span class="muted" style="font-size:12.5px">${effectText(t, id)}</span></td>`).join("")}
+      <td class="muted" style="font-size:12.5px;min-width:200px">${t.note ?? ""}</td></tr>`).join("");
+  }
+  async function simulate() {
+    const n = scen.id === "liaodong645" ? 40 : 100;
+    const g = gen;
+    $("sim").disabled = true;
+    const total = {};
+    const chunk = 5;
+    for (let i = 0; i < n; i += chunk) {
+      if (g !== gen) break;
+      const r = runMany(scen, data_default, chunk, 1e3 + i * 7);
+      for (const [k, v] of Object.entries(r)) total[k] = (total[k] || 0) + v * chunk;
+      $("simout").textContent = `\uCE21\uC815 \uC911\u2026 ${Math.min(i + chunk, n)} / ${n}\uD310`;
+      await sleep(0);
+    }
+    $("sim").disabled = false;
+    if (g !== gen) return;
+    const parts = scen.sides.map((s) => ({ s, p: (total[s] || 0) / n }));
+    $("simout").innerHTML = parts.map(({ s, p }) => `<span style="color:${data_default.nations[s].color}">\u25A0</span> ${data_default.nations[s].name} ${(p * 100).toFixed(0)}%`).join(" \xB7 ") + ` <span class="muted">(${n}\uD310)</span>`;
+    $("simbar").hidden = false;
+    $("simbar").innerHTML = parts.map(({ s, p }) => `<i style="width:${p * 100}%;background:${data_default.nations[s].color}"></i>`).join("");
+  }
+  function hexAt(evt) {
+    const r = canvas.getBoundingClientRect();
+    const x = (evt.clientX - r.left) * (canvas._w / r.width);
+    const y = (evt.clientY - r.top) * (canvas._h / r.height);
+    let best = null, bd = Infinity;
+    for (const t of state.map.tiles) {
+      const c = center(t.col, t.row);
+      const d = (c.x - x) ** 2 + (c.y - y) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = t;
+      }
+    }
+    return bd < size * size ? best : null;
+  }
+  var myTurn = () => !state.winner && !busy && player() !== "none" && activeNation(state) === player();
+  canvas.addEventListener("mousemove", (e) => {
+    const t = hexAt(e);
+    hover = t ? { tile: t, unit: unitAt(state, t.col, t.row) } : null;
+    renderPanels();
+  });
+  canvas.addEventListener("click", (e) => {
+    const t = hexAt(e);
+    if (!t) return;
+    hover = { tile: t, unit: unitAt(state, t.col, t.row) };
+    if (!myTurn()) {
+      renderPanels();
+      return;
+    }
+    const u = hover.unit;
+    if (u && u.nation === player() && !u.acted) {
+      selected = u;
+      reach = moveRange(state, data_default, u);
+      fx = null;
+    } else if (selected && u && u.nation !== player()) {
+      const ranged = distance(u, selected) > 1;
+      const res = attack(state, data_default, selected, u);
+      if (res) {
+        fx = { unit: selected, target: u, res, ranged };
+        selected = null;
+        reach = null;
+      }
+    } else if (selected && reach?.has(key(t.col, t.row))) {
+      const path = findPath(state, data_default, selected, t.col, t.row);
+      moveUnit(state, data_default, selected, t.col, t.row);
+      fx = { unit: selected, path };
+      reach = null;
+      if (!attackTargets(state, data_default, selected).length) {
+        waitUnit(state, selected);
+        selected = null;
+      }
+    } else {
+      selected = null;
+      reach = null;
+    }
+    render();
+    if (myTurn() && state.units.every((x) => x.dead || x.nation !== player() || x.acted)) endPlayerTurn();
+  });
+  function endPlayerTurn() {
+    selected = null;
+    reach = null;
+    endTurn(state, data_default);
+    render();
+    if (!state.winner) playAiTurn(gen);
+  }
+  $("scenario").onchange = (e) => load(Number(e.target.value));
+  $("side").onchange = restart;
+  $("restart").onclick = restart;
+  $("auto").onclick = () => {
+    auto = !auto;
+    updateButtons();
+    if (auto && !busy) runAuto();
+  };
+  $("step").onclick = () => {
+    if (!busy) playAiTurn(gen);
+  };
+  $("sim").onclick = simulate;
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && myTurn()) endPlayerTurn();
+  });
+  fillSelectors();
+  buildTables();
+  load(0);
+})();
+
+</script>

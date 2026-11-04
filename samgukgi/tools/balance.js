@@ -4,8 +4,11 @@
 //   node tools/balance.js --n 400    # 판 수 지정
 import baseData from '../src/data/index.js';
 import scenario645 from '../src/data/scenarios/liaodong645.js';
-import { createGame, endTurn, aliveUnits } from '../src/game.js';
-import { runAiTurn } from '../src/ai.js';
+import { createGame } from '../src/game.js';
+import { playOut, runMany } from '../src/sim.js';
+import labs from '../src/data/scenarios/labs.js';
+
+export { playOut };
 
 const TYPES = ['cavalry', 'spear', 'archer'];
 
@@ -32,19 +35,6 @@ function arena(rows, a, b) {
 }
 
 const PLAINS = Array(7).fill('.'.repeat(11));
-
-export function playOut(state, data, maxSteps = 400) {
-  let steps = 0;
-  while (!state.winner && !state.timeout && steps++ < maxSteps) {
-    runAiTurn(state, data);
-    endTurn(state, data);
-  }
-  if (state.winner) return state.winner;
-  // 시간 초과: 남은 병력 비율이 높은 쪽
-  const score = (n) => aliveUnits(state, n).reduce((s, u) => s + u.troops / u.maxTroops, 0);
-  const [a, b] = state.sides;
-  return score(a) === score(b) ? 'draw' : score(a) > score(b) ? a : b;
-}
 
 // red를 먼저 두는 판과 blue를 먼저 두는 판을 절반씩
 export function duel(data, scen, n, seed0 = 1) {
@@ -104,6 +94,12 @@ function main() {
   console.log('\n■ 병력 차이 (창병 1:1, 평지)');
   for (const t of [5500, 6000, 7500]) {
     console.log(`  ${t} vs 5000 → 승률 ${pct(duel(testData(), arena(PLAINS, { type: 'spear', troops: t }, { type: 'spear' }), n).red)}`);
+  }
+
+  console.log('\n■ 병종 실험실 (표준 장수, 청군 승률)');
+  for (const lab of labs) {
+    const r = runMany(lab, baseData, n, 500);
+    console.log(`  ${lab.title.padEnd(26)} 청군 ${pct(r.lab_a ?? 0)} / 적군 ${pct(r.lab_b ?? 0)}   기대: ${lab.expect.text}`);
   }
 
   console.log('\n■ 645 안시성 시나리오 (AI 대 AI)');

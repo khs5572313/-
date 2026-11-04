@@ -1,63 +1,136 @@
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>삼국기 — 645 안시성 프로토타입</title>
+<title>삼국기 병종 실험실</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-  :root { --bg:#1b1a17; --panel:#26241f; --line:#3d3a32; --ink:#eee6d3; --muted:#a69f8c; --accent:#c9a64e; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family: "Noto Sans KR", system-ui, sans-serif; font-size:14px; }
-  header { padding:10px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0; color:var(--accent); letter-spacing:2px; }
-  header .turn { color:var(--muted); }
-  button, select { background:#3a3629; color:var(--ink); border:1px solid #5a5340; border-radius:6px; padding:6px 12px; font:inherit; cursor:pointer; }
-  button:hover { background:#4a4533; }
-  main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:12px; padding:12px 16px; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
-  #mapWrap { background:#12110f; border:1px solid var(--line); border-radius:8px; overflow:auto; }
-  canvas { display:block; width:100%; height:auto; }
-  aside { display:flex; flex-direction:column; gap:10px; min-width:0; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
-  .card h2 { font-size:13px; margin:0 0 6px; color:var(--accent); }
-  .muted { color:var(--muted); }
-  table.stats { width:100%; border-collapse:collapse; }
-  table.stats td { padding:2px 4px; }
-  .bar { height:6px; background:#3a3629; border-radius:3px; overflow:hidden; }
-  .bar > i { display:block; height:100%; }
-  #log { max-height:220px; overflow:auto; font-size:12px; line-height:1.5; white-space:pre-wrap; }
-  .tag { display:inline-block; padding:1px 6px; border-radius:4px; background:#3a3629; margin:1px 2px 1px 0; font-size:12px; }
-  .winner { font-size:16px; color:var(--accent); font-weight:bold; }
+  /* 레이아웃: 쪽빛 군령 탁자 — 지도가 주인공, 오른쪽에 장부(부대·지형·기록), 아래에 병종·지형 상성표 */
+  :root {
+    --night: #121a2a;      /* 쪽빛 바탕 */
+    --board: #19243a;      /* 장부 패널 */
+    --rule: #2d3c5a;       /* 괘선 */
+    --ink: #e9e2cf;        /* 한지빛 글자 */
+    --dim: #97a3ba;        /* 흐린 글자 */
+    --brass: #d6b25e;      /* 놋쇠 강조 */
+    --celadon: #8cc2a7;    /* 청자색 보조 */
+    --good: #6fcf8e; --warn: #f2c14e; --bad: #ef6a5a;
+    --f-display: "Song Myung", "Nanum Myeongjo", serif;
+    --f-body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --f-num: "IBM Plex Mono", ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--night); color: var(--ink); }
+  body { font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+  .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; max-width: 1380px; margin: 0 auto; display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+  header h1 { font-family: var(--f-display); font-weight: 400; font-size: 30px; margin: 0; letter-spacing: 3px; color: var(--brass); }
+  header h1 small { font-size: 15px; color: var(--dim); letter-spacing: 1px; margin-left: 6px; }
+  header .tag { color: var(--dim); font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls label { color: var(--dim); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  select, button { font: inherit; font-size: 14px; color: var(--ink); background: var(--board); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--brass); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  button.primary { background: var(--brass); color: var(--night); border-color: var(--brass); font-weight: bold; }
+  button[disabled] { opacity: .45; cursor: default; }
+  .brief { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: start; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding-block: 12px; }
+  .brief h2 { font-family: var(--f-display); font-weight: 400; font-size: 21px; margin: 0 0 4px; text-wrap: balance; }
+  .brief p { margin: 0; max-width: 68ch; color: var(--ink); }
+  .brief .expect { color: var(--celadon); font-size: 14px; margin-top: 6px; }
+  .status { text-align: right; font-family: var(--f-num); font-size: 13px; color: var(--dim); min-width: 220px; display: grid; gap: 6px; justify-items: end; }
+  .status .turn { font-size: 15px; color: var(--ink); }
+  .status .winner { color: var(--brass); font-family: var(--f-display); font-size: 20px; }
+  .simbar { width: 220px; height: 10px; border-radius: 5px; background: var(--rule); overflow: hidden; display: flex; }
+  .simbar i { display: block; height: 100%; }
+  @media (max-width: 720px) { .brief { grid-template-columns: 1fr; } .status { text-align: left; justify-items: start; } }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  .map { background: #0d1320; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: auto; max-width: 100%; touch-action: manipulation; }
+  aside { display: grid; gap: 10px; min-width: 0; }
+  .panel { background: var(--board); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .panel h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: 2px; color: var(--brass); font-weight: normal; }
+  .muted { color: var(--dim); }
+  .num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 4px; background: var(--rule); font-size: 12px; margin: 2px 3px 0 0; }
+  .chip.alert { background: var(--warn); color: var(--night); }
+  .bar { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; margin: 2px 0 6px; }
+  .bar i { display: block; height: 100%; }
+  #log { max-height: 240px; overflow: auto; font-size: 12.5px; white-space: pre-wrap; font-family: var(--f-body); }
+  .tables { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .tables h2 { font-family: var(--f-display); font-weight: 400; font-size: 20px; margin: 4px 0 6px; }
+  .tables p.lead { margin: 0 0 8px; color: var(--dim); max-width: 75ch; font-size: 14px; }
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  th { color: var(--brass); font-weight: normal; letter-spacing: 1px; font-size: 12.5px; background: var(--board); white-space: nowrap; }
+  td .sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+  td.cell b { font-family: var(--f-num); font-weight: 600; }
+  td.cell .no { color: var(--bad); }
+  td.cell .up { color: var(--good); }
+  td.cell .down { color: var(--warn); }
+  .help { font-size: 13px; color: var(--dim); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
-</head>
-<body>
-<header>
-  <h1>三國記 삼국기</h1>
-  <span id="title"></span>
-  <span class="turn" id="turn"></span>
-  <label>플레이: <select id="side">
-    <option value="tang">당</option>
-    <option value="goguryeo" selected>고구려</option>
-    <option value="none">관전(AI 대 AI)</option>
-  </select></label>
-  <button id="restart">다시 시작</button>
-  <button id="wait">대기</button>
-  <button id="end">턴 종료</button>
-</header>
-<main>
-  <div id="mapWrap"><canvas id="map"></canvas></div>
-  <aside>
-    <div class="card" id="info"><h2>부대 정보</h2><div class="muted">부대를 클릭하세요.</div></div>
-    <div class="card" id="preview"><h2>교전 예측</h2><div class="muted">적 부대에 마우스를 올리면 예상 피해가 나옵니다.</div></div>
-    <div class="card" id="tile"><h2>지형</h2><div class="muted">-</div></div>
-    <div class="card"><h2>전투 기록</h2><div id="log"></div></div>
-    <div class="card muted" style="font-size:12px">
-      조작: 아군 부대 클릭 → 파란 칸 이동 → 빨간 테두리 적 공격 (또는 [대기]).<br>
-      상성: 창병 &gt; 기병 &gt; 궁병 &gt; 창병. 지형·성·국가 버프·무장 특기가 피해에 반영됩니다.<br>
-      지도는 개략 배치이며 실측 지형 지도는 M2에서 제작합니다.
+
+<div class="wrap">
+  <header>
+    <h1>三國記<small>삼국기 · 병종 실험실</small></h1>
+    <span class="tag">M1 프로토타입 — 1칸 ≈ 6km, 1턴 ≈ 하루. 모든 실험은 같은 능력치의 ‘표준 장수’로 병종과 지형만 비교합니다.</span>
+  </header>
+
+  <div class="controls">
+    <label for="scenario">전장 <select id="scenario"></select></label>
+    <label for="side">진영 <select id="side"></select></label>
+    <label for="speed">속도 <select id="speed">
+      <option value="900">느리게</option>
+      <option value="450" selected>보통</option>
+      <option value="150">빠르게</option>
+    </select></label>
+    <button id="auto" class="primary">▶ 자동 진행</button>
+    <button id="step">한 턴만</button>
+    <button id="restart">처음부터</button>
+    <button id="sim">100판 돌려 승률 보기</button>
+  </div>
+
+  <section class="brief">
+    <div>
+      <h2 id="b-title"></h2>
+      <p id="b-desc"></p>
+      <p class="expect" id="b-expect"></p>
     </div>
-  </aside>
-</main>
+    <div class="status">
+      <div class="turn" id="turn"></div>
+      <div id="simout" class="muted">아직 측정하지 않았습니다.</div>
+      <div class="simbar" id="simbar" hidden></div>
+    </div>
+  </section>
+
+  <main>
+    <div class="map"><canvas id="map"></canvas></div>
+    <aside>
+      <div class="panel" id="info"><h3>부대</h3><div class="muted">부대에 마우스를 올리거나 누르세요.</div></div>
+      <div class="panel" id="tile"><h3>지형</h3><div class="muted">칸에 마우스를 올리면 병종별 이동·전투 효과가 나옵니다.</div></div>
+      <div class="panel"><h3>전투 기록</h3><div id="log"></div></div>
+      <div class="panel help">
+        흰 점선은 이동 경로, 빨간 실선은 근접 공격, 주황 점선은 원거리 사격입니다.
+        진영을 고르면 직접 조종할 수 있습니다. 아군 부대를 누르고, 파란 칸으로 이동한 뒤, 빨간 테두리 적을 누르면 공격합니다.
+      </div>
+    </aside>
+  </main>
+
+  <section class="tables">
+    <div>
+      <h2>병종표</h2>
+      <p class="lead">이동력은 ‘평지 1칸 = 2’ 단위입니다. 2 단위로 쪼개 두어야 산·숲·습지에서 병종마다 속도가 달라지는 것을 정밀하게 표현할 수 있습니다.</p>
+      <div class="scroll"><table id="unitTable"></table></div>
+    </div>
+    <div>
+      <h2>지형 상성표</h2>
+      <p class="lead">칸 안의 굵은 숫자는 하루에 갈 수 있는 칸 수, 아래는 그 지형에서의 전투 보정입니다. 강과 바다는 배가 없으면 건널 수 없고, 여울·나루로 돌아가야 합니다.</p>
+      <div class="scroll"><table id="terrainTable"></table></div>
+    </div>
+  </section>
+</div>
+
 <script type="module" src="./app.js"></script>
-</body>
-</html>

@@ -3,6 +3,9 @@
 //   stat: atk | def | counter | move | range | moraleLoss | moraleRegen | moraleFloor | moraleStart | troops
 //   cond: unitType | vsUnitType | terrain[] | ownTerritory | role | afterMove | nearWater | troopsBelow
 export default {
+  // 병종 실험실 전용: 버프 없는 중립 세력
+  lab_a: { name: '청군', color: '#3b82c4', buff: null },
+  lab_b: { name: '적군', color: '#c4473b', buff: null },
   goguryeo: {
     name: '고구려', color: '#b8392f',
     buff: {
@@ -18,10 +21,10 @@ export default {
     name: '백제', color: '#2f6fb8',
     buff: {
       name: '해상 왕국',
-      desc: '바다·하천에 닿은 칸에서 공격 +10%, 이동력 +1 (수군 체계는 M2에서 확장)',
+      desc: '바다·강에 닿은 칸에서 공격 +10%, 이동력 +2MP(평지 1칸) (수군 체계는 M2에서 확장)',
       mods: [
         { stat: 'atk', value: 0.10, cond: { nearWater: true } },
-        { stat: 'move', value: 1, cond: { nearWater: true } },
+        { stat: 'move', value: 2, cond: { nearWater: true } },
       ],
     },
   },
@@ -70,8 +73,8 @@ export default {
     name: '말갈', color: '#4f8a5b',
     buff: {
       name: '백산의 기마',
-      desc: '모든 부대 이동력 +1',
-      mods: [{ stat: 'move', value: 1 }],
+      desc: '모든 부대 이동력 +2MP(평지 1칸)',
+      mods: [{ stat: 'move', value: 2 }],
     },
   },
 };

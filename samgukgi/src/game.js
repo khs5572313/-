@@ -67,28 +67,30 @@ export function movePoints(state, data, unit) {
   return data.units[unit.type].move + getMods(state, data, unit, {}).move;
 }
 
-// 이동 가능 칸: 다익스트라. 적 칸 진입 불가, 아군 칸 통과 가능·정지 불가,
-// 적에 인접한 칸(ZOC)에 들어가면 그 칸에서 이동 종료.
-export function moveRange(state, data, unit) {
-  const result = new Map();
-  if (unit.hold || unit.moved) {
-    result.set(key(unit.col, unit.row), 0);
-    return result;
-  }
+// 이동 탐색(다익스트라). 규칙:
+//  · 강·바다 등 impassable 지형과 적 부대 칸은 진입 불가
+//  · 아군 칸은 통과 가능, 정지 불가
+//  · 적에 인접한 칸(ZOC)에 들어가면 그 칸에서 이동 종료
+//  · stopOnEnter 지형(여울·나루)에 들어가면 그 칸에서 이동 종료
+function explore(state, data, unit) {
   const mp = movePoints(state, data, unit);
-  const best = new Map([[key(unit.col, unit.row), 0]]);
+  const startK = key(unit.col, unit.row);
+  const best = new Map([[startK, 0]]);
+  const prev = new Map();
   const frontier = [{ col: unit.col, row: unit.row, cost: 0 }];
   while (frontier.length) {
     frontier.sort((a, b) => a.cost - b.cost);
     const cur = frontier.shift();
+    if (cur.cost > best.get(key(cur.col, cur.row))) continue;
     const isStart = cur.col === unit.col && cur.row === unit.row;
-    if (!isStart && inZoc(state, unit, cur.col, cur.row)) continue;
+    if (!isStart) {
+      if (inZoc(state, unit, cur.col, cur.row)) continue;
+      if (data.terrain[tileAt(state.map, cur.col, cur.row).terrain].stopOnEnter) continue;
+    }
     for (const n of neighbors(cur.col, cur.row)) {
       const t = tileAt(state.map, n.col, n.row);
       if (!t) continue;
-      const terr = data.terrain[t.terrain];
-      if (terr.impassable) continue;
-      const step = terr.move[unit.type] ?? Infinity;
+      const step = enterCost(data, unit.type, t);
       const cost = cur.cost + step;
       if (cost > mp) continue;
       const occ = unitAt(state, n.col, n.row);
@@ -96,15 +98,75 @@ export function moveRange(state, data, unit) {
       const k = key(n.col, n.row);
       if (best.has(k) && best.get(k) <= cost) continue;
       best.set(k, cost);
+      prev.set(k, key(cur.col, cur.row));
       frontier.push({ col: n.col, row: n.row, cost });
     }
   }
+  return { best, prev };
+}
+
+export function enterCost(data, type, tile) {
+  const terr = data.terrain[tile.terrain];
+  if (terr.impassable) return Infinity;
+  return terr.move[type] ?? Infinity;
+}
+
+export function moveRange(state, data, unit) {
+  const result = new Map();
+  if (unit.hold || unit.moved) {
+    result.set(key(unit.col, unit.row), 0);
+    return result;
+  }
+  const { best } = explore(state, data, unit);
   for (const [k, cost] of best) {
     const [c, r] = k.split(',').map(Number);
     const occ = unitAt(state, c, r);
     if (!occ || occ === unit) result.set(k, cost);
   }
   return result;
+}
+
+// 출발점 → (col,row) 경로 [{col,row}, ...] (출발점 포함). 도달 불가면 null
+export function findPath(state, data, unit, col, row) {
+  if (unit.col === col && unit.row === row) return [{ col, row }];
+  const { prev } = explore(state, data, unit);
+  let k = key(col, row);
+  if (!prev.has(k)) return null;
+  const path = [];
+  while (k) {
+    const [c, r] = k.split(',').map(Number);
+    path.unshift({ col: c, row: r });
+    k = prev.get(k);
+  }
+  return path;
+}
+
+// 목표까지의 '실제 행군 비용' 지도(부대는 무시, 지형만). AI가 강을 건널 여울을 찾고
+// 산을 돌아갈지 넘을지 판단하는 데 쓴다. 값 단위는 MP.
+export function travelCostMap(state, data, type, goal) {
+  const dist = new Map([[key(goal.col, goal.row), 0]]);
+  const frontier = [{ col: goal.col, row: goal.row, cost: 0 }];
+  while (frontier.length) {
+    frontier.sort((a, b) => a.cost - b.cost);
+    const cur = frontier.shift();
+    if (cur.cost > dist.get(key(cur.col, cur.row))) continue;
+    const curTile = tileAt(state.map, cur.col, cur.row);
+    // cur로 들어오는 비용 (목표 칸 자체는 적이 서 있으므로 0)
+    const isGoal = cur.col === goal.col && cur.row === goal.row;
+    let step = isGoal ? 2 : enterCost(data, type, curTile);
+    if (!isGoal && data.terrain[curTile.terrain].stopOnEnter) step += 6; // 여울에서 하루 멈춤
+    if (step === Infinity) continue;
+    for (const n of neighbors(cur.col, cur.row)) {
+      const t = tileAt(state.map, n.col, n.row);
+      if (!t || enterCost(data, type, t) === Infinity) continue;
+      const cost = cur.cost + step;
+      const k = key(n.col, n.row);
+      if (dist.has(k) && dist.get(k) <= cost) continue;
+      dist.set(k, cost);
+      frontier.push({ col: n.col, row: n.row, cost });
+    }
+  }
+  return dist;
 }
 
 export function attackTargets(state, data, unit, pos = unit) {
