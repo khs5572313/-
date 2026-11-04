@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>삼국기 — 645 안시성 프로토타입</title>
+<style>
+  :root { --bg:#1b1a17; --panel:#26241f; --line:#3d3a32; --ink:#eee6d3; --muted:#a69f8c; --accent:#c9a64e; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: "Noto Sans KR", system-ui, sans-serif; font-size:14px; }
+  header { padding:10px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; color:var(--accent); letter-spacing:2px; }
+  header .turn { color:var(--muted); }
+  button, select { background:#3a3629; color:var(--ink); border:1px solid #5a5340; border-radius:6px; padding:6px 12px; font:inherit; cursor:pointer; }
+  button:hover { background:#4a4533; }
+  main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:12px; padding:12px 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  #mapWrap { background:#12110f; border:1px solid var(--line); border-radius:8px; overflow:auto; }
+  canvas { display:block; width:100%; height:auto; }
+  aside { display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .card h2 { font-size:13px; margin:0 0 6px; color:var(--accent); }
+  .muted { color:var(--muted); }
+  table.stats { width:100%; border-collapse:collapse; }
+  table.stats td { padding:2px 4px; }
+  .bar { height:6px; background:#3a3629; border-radius:3px; overflow:hidden; }
+  .bar > i { display:block; height:100%; }
+  #log { max-height:220px; overflow:auto; font-size:12px; line-height:1.5; white-space:pre-wrap; }
+  .tag { display:inline-block; padding:1px 6px; border-radius:4px; background:#3a3629; margin:1px 2px 1px 0; font-size:12px; }
+  .winner { font-size:16px; color:var(--accent); font-weight:bold; }
+</style>
+</head>
+<body>
+<header>
+  <h1>三國記 삼국기</h1>
+  <span id="title"></span>
+  <span class="turn" id="turn"></span>
+  <label>플레이: <select id="side">
+    <option value="tang">당</option>
+    <option value="goguryeo" selected>고구려</option>
+    <option value="none">관전(AI 대 AI)</option>
+  </select></label>
+  <button id="restart">다시 시작</button>
+  <button id="wait">대기</button>
+  <button id="end">턴 종료</button>
+</header>
+<main>
+  <div id="mapWrap"><canvas id="map"></canvas></div>
+  <aside>
+    <div class="card" id="info"><h2>부대 정보</h2><div class="muted">부대를 클릭하세요.</div></div>
+    <div class="card" id="preview"><h2>교전 예측</h2><div class="muted">적 부대에 마우스를 올리면 예상 피해가 나옵니다.</div></div>
+    <div class="card" id="tile"><h2>지형</h2><div class="muted">-</div></div>
+    <div class="card"><h2>전투 기록</h2><div id="log"></div></div>
+    <div class="card muted" style="font-size:12px">
+      조작: 아군 부대 클릭 → 파란 칸 이동 → 빨간 테두리 적 공격 (또는 [대기]).<br>
+      상성: 창병 &gt; 기병 &gt; 궁병 &gt; 창병. 지형·성·국가 버프·무장 특기가 피해에 반영됩니다.<br>
+      지도는 개략 배치이며 실측 지형 지도는 M2에서 제작합니다.
+    </div>
+  </aside>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

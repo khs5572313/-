@@ -1,0 +1,12 @@
+{
+  "name": "samgukgi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "삼국기 — 고구려·백제·신라 필드맵 전략 시뮬레이션 (프로토타입)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "balance": "node tools/balance.js",
+    "serve": "python3 -m http.server 8645"
+  }
+}

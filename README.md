@@ -146,3 +146,9 @@ python -m pytest -q    # API 키 없이 실행됨 (가짜 엔진 사용)
 | `docread/word.py` | Word(.docx) 전사본·정리본 생성 |
 | `docread/evaluate.py` | 정답 대비 정확도 측정 |
 | `webapp/` | 업로드·검수 웹 화면 |
+
+---
+
+## 별도 프로젝트: 삼국기(게임 프로토타입)
+
+`samgukgi/` 폴더는 위 판독기와 무관한 역사 전략 게임 프로토타입입니다. 실행 방법은 [`samgukgi/README.md`](samgukgi/README.md)를 보세요.

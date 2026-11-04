@@ -1,0 +1,26 @@
+// 무장 특기. 특정 병종 특화는 여기서 표현한다
+// (예: '개마무사'는 고구려 전용 병종이 아니라, 그 특기를 가진 무장이 기병을 이끌 때만 발동).
+export default {
+  gaema:      { name: '개마무사', desc: '기병 지휘 시 공격 +20%, 방어 +10%',
+                mods: [{ stat: 'atk', value: 0.2, cond: { unitType: 'cavalry' } },
+                       { stat: 'def', value: 0.1, cond: { unitType: 'cavalry' } }] },
+  dolgyeok:   { name: '돌격', desc: '기병이 이동한 뒤 공격하면 공격 +15%',
+                mods: [{ stat: 'atk', value: 0.15, cond: { unitType: 'cavalry', afterMove: true, role: 'attack' } }] },
+  jilpung:    { name: '질풍', desc: '기병 지휘 시 이동력 +1',
+                mods: [{ stat: 'move', value: 1, cond: { unitType: 'cavalry' } }] },
+  jangchang:  { name: '장창진', desc: '창병 지휘 시 기병 상대 방어 +10%, 반격 +30%',
+                mods: [{ stat: 'def', value: 0.1, cond: { unitType: 'spear', vsUnitType: 'cavalry' } },
+                       { stat: 'counter', value: 0.3, cond: { unitType: 'spear', vsUnitType: 'cavalry' } }] },
+  gangno:     { name: '강노', desc: '궁병 지휘 시 사거리 +1',
+                mods: [{ stat: 'range', value: 1, cond: { unitType: 'archer' } }] },
+  singung:    { name: '신궁', desc: '궁병 지휘 시 공격 +20%',
+                mods: [{ stat: 'atk', value: 0.2, cond: { unitType: 'archer' } }] },
+  cheolbyeok: { name: '철벽', desc: '성에서 방어 +25% (병종 무관)',
+                mods: [{ stat: 'def', value: 0.25, cond: { terrain: ['castle'] } }] },
+  hwarang:    { name: '화랑', desc: '시작 사기 +10, 사기 감소 -20%',
+                mods: [{ stat: 'moraleStart', value: 10 }, { stat: 'moraleLoss', value: -0.2 }] },
+  bulgul:     { name: '불굴', desc: '사기 감소 -30%',
+                mods: [{ stat: 'moraleLoss', value: -0.3 }] },
+  gyeolsa:    { name: '결사', desc: '병력이 30% 미만이면 공격 +25%',
+                mods: [{ stat: 'atk', value: 0.25, cond: { troopsBelow: 0.3 } }] },
+};
