@@ -6,3 +6,6 @@ data/
 out/
 # 학생 개인정보가 담긴 원본·결과는 절대 커밋하지 않는다
 samples/
+
+# 삼국기 게임 데이터는 커밋 대상
+!samgukgi/js/data/
