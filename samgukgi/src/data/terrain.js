@@ -10,7 +10,7 @@
 //   supply   : 자국 성에 있는 부대가 턴마다 회복하는 병력 비율
 //   navigable: 배가 다닐 수 있는 물 (강·바다·여울)
 //   port     : 나루터·포구. 여기서 인접한 물로 나가면 승선
-// 공성병기(siege)는 move 키가 없는 지형(산악·습지·여울)에 들어갈 수 없다
+// 공성병기(siege)는 move 키가 없는 지형(산악·습지)에 들어갈 수 없다
 export default {
   plains: { name: '평지', char: '.', color: '#c7d39a',
     move: { cavalry: 2, spear: 2, archer: 2, siege: 2 }, def: 1.0,
@@ -33,9 +33,9 @@ export default {
     atk: { cavalry: 0.7 }, charge: { cavalry: 0.7 },
     note: '말발굽이 빠진다. 기병 이동 4배, 기병 전투 ×0.7. 공성병기 진입 불가' },
   ford: { name: '여울·나루', char: '=', color: '#9cc3d9',
-    move: { cavalry: 4, spear: 4, archer: 4 }, def: 0.6, stopOnEnter: true, navigable: true,
+    move: { cavalry: 4, spear: 4, archer: 4, siege: 4 }, def: 0.6, stopOnEnter: true, navigable: true,
     atk: { cavalry: 0.7, spear: 0.7, archer: 0.7 },
-    note: '건널 수 있는 얕은 곳. 들어가면 그 턴 이동 종료. 물속 부대 방어 ×0.6·공격 ×0.7 (반도이격). 공성병기는 못 건넘' },
+    note: '건널 수 있는 얕은 곳. 들어가면 그 턴 이동 종료. 물속 부대 방어 ×0.6·공격 ×0.7 (반도이격). 공성병기는 분해해 운반하며 건넘' },
   river: { name: '강', char: '~', color: '#5b93c9',
     move: {}, def: 1.0, impassable: true, navigable: true,
     note: '걸어서는 못 건넌다. 여울로 돌아가거나, 나루터에서 배를 타거나, 부교를 놓아야 한다' },

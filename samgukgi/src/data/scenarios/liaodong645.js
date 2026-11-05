@@ -35,7 +35,7 @@ export default {
     { name: '개모성', col: 8, row: 3, owner: 'tang' },
     { name: '요동성', col: 9, row: 6, owner: 'tang' },
     { name: '백암성', col: 13, row: 6, owner: 'tang' },
-    { name: '안시성', col: 10, row: 10, owner: 'goguryeo', wall: 175 },
+    { name: '안시성', col: 10, row: 10, owner: 'goguryeo', wall: 150 },
     { name: '건안성', col: 10, row: 13, owner: 'goguryeo' },
   ],
   sides: ['tang', 'goguryeo'],
@@ -57,6 +57,6 @@ export default {
   ],
   victory: [
     { nation: 'tang', type: 'capture', castle: '안시성' },
-    { nation: 'goguryeo', type: 'survive', turns: 20 }, // 성벽 175와 함께 AI 대 AI 당 승률 ≈ 50% (tools/balance.js)
+    { nation: 'goguryeo', type: 'survive', turns: 20 }, // 성벽 150과 함께 AI 대 AI 당 승률 ≈ 50% (tools/balance.js)
   ],
 };

@@ -33,9 +33,12 @@ function dangerAt(state, data, unit, col, row, ignore = null) {
   });
 }
 
+// 아직 못 차지한 목표 성 중 목록 순서상 첫 번째 (전군이 한 성에 집중)
 function captureTarget(state, unit) {
   const v = (state.scenario.victory || []).find((x) => x.type === 'capture' && x.nation === unit.nation);
-  return v ? state.map.tiles.find((t) => t.castle === v.castle) : null;
+  if (!v) return null;
+  return (v.castles || [v.castle]).map((n) => state.map.tiles.find((t) => t.castle === n))
+    .find((t) => t && t.owner !== unit.nation) ?? null;
 }
 
 function scoreAttack(state, data, unit, target, col, row) {
@@ -53,17 +56,24 @@ function scoreAttack(state, data, unit, target, col, row) {
     const onObjective = objective && target.col === objective.col && target.row === objective.row;
     const tt = tileAt(state.map, target.col, target.row);
     // 성벽을 깎는 가치: 성벽 1 = 병력 약 40명 상당 (목표 성이면 두 배)
-    const wall = tt.castle && tt.wall > 0
-      ? (unit.troops / 5000) * data.wallDamage[unit.type] * (1 + getMods(state, data, unit, {}).wall) * 40 * (onObjective ? 2 : 1) : 0;
+    // 목표 성일 때만 가치가 있다 (함락할 생각이 없는 성의 성벽을 두드리는 건 낭비)
+    const wall = onObjective && tt.wall > 0
+      ? (unit.troops / 5000) * data.wallDamage[unit.type] * (1 + getMods(state, data, unit, {}).wall) * 80 : 0;
     const siege = (onObjective ? dmg * 1.5 + 150 : 0) + wall;
     const danger = dangerAt(state, data, unit, col, row, kill ? target : null);
     return dmg - 0.9 * ctr + kill + siege - 0.35 * danger;
   });
 }
 
+// 진군 목표: 공략할 성이 있으면 그 성으로 모인다. 단 가까이(5칸) 다가온 야전 부대는 먼저 상대한다
 function goalFor(state, data, unit) {
   const objective = captureTarget(state, unit);
-  if (objective && objective.owner !== unit.nation && !unitAt(state, objective.col, objective.row)) return objective;
+  if (objective && objective.owner !== unit.nation) {
+    const threat = aliveUnits(state).filter((e) => isEnemy(e, unit) && !e.hold && distance(e, unit) <= 5)
+      .sort((a, b) => distance(unit, a) - distance(unit, b))[0];
+    if (threat) return threat;
+    return objective;
+  }
   // 공성병기는 목표 성(없으면 가장 가까운 적 성)으로 간다
   if (unit.type === 'siege') {
     if (objective && objective.owner !== unit.nation) return objective;
@@ -106,7 +116,7 @@ export function actUnit(state, data, unit) {
   }
   const goal = goalFor(state, data, unit);
   if (goal && !unit.hold) {
-    const travel = travelCostMap(state, data, unit.type, goal);
+    const travel = travelCostMap(state, data, unit.type, goal, { near: unit, margin: 3 });
     const here = travelDays(travel, data, unit, unit.col, unit.row, tileAt(state.map, unit.col, unit.row)) ?? Infinity;
     // 부교: 강 건너편으로 가는 길이 크게 줄어들면 다리를 놓는다
     for (const site of bridgeSites(state, data, unit)) {

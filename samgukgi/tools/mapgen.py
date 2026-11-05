@@ -15,6 +15,7 @@
   4. 강: 헥스 고도로 웅덩이를 메운 뒤(priority-flood) 가장 낮은 이웃으로 물을 흘려
          상류 면적을 누적한다. 큰 강은 '강'(걸어서 못 건넘), 중간 강은 '여울'(어디서나 건너지만 하루 소모).
   5. 큰 강에는 일정 간격으로 여울을 둔다 (실제 도하 지점 고증 전 임시 배치).
+  6. 해안 포구: 역사 항구 + 바다에 닿은 평지·구릉 중 강 하구를 우선해 12칸 간격으로 자동 배치.
 
 한계 (게임 배치 전에 사람이 손봐야 할 것)
   · 해안선은 현대 기준이다. 서해안 간척지, 요하 하구 삼각주 등은 7세기와 다르다.
@@ -43,6 +44,7 @@ KM_LON = 111.32 * math.cos(math.radians((LAT0 + LAT1) / 2))
 BIG_RIVER_KM2 = 15000          # 상류 면적이 이보다 크면 '강' (걸어서 도하 불가)
 MID_RIVER_KM2 = 3000           # 이보다 크면 '여울' (어디서나 건너지만 하루 소모)
 FORD_EVERY = 5                 # 큰 강 몇 칸마다 여울 하나
+PORT_SPACING = 12              # 자동 포구 사이 최소 간격(칸) ≈ 72km
 # 요택: 요하 하류 서쪽의 저습지 (대략 범위)
 MARSH_BOX = (121.6, 122.7, 40.9, 41.9)  # lon0, lon1, lat0, lat1, 해발 30m 미만만
 
@@ -192,6 +194,29 @@ def main():
         if typ == 'port':
             terrain[r, c] = 'P'
         placed.append({'name': name, 'nation': nation or None, 'type': typ, 'col': int(c), 'row': int(r), 'confidence': conf})
+
+    # ── 포구 자동 배치: 바다에 닿은 평지·구릉 중 강 하구를 우선, PORT_SPACING칸 간격 ──
+    def cube(c, r):
+        q = c - (r - (r & 1)) // 2
+        return q, r, -q - r
+    def hexdist(a, b):
+        A, B = cube(*a), cube(*b)
+        return max(abs(A[0] - B[0]), abs(A[1] - B[1]), abs(A[2] - B[2]))
+    ports = [(p['col'], p['row']) for p in placed if p['type'] == 'port']
+    cands = []
+    for r in range(rows):
+        for c in range(cols):
+            if terrain[r, c] not in '.h':
+                continue
+            nb = [terrain[rr, cc] for cc, rr in nbrs(c, r)]
+            if 'S' not in nb:
+                continue
+            score = (3 if ('~' in nb or '=' in nb) else 0) + (1 if terrain[r, c] == '.' else 0)
+            cands.append((-score, r, c))
+    for _, r, c in sorted(cands):
+        if all(hexdist((c, r), p) >= PORT_SPACING for p in ports):
+            terrain[r, c] = 'P'
+            ports.append((c, r))
 
     rows_out = [''.join(terrain[r]) for r in range(rows)]
     counts = {ch: int((terrain == ch).sum()) for ch in '.hmw~=SP'}

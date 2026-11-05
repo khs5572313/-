@@ -4,6 +4,7 @@ import { neighbors, distance, key } from './hex.js';
 import { getMods, tileAt } from './modifiers.js';
 import { resolveAttack, unitRange, generalOf } from './combat.js';
 import { createRng } from './rng.js';
+import { MinHeap } from './pq.js';
 
 export { tileAt };
 
@@ -29,6 +30,8 @@ export function buildMap(scenario, data) {
     t.owner = c.owner;
     t.wall = t.wallMax = c.wall ?? 100;
   }
+  scenario.setupMap?.(map, data); // 실측 지도 시나리오: 시점별 국경 등
+  for (const c of scenario.castles || []) tileAt(map, c.col, c.row).owner = c.owner; // 성 주인이 우선
   return map;
 }
 
@@ -96,10 +99,10 @@ function explore(state, data, unit) {
   const best = new Map([[startK, 0]]);
   const prev = new Map();
   const terminal = new Set();
-  const frontier = [{ col: unit.col, row: unit.row, cost: 0 }];
-  while (frontier.length) {
-    frontier.sort((a, b) => a.cost - b.cost);
-    const cur = frontier.shift();
+  const frontier = new MinHeap();
+  frontier.push({ col: unit.col, row: unit.row, cost: 0 });
+  while (frontier.size) {
+    const cur = frontier.pop();
     const ck = key(cur.col, cur.row);
     if (cur.cost > best.get(ck)) continue;
     const curTile = tileAt(state.map, cur.col, cur.row);
@@ -175,10 +178,13 @@ export function embarkedAt(data, unit, tile) {
 // 목표까지의 '행군 일수' 지도 (부대는 무시, 지형·배·부교만). 키: "col,row|land" 또는 "col,row|water"
 // AI가 여울을 찾고, 산을 넘을지 돌아갈지, 배를 탈지 판단하는 데 쓴다.
 export const EMBARK_DAYS = 1;
-export function travelCostMap(state, data, type, goal) {
+// opts.near: 이 칸(부대 위치)의 값이 확정되고 opts.margin일 더 탐색하면 멈춘다 (큰 지도용)
+export function travelCostMap(state, data, type, goal, opts = {}) {
   const landMp = data.units[type].move, shipMp = data.ship.move;
   const dist = new Map();
-  const frontier = [];
+  const frontier = new MinHeap();
+  const nearK = opts.near ? key(opts.near.col, opts.near.row) : null;
+  let stopAt = Infinity;
   const push = (col, row, mode, cost) => {
     const k = `${key(col, row)}|${mode}`;
     if (dist.has(k) && dist.get(k) <= cost) return;
@@ -194,10 +200,11 @@ export function travelCostMap(state, data, type, goal) {
     if (!isWaterOnly(data, t) && enterCost(data, type, t) !== Infinity) push(n.col, n.row, 'land', 0.01);
     if (isNavigable(data, t)) push(n.col, n.row, 'water', 0.01);
   }
-  while (frontier.length) {
-    frontier.sort((a, b) => a.cost - b.cost);
-    const cur = frontier.shift();
+  while (frontier.size) {
+    const cur = frontier.pop();
+    if (cur.cost > stopAt) break;
     if (cur.cost > dist.get(`${key(cur.col, cur.row)}|${cur.mode}`)) continue;
+    if (nearK && stopAt === Infinity && key(cur.col, cur.row) === nearK) stopAt = cur.cost + (opts.margin ?? 2);
     const curTile = tileAt(state.map, cur.col, cur.row);
     for (const n of neighbors(cur.col, cur.row)) {
       const t = tileAt(state.map, n.col, n.row);
@@ -318,8 +325,10 @@ export function checkVictory(state, data) {
   if (state.winner) return state.winner;
   for (const v of state.scenario.victory || []) {
     if (v.type === 'capture') {
-      const t = state.map.tiles.find((x) => x.castle === v.castle);
-      if (t && t.owner === v.nation) state.winner = v.nation;
+      // castle 하나 또는 castles 여러 개 (모두 점령해야 승리)
+      const names = v.castles || [v.castle];
+      const all = names.every((n) => state.map.tiles.find((x) => x.castle === n)?.owner === v.nation);
+      if (all) state.winner = v.nation;
     }
   }
   if (!state.winner) {

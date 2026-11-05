@@ -70,6 +70,7 @@ export default {
     },
   },
   balhae: { name: '발해', color: '#2f8f8a', buff: null }, // 국가 버프는 M3에서 설계
+  khitan: { name: '거란', color: '#8a6d3b', buff: null },
   mohe: {
     name: '말갈', color: '#4f8a5b',
     buff: {

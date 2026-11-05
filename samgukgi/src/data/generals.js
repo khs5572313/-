@@ -30,6 +30,10 @@ export default {
     note: '안시성 공략 때 토산 축조 지휘', lead: 80, war: 76, int: 74, pol: 70, cha: 75,
     aptitude: { cavalry: 'B', spear: 'A', archer: 'B' }, skills: ['gongbyeong'] },
 
+  zhang_liang: { name: '장량', hanja: '張亮', nation: 'tang', born: null, died: 646, historicity: '사서',
+    note: '645년 평양도 행군대총관. 수군을 이끌고 바다를 건너 비사성을 함락', lead: 78, war: 70, int: 68, pol: 72, cha: 66,
+    aptitude: { cavalry: 'C', spear: 'A', archer: 'A' }, skills: [] },
+
   // ── 고구려 ───────────────────────────
   ansi_lord: { name: '안시성주', hanja: '安市城主', nation: 'goguryeo', born: null, died: null, historicity: '후대전승',
     note: '삼국사기는 성주 이름을 적지 않음. "양만춘"이라는 이름은 후대(조선) 문헌 전승',

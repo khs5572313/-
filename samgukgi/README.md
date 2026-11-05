@@ -1,7 +1,7 @@
 # 삼국기(三國記) — 프로토타입
 
 581년 수 건국부터 698년 발해 건국까지, 고구려·백제·신라의 필드맵 전략 시뮬레이션.
-현재 단계는 **M1 수직 슬라이스: 645 요동 전역(안시성)** 입니다. 기획서는 [`docs/GDD_M0.md`](docs/GDD_M0.md)에 있습니다.
+현재 단계는 **M2: 실측 전체 지도 + 시점별 국경 + 실측 지도 위 645 요동 전역** 입니다. 기획서는 [`docs/GDD_M0.md`](docs/GDD_M0.md)에 있습니다.
 
 ## 바로 해 보기
 
@@ -53,8 +53,13 @@ samgukgi/
 │   ├ scenarios/labs.js       병종 실험실 11종
 │   ├ maps/fullmap.js         실측 고도로 만든 전체 지도 (자동 생성)
 │   ├ sites.js                역사 지점 위경도·신뢰도
+│   ├ epochs.js               581~696 여섯 시점의 성 주인·세력 씨앗
+│   ├ scenarios/liaodong645full.js  실측 지도 위 645 요동 전역
 │   └ scenarios/liaodong645.js
 ├ src/sim.js                자동 대전 (브라우저·Node 공용)
+├ src/territory.js          시점별 국경 자동 계산
+├ src/crop.js               전체 지도에서 시나리오 지역 잘라 내기
+├ src/pq.js                 우선순위 큐 (큰 지도 경로 탐색)
 ├ tools/balance.js          밸런스 시뮬레이터
 ├ tools/build.mjs           웹 화면을 파일 하나(dist/)로 묶기
 ├ tools/mapgen.py           고도 데이터 → 전체 지도 생성 (python3 tools/mapgen.py --preview)

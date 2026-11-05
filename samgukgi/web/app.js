@@ -2,6 +2,9 @@ import data from '../src/data/index.js';
 import scenario645 from '../src/data/scenarios/liaodong645.js';
 import labs from '../src/data/scenarios/labs.js';
 import fullmap from '../src/data/maps/fullmap.js';
+import scenario645full from '../src/data/scenarios/liaodong645full.js';
+import epochs from '../src/data/epochs.js';
+import { applyEpoch } from '../src/territory.js';
 import { buildMap, bridgeSites, buildBridge } from '../src/game.js';
 import {
   createGame, moveRange, attackTargets, moveUnit, attack, waitUnit, endTurn, unitAt, activeNation, findPath,
@@ -10,7 +13,7 @@ import { actUnit, aiOrder } from '../src/ai.js';
 import { computeDamage, canCounter, generalOf, unitRange, isDismounted } from '../src/combat.js';
 import { getMods, tileAt } from '../src/modifiers.js';
 import { runMany } from '../src/sim.js';
-import { toPixel, key, distance } from '../src/hex.js';
+import { toPixel, key, distance, neighbors } from '../src/hex.js';
 
 const FULLMAP = {
   id: 'fullmap', viewer: true, title: '전체 지도 · 실측 고도 (요서~규슈)',
@@ -19,7 +22,12 @@ const FULLMAP = {
     + '마우스 휠이나 +/− 버튼으로 확대하고, 끌어서 움직이세요.',
   expect: { text: '해안선은 현대 기준이고, 역사 지점 좌표는 추정입니다(점선 테두리 = 위치 논쟁 있음). 고증 후 수정이 필요합니다.' },
 };
-const SCENARIOS = [FULLMAP, ...labs, { ...scenario645, expect: { text: 'AI 대 AI 기준 당과 고구려가 대략 반반이 되도록 맞췄습니다.' } }];
+const SCENARIOS = [
+  FULLMAP,
+  { ...scenario645full, expect: { text: 'AI 대 AI 기준 요동성은 거의 함락되고, 안시성은 반반 버팁니다(역사: 요동성 함락, 안시성 방어 성공).' } },
+  ...labs,
+  { ...scenario645, title: '645 안시성 · 축소판', expect: { text: 'AI 대 AI 기준 당과 고구려가 대략 반반이 되도록 맞췄습니다.' } },
+];
 const $ = (id) => document.getElementById(id);
 const canvas = $('map');
 const ctx = canvas.getContext('2d');
@@ -43,8 +51,8 @@ function load(index) {
   const viewer = !!scen.viewer;
   for (const id of ['auto', 'step', 'restart', 'sim']) $(id).hidden = viewer;
   $('side').parentElement.hidden = viewer; $('speed').parentElement.hidden = viewer;
-  $('zoomCtl').hidden = !viewer;
-  if (viewer) { openViewer(); return; }
+  $('epochCtl').hidden = !viewer;
+  if (viewer) { $('zoomCtl').hidden = false; openViewer(); return; }
   viewerState = null;
   fillSides();
   restart();
@@ -68,16 +76,55 @@ function restart() {
   if (player() !== 'none' && activeNation(state) !== player()) playAiTurn(gen);
 }
 
+// 카메라: 작은 지도는 화면에 꼭 맞추고(고정), 큰 지도는 확대·이동한다.
+let cam = { s: 1, ox: 0, oy: 0, free: false };
 function resize() {
   const w0 = Math.sqrt(3) * (state.map.w + 0.5);
   const h0 = 1.5 * (state.map.h - 1) + 2;
-  size = Math.max(18, Math.min(34, 900 / w0));
-  const w = size * w0 + PAD * 2, h = size * h0 + PAD * 2;
+  const fit = 900 / w0;
+  let w, h;
+  if (fit >= 18) {
+    size = Math.min(34, fit);
+    w = size * w0 + PAD * 2; h = size * h0 + PAD * 2;
+    cam = { s: 1, ox: 0, oy: 0, free: false };
+  } else {
+    size = 22;
+    w = 900; h = 620;
+    cam = { s: 1, ox: 0, oy: 0, free: true, worldW: size * w0 + PAD * 2, worldH: size * h0 + PAD * 2 };
+  }
+  $('zoomCtl').hidden = !cam.free;
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
   canvas.style.aspectRatio = `${w} / ${h}`;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  canvas._w = w; canvas._h = h;
+  canvas._w = w; canvas._h = h; canvas._dpr = dpr;
+  if (cam.free) {
+    // 처음에는 먼저 움직이는 진영의 부대들 가운데를 비춘다
+    const us = state.units.filter((u) => u.nation === state.sides[0] && !u.embarked);
+    const cx = us.reduce((a, u) => a + center(u.col, u.row).x, 0) / us.length;
+    const cy = us.reduce((a, u) => a + center(u.col, u.row).y, 0) / us.length;
+    cam.s = 0.75; lookAt(cx, cy);
+  }
+}
+
+function lookAt(x, y) {
+  cam.ox = canvas._w / 2 - x * cam.s;
+  cam.oy = canvas._h / 2 - y * cam.s;
+}
+
+function camZoom(f, sx = canvas._w / 2, sy = canvas._h / 2) {
+  const ns = Math.min(2.5, Math.max(canvas._w / cam.worldW, cam.s * f));
+  cam.ox = sx - (sx - cam.ox) * (ns / cam.s);
+  cam.oy = sy - (sy - cam.oy) * (ns / cam.s);
+  cam.s = ns;
+  render();
+}
+
+// 자동 진행 중 행동하는 부대가 화면 밖이면 카메라를 옮긴다
+function follow(u) {
+  if (!cam.free || !u) return;
+  const c = center(u.col, u.row);
+  const sx = c.x * cam.s + cam.ox, sy = c.y * cam.s + cam.oy;
+  if (sx < 60 || sy < 60 || sx > canvas._w - 60 || sy > canvas._h - 60) lookAt(c.x, c.y);
 }
 
 const player = () => $('side').value;
@@ -92,6 +139,7 @@ async function playAiTurn(g) {
     if (g !== gen || state.winner) break;
     if (u.dead || u.acted) continue;
     fx = actUnit(state, data, u);
+    follow(fx.unit);
     render();
     await sleep(delay());
   }
@@ -173,10 +221,17 @@ function arrow(from, to, color, dashed, head = true) {
 }
 
 function render() {
-  ctx.clearRect(0, 0, canvas._w, canvas._h);
+  const dpr = canvas._dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#0d1320'; ctx.fillRect(0, 0, canvas._w, canvas._h);
+  ctx.setTransform(dpr * cam.s, 0, 0, dpr * cam.s, dpr * cam.ox, dpr * cam.oy);
+  // 화면에 보이는 범위(월드 좌표)만 그린다
+  const vx0 = -cam.ox / cam.s - size * 2, vy0 = -cam.oy / cam.s - size * 2;
+  const vx1 = (canvas._w - cam.ox) / cam.s + size * 2, vy1 = (canvas._h - cam.oy) / cam.s + size * 2;
   const targets = selected && !selected.acted ? new Set(attackTargets(state, data, selected).map((u) => u.id)) : new Set();
   for (const t of state.map.tiles) {
     const { x, y } = center(t.col, t.row);
+    if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
     hexPath(x, y, size);
     ctx.fillStyle = data.terrain[t.terrain].color; ctx.fill();
     if (t.owner && data.nations[t.owner] && !data.terrain[t.terrain].impassable) {
@@ -231,6 +286,11 @@ function render() {
         ctx.fillStyle = '#ffb0a8'; ctx.fillText(`반격 -${fx.res.counterDmg}`, a.x, a.y + size * 1.15);
       }
     }
+  }
+  if (cam.free) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = '12px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(233,226,207,.85)';
+    ctx.fillText('휠·＋/− 확대 · 끌어서 이동 · 행동하는 부대를 카메라가 따라갑니다', 10, canvas._h - 10);
   }
   renderPanels();
 }
@@ -405,6 +465,8 @@ function openViewer() {
   $('turn').textContent = `${fullmap.rows[0].length} × ${fullmap.rows.length}칸 · 역사 지점 ${fullmap.sites.length}곳`;
   $('simout').textContent = ''; $('simbar').hidden = true;
   const map = buildMap({ rows: fullmap.rows, castles: [], territory: [] }, data);
+  const epoch = epochs.find((e) => e.id === $('epoch').value);
+  if (epoch) applyEpoch(map, data, fullmap.meta, fullmap.sites, epoch);
   const off = document.createElement('canvas');
   const ow = Math.ceil(VS * Math.sqrt(3) * (map.w + 0.5)), oh = Math.ceil(VS * (1.5 * map.h + 0.5));
   off.width = ow; off.height = oh;
@@ -419,6 +481,27 @@ function openViewer() {
       i ? o.lineTo(px, py) : o.moveTo(px, py);
     }
     o.fillStyle = data.terrain[t.terrain].color; o.fill();
+    if (t.owner && data.nations[t.owner] && t.terrain !== 'sea') { o.fillStyle = data.nations[t.owner].color + (t.frontier ? '3a' : '99'); o.fill(); }
+  }
+  // 국경선: 주인이 다른 이웃과 맞닿은 변
+  if (epoch) {
+    o.strokeStyle = 'rgba(20,16,10,.85)'; o.lineWidth = 1.2;
+    for (const t of map.tiles) {
+      if (!t.owner || t.terrain === 'sea') continue;
+      const p = toPixel(t.col, t.row, VS);
+      const x = p.x + VS * Math.sqrt(3) / 2, y = p.y + VS;
+      neighbors(t.col, t.row).forEach((n, i) => {
+        const nt = tileAt(map, n.col, n.row);
+        if (!nt || nt.terrain === 'sea' || nt.owner === t.owner) return;
+        // 이웃 방향 i(동, 북동, 북서, 서, 남서, 남동)와 맞닿은 변의 두 꼭짓점 각도 (뾰족한 위 헥스, y축 아래)
+        const [d0, d1] = EDGE_ANGLES[i];
+        const r = Math.PI / 180;
+        o.beginPath();
+        o.moveTo(x + VS * Math.cos(d0 * r), y + VS * Math.sin(d0 * r));
+        o.lineTo(x + VS * Math.cos(d1 * r), y + VS * Math.sin(d1 * r));
+        o.stroke();
+      });
+    }
   }
   // 화면 크기
   const w = 900, h = Math.round(900 * oh / ow);
@@ -427,9 +510,16 @@ function openViewer() {
   canvas.style.aspectRatio = `${w} / ${h}`;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   canvas._w = w; canvas._h = h;
-  viewerState = { map, off, ow, oh, scale: w / ow, ox: 0, oy: 0, hover: null };
+  viewerState = { map, off, ow, oh, scale: w / ow, ox: 0, oy: 0, hover: null, epoch };
   renderViewer();
-  $('info').innerHTML = '<h3>역사 지점</h3>' + fullmap.sites.map((st) =>
+  const counts = {};
+  for (const t of map.tiles) if (t.owner) counts[t.owner] = (counts[t.owner] || 0) + 1;
+  const legend = epoch ? `<h3>${epoch.title}</h3><div style="font-size:13px">${epoch.note}</div>`
+    + `<div style="margin:6px 0">${Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([n, c]) =>
+      `<span class="chip"><span style="color:${data.nations[n].color}">■</span> ${data.nations[n].name} ${c.toLocaleString()}칸</span>`).join('')}</div>`
+    + `<div class="muted" style="font-size:12.5px">근거: ${epoch.certainty}</div>`
+    + '<div class="muted" style="font-size:12px;margin:4px 0 10px">국경은 각 성에서 실제 지형을 따라 행군 거리로 넓혀 자동 계산했습니다. 진한 색은 6일 행군 안의 핵심 영역, 연한 색은 15일 행군까지의 변경, 색 없는 땅은 미지배입니다.</div>' : '';
+  $('info').innerHTML = legend + '<h3>역사 지점</h3>' + fullmap.sites.map((st) =>
     `<div style="font-size:13px"><span style="color:${data.nations[st.nation]?.color ?? 'var(--dim)'}">●</span> ${st.name} `
     + `<span class="muted">${SITE_TYPE[st.type]} · ${CONF[st.confidence]}</span></div>`).join('');
   $('tile').innerHTML = '<h3>지형</h3><div class="muted">칸에 마우스를 올리세요.</div>';
@@ -437,6 +527,11 @@ function openViewer() {
 }
 
 const SITE_TYPE = { capital: '도성', castle: '성', port: '항구', battle: '전장' };
+const EDGE_ANGLES = [[-30, 30], [-90, -30], [-150, -90], [150, 210], [90, 150], [30, 90]];
+function fillEpochs() {
+  $('epoch').innerHTML = '<option value="">지형만</option>' + epochs.map((e) => `<option value="${e.id}">${e.title}</option>`).join('');
+  $('epoch').value = 's645';
+}
 const CONF = { high: '위치 확실', mid: '유력설', low: '논쟁 중' };
 
 function renderViewer() {
@@ -452,7 +547,9 @@ function renderViewer() {
     const r = st.type === 'capital' ? 6 : 4.5;
     ctx.beginPath();
     if (st.type === 'castle' || st.type === 'capital') ctx.rect(x - r, y - r, r * 2, r * 2); else ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = data.nations[st.nation]?.color ?? '#e9e2cf'; ctx.fill();
+    // 시점을 고르면 그 시점의 주인 색으로
+    const owner = v.epoch && (st.name in v.epoch.owners) ? v.epoch.owners[st.name] : v.epoch ? null : st.nation;
+    ctx.fillStyle = data.nations[owner]?.color ?? '#e9e2cf'; ctx.fill();
     ctx.lineWidth = 1.5; ctx.strokeStyle = '#10151f';
     if (st.confidence === 'low') ctx.setLineDash([2, 2]);
     ctx.stroke(); ctx.setLineDash([]);
@@ -484,16 +581,31 @@ function zoomAt(f, cx = canvas._w / 2, cy = canvas._h / 2) {
   renderViewer();
 }
 
-let drag = null;
+let drag = null, dragged = false;
 canvas.addEventListener('wheel', (e) => {
-  if (!viewerState) return;
+  if (!viewerState && !cam.free) return;
   e.preventDefault();
   const r = canvas.getBoundingClientRect();
-  zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, (e.clientX - r.left) * (canvas._w / r.width), (e.clientY - r.top) * (canvas._h / r.height));
+  const sx = (e.clientX - r.left) * (canvas._w / r.width), sy = (e.clientY - r.top) * (canvas._h / r.height);
+  if (viewerState) zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, sx, sy);
+  else camZoom(e.deltaY < 0 ? 1.2 : 1 / 1.2, sx, sy);
 }, { passive: false });
-canvas.addEventListener('pointerdown', (e) => { if (viewerState) { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); } });
+canvas.addEventListener('pointerdown', (e) => {
+  if (viewerState || cam.free) { drag = { x: e.clientX, y: e.clientY, moved: 0 }; dragged = false; }
+});
 canvas.addEventListener('pointerup', () => { drag = null; });
 canvas.addEventListener('pointermove', (e) => {
+  if (!viewerState && cam.free && drag) {
+    const r = canvas.getBoundingClientRect(), f = canvas._w / r.width;
+    drag.moved += Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y);
+    if (drag.moved > 6) {
+      dragged = true;
+      cam.ox += (e.clientX - drag.x) * f; cam.oy += (e.clientY - drag.y) * f;
+      render();
+    }
+    drag.x = e.clientX; drag.y = e.clientY;
+    return;
+  }
   if (!viewerState) return;
   if (drag) {
     const r = canvas.getBoundingClientRect(), f = canvas._w / r.width;
@@ -511,14 +623,14 @@ canvas.addEventListener('pointermove', (e) => {
   $('tile').innerHTML = tileCard(t) + `<div class="muted num" style="font-size:12px">칸 (${t.col}, ${t.row}) · 북위 ${lat.toFixed(2)}° 동경 ${lon.toFixed(2)}°</div>`
     + (site ? `<div style="margin-top:4px"><b>${site.name}</b> <span class="muted">${SITE_TYPE[site.type]} · ${CONF[site.confidence]}</span></div>` : '');
 });
-$('zin').onclick = () => viewerState && zoomAt(1.5);
-$('zout').onclick = () => viewerState && zoomAt(1 / 1.5);
+$('zin').onclick = () => (viewerState ? zoomAt(1.5) : cam.free && camZoom(1.5));
+$('zout').onclick = () => (viewerState ? zoomAt(1 / 1.5) : cam.free && camZoom(1 / 1.5));
 
 // ── 입력 ─────────────────────────────────────────
 function hexAt(evt) {
   const r = canvas.getBoundingClientRect();
-  const x = (evt.clientX - r.left) * (canvas._w / r.width);
-  const y = (evt.clientY - r.top) * (canvas._h / r.height);
+  const x = ((evt.clientX - r.left) * (canvas._w / r.width) - cam.ox) / cam.s;
+  const y = ((evt.clientY - r.top) * (canvas._h / r.height) - cam.oy) / cam.s;
   let best = null, bd = Infinity;
   for (const t of state.map.tiles) {
     const c = center(t.col, t.row);
@@ -539,6 +651,7 @@ canvas.addEventListener('mousemove', (e) => {
 
 canvas.addEventListener('click', (e) => {
   if (viewerState) return;
+  if (dragged) { dragged = false; return; }
   const t = hexAt(e);
   if (!t) return;
   hover = { tile: t, unit: unitAt(state, t.col, t.row) };
@@ -580,5 +693,7 @@ $('sim').onclick = simulate;
 window.addEventListener('keydown', (e) => { if (e.key === 'Enter' && myTurn()) endPlayerTurn(); });
 
 fillSelectors();
+fillEpochs();
+$('epoch').onchange = () => viewerState && openViewer();
 buildTables();
 load(0);

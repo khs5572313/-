@@ -91,6 +91,7 @@
     <button id="step">한 턴만</button>
     <button id="restart">처음부터</button>
     <button id="sim">100판 돌려 승률 보기</button>
+    <label id="epochCtl" for="epoch" hidden>시점 <select id="epoch"></select></label>
     <span id="zoomCtl" hidden><button id="zin" aria-label="확대">＋ 확대</button> <button id="zout" aria-label="축소">− 축소</button></span>
   </div>
 
@@ -194,12 +195,12 @@
       name: "\uC5EC\uC6B8\xB7\uB098\uB8E8",
       char: "=",
       color: "#9cc3d9",
-      move: { cavalry: 4, spear: 4, archer: 4 },
+      move: { cavalry: 4, spear: 4, archer: 4, siege: 4 },
       def: 0.6,
       stopOnEnter: true,
       navigable: true,
       atk: { cavalry: 0.7, spear: 0.7, archer: 0.7 },
-      note: "\uAC74\uB110 \uC218 \uC788\uB294 \uC595\uC740 \uACF3. \uB4E4\uC5B4\uAC00\uBA74 \uADF8 \uD134 \uC774\uB3D9 \uC885\uB8CC. \uBB3C\uC18D \uBD80\uB300 \uBC29\uC5B4 \xD70.6\xB7\uACF5\uACA9 \xD70.7 (\uBC18\uB3C4\uC774\uACA9). \uACF5\uC131\uBCD1\uAE30\uB294 \uBABB \uAC74\uB118"
+      note: "\uAC74\uB110 \uC218 \uC788\uB294 \uC595\uC740 \uACF3. \uB4E4\uC5B4\uAC00\uBA74 \uADF8 \uD134 \uC774\uB3D9 \uC885\uB8CC. \uBB3C\uC18D \uBD80\uB300 \uBC29\uC5B4 \xD70.6\xB7\uACF5\uACA9 \xD70.7 (\uBC18\uB3C4\uC774\uACA9). \uACF5\uC131\uBCD1\uAE30\uB294 \uBD84\uD574\uD574 \uC6B4\uBC18\uD558\uBA70 \uAC74\uB118"
     },
     river: {
       name: "\uAC15",
@@ -259,7 +260,7 @@
     // 궁병: 사거리 2. 거리 2 사격은 반격을 받지 않지만 화력 85%(combat.js RANGED_FALLOFF).
     // 인접(거리 1)하면 근접전에 말려들어 공격력 75%.
     archer: { name: "\uAD81\uBCD1", short: "\uAD81", atk: 1, def: 0.8, move: 6, range: 2, adjacentMul: 0.75 },
-    // 공성병기(충차·포차): 사람에게는 약하고 성벽에 강하다. 하루 2칸, 산·습지·여울 진입 불가
+    // 공성병기(충차·포차): 사람에게는 약하고 성벽에 강하다. 하루 2칸, 산·습지 진입 불가(여울은 분해해 운반)
     siege: { name: "\uACF5\uC131\uBCD1\uAE30", short: "\uACF5", atk: 0.5, def: 0.6, move: 4, range: 2, adjacentMul: 0.7 }
   };
   var wallDamage = { cavalry: 1, spear: 3, archer: 1, siege: 20 };
@@ -353,6 +354,7 @@
     },
     balhae: { name: "\uBC1C\uD574", color: "#2f8f8a", buff: null },
     // 국가 버프는 M3에서 설계
+    khitan: { name: "\uAC70\uB780", color: "#8a6d3b", buff: null },
     mohe: {
       name: "\uB9D0\uAC08",
       color: "#4f8a5b",
@@ -549,6 +551,22 @@
       cha: 75,
       aptitude: { cavalry: "B", spear: "A", archer: "B" },
       skills: ["gongbyeong"]
+    },
+    zhang_liang: {
+      name: "\uC7A5\uB7C9",
+      hanja: "\u5F35\u4EAE",
+      nation: "tang",
+      born: null,
+      died: 646,
+      historicity: "\uC0AC\uC11C",
+      note: "645\uB144 \uD3C9\uC591\uB3C4 \uD589\uAD70\uB300\uCD1D\uAD00. \uC218\uAD70\uC744 \uC774\uB04C\uACE0 \uBC14\uB2E4\uB97C \uAC74\uB108 \uBE44\uC0AC\uC131\uC744 \uD568\uB77D",
+      lead: 78,
+      war: 70,
+      int: 68,
+      pol: 72,
+      cha: 66,
+      aptitude: { cavalry: "C", spear: "A", archer: "A" },
+      skills: []
     },
     // ── 고구려 ───────────────────────────
     ansi_lord: {
@@ -800,7 +818,7 @@
       { name: "\uAC1C\uBAA8\uC131", col: 8, row: 3, owner: "tang" },
       { name: "\uC694\uB3D9\uC131", col: 9, row: 6, owner: "tang" },
       { name: "\uBC31\uC554\uC131", col: 13, row: 6, owner: "tang" },
-      { name: "\uC548\uC2DC\uC131", col: 10, row: 10, owner: "goguryeo", wall: 175 },
+      { name: "\uC548\uC2DC\uC131", col: 10, row: 10, owner: "goguryeo", wall: 150 },
       { name: "\uAC74\uC548\uC131", col: 10, row: 13, owner: "goguryeo" }
     ],
     sides: ["tang", "goguryeo"],
@@ -822,7 +840,7 @@
     victory: [
       { nation: "tang", type: "capture", castle: "\uC548\uC2DC\uC131" },
       { nation: "goguryeo", type: "survive", turns: 20 }
-      // 성벽 175와 함께 AI 대 AI 당 승률 ≈ 50% (tools/balance.js)
+      // 성벽 150과 함께 AI 대 AI 당 승률 ≈ 50% (tools/balance.js)
     ]
   };
 
@@ -1320,7 +1338,7 @@
       "mmmmmmmmmmmmmmmhhhhhhhhmhhhhhhhhhhhhhhhh...hh.====.........~~..............==..~.......~~~...........===......=..............=......hh...h.h=~hmhhmmh...hhhhhhhhhh..=..h.hhhhhhhhhhhh.hhhhhhhhhhhhhhhhhhhhhhhhhhh........",
       "mmmmmmmmmmmmmmhhhhhhhmmhhhhhhhhhhhhhhhhh...h.=...........=~...............=...~..........=~~~......==.........=..............=....h..h....hhh~~..hhh..h.hhhhhhhhh..=hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.h......",
       "mmmmmmmmmmmmmhhhhhhh=hmhhhhhhhhhhhhhhhhh....==..........~~....................~..............=.....=..........=..............=....h..h...hhhhhh~.hh..h.h.hmhhhhhhhh=hhhhhhhhhmmmmmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.......",
-      "mmmmmmmmmmmmmmhhhhhh=hhhhhhhhhhhhhhhhhhh...=..........~~....................=~...............=....=...........=..............=...h...h.h.hhhhh=.mh=.h..hhhhhhhhhhhh=hhhhhhhmmmmmhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh......",
+      "mmmmmmmmmmmmmmhhhhhh=hhhhhhhhhhhhhhhhhhh...=..........~~....................=~...............=....=...........=..............=...h...h.h.hhhhh=.mh=.h..hhhhhhhhhhhh=hhhhhhhmmmmmhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh...P..",
       "mmmmmmmmmmmmmmmmhhmhh======hhhhhhhhhhhhhh.............=.....................=.................=..==............=....................h.hh...hmhh~hm=...hhhhmhhhhhhhhhhhhhhmmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.h.S.",
       "mmmmmmmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhhhh.............~....................==..................~.=..............=..........h..........hhhh.mhmhh~~=...hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.==.hhhhhhhhhhhhhhhhhhhhhhhhhhhhh.SS.",
       "mmmmmmmmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhhhh............~........=============....................~=...............=.........h..........hhhhhmmmh....=...hhhhhmhhhhhhhhhhhhhhhhhhhhhhmhh=hhhhhhhhhhhhhhhhmhhhhhhhhhhhhh.hS..",
@@ -1332,13 +1350,13 @@
       "mmmmmmmmmmmmmmmmmmhhmhhhhhhhhhhhhhhhhhhhhhhh~~........=........................................~..................=.............h..h.h.hhhhhh.=.~.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhhhhmhhhhhhhmh.hhh.SSS.",
       "mmmmmmmmmmmmmmmmmmmmmhmhhhhhhhhhhhhhhhhhhhh~.........=........................................~............................hh..hhhhh.hhhhhhhh=..~hhhhhhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh=hhhhhhhhhmhmhhhhhhhh..hhh.SSS..",
       "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhh~~h........=........................................~............................hhh..h......h.....=...~hhhhhhmhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.==hh.hhhhhhh.hhmhhhh..h....SSS...",
-      "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhh~hh........=.........................................~..=.........................h...........======....=h.hhhhhhhhhhhhhhhhhhhhhhhhhhhhh....hh=h==~~=hhhhh.hhhhhhh..hh...SSS...S",
+      "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhh~hh........=.........................................~..=.........................h...........======....=h.hhhhhhhhhhhhhhhhhhhhhhhhhhhhh....hh=h==~~=hhhhh.hhhhhhh..hh..PSSS...S",
       "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhh~hhh.......=.........................................~..=.....................................=.=......hh~=hhhhhhhhhhhhhhhhhhhhhhhhhhhhh..=====.h=h..~hh..===..hhhh.h....SSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhhh~hhhh......=..........................................~.=.....................................=.=......hhhh~.hhhhhhhhhhhhhhhhhhhhhhhhhhh......hhh=.hhh~h.==hh.hhhhhhhh...SSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhh=hhhh.................................................~.=...........h.....hh.......h....=======.=.....hhhhh~hhhhhhhhhhhhhhhhhhhhhhhmhhhh......hhhh=hhhh~.=..hhmhhhhhhh....SSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhh~~hhhhh.................................................~=..................h....................=...hhhhhhhh~hhhhhh===hhhhhhhhhhhhhhhhhh.......hhh=.hhh~.=..hhhhh..h.....SSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhh~hhhhhhhh..............h.................................=.....................h.................=...hhhhhhhhh~hhhhh=mh=hhhhhhhhmmmmhmhhhh....h..hh=.hhhh~=hh..........hhSSSSSSSSSS",
-      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhh~hhhhhhhhhhhh.....hhhhhhh........====....................~....................h.hh..............=..hhhhhhhhhhh=hhhh=hmh=hh=hhhhhhmmmmmhhh..hhhhhhh=hhhhhh~hhhh.~~......hSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhh~hhhhhhhhhhhh.....hhhhhhh........====....................~....................h.hh..............=..hhhhhhhhhhh=hhhh=hmh=hh=hhhhhhmmmmmhhh..hhhhhhh=hhhhhh~hhhh.~~P.....hSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhh~hhhhhhhhhhhh.hhhhhhhhhhhhh.........=....................~..................hhh.h..............=...hhhhhhhhhhh~hh==hhmh====hhhhhmmmmhhhhhhhhhhhhhh=hhhhh.=~.h=~.S.....h.SSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhhhh~hhhhhhhhhhhhhhhhhhhhhhh.h...........=....................~...................hhh..............=.hhhhmhhhhhh====h=hhhhhhhhh=hhhhhmmmmhhhhhhmhhhhhh=hhhhhhhh~~~...SS.SSShSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhhhhh~~hhhhhhhhhhhhhhhhh.hhhhhhh............=....................=..===...........hhhhhhh.h..........h=.hhhhhhmhhh=hhh==hhhhhhhhhhhhhhhmmmmmhhhhhhhhhmmh=hh.hhhhh...hh...SSSSSSSSSSSSSSSS",
@@ -1348,7 +1366,7 @@
       "mmmmmmmmmmmmmmmmmmmm====h==hhhhhhhh~hhhhhhhhhhhhhhhhhh...hhhhhh.hh............=.................~......hh.......h....hhhh....hh..hhh.hhhhhhhhhhhh=hhhhhhhhhmmmmhhhhhhhhmmmmmmmhhm=hhh==hmhhhhhhhhhhh....SSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmhh==h===hhhh~=hhhhhhhhhhhhhhhhhhh.......hhhh.............=.................~.......h......hhhhh.hh.....hh.hhhh.hhhhhhhhhhhhh===hhhhhhhmmmmhhhhhmhmmmmhmmmhh=hhhhhhmmhhhhhhhh.hS...SSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmhhhhhh=h===~~hhhhhhhhhhhhhhhhhhhhh.........h..............=................~..........h.....hhhh.hhh..hhh.hhhh..hhhmmmhhhhhhhhhhhhhhhhhmmmmmmmmmmhmmmhmmmmmh=hmmmhhhhhhmhhhhhSSS.SSSSSSSSSSSSSSSSSSS",
-      "mmmmmmmmmmmmmmmmmhhhhhhhhh=hhhh=hhhhhhhhhhhhhhhhhhhhh...............hh.........=..............~=...........hhh..hhhh..hhhhhhhhhhhh.hhhhhmmmmhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmhmmmhh=hmmmmhhhhhhhh.h.SSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmmmmmmmhhhhhhhhh=hhhh=hhhhhhhhhhhhhhhhhhhhh...............hh.........=..............~=...........hhh..hhhh..hhhhhhhhhhhh.hhhhhmmmmhhhhhhhhhhhhhhhhmmmmmmmmmmmmmmhmmmhh=hmmmmhhhhhhhh.hPSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhh..............h...........=.............~...........hh.hhhhhhh..hhhhhhhmhhhhhhhhhhhmmhhhhhmmhhhhhhhhhhmmmmmmmmmmmmmmhhhhhh=mmhmmmhhhhmhhh.SSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhh.........................=...........~~........hh...hhhhhhh..hhhhhhhhhmhhhhhhhhhhmmhhhmmmmhhhhhhhhhhmmmmmmmmmmmmmmmmhhh==mmmhmmhhhhmhh.hSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhhh=hhhhhhhhhhmhhhhhhhhh....=..h...................=.....=~~~~=..........hh..hhhhhh.hhhhhhhhhhhhhhhhhhhhhhmhhhhhmhmhhhhhhhhhhmmmmmmmmmmmmmmmmmm==hhmmmmmmmhhhhh..SSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -1357,7 +1375,7 @@
       "mmmmmmmmmmmmmmmmmmmmmmmmhmmmhhhh=hhhhhhhhhhhhhhhhh.......=h.........hh...........=...~..................h.hh.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhmhhhhhhmmmmmmhmmmmmmmmmmmmmmmmmmmmhmmmmmmmmmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmmmmmmmmmmmmmmhmmmhhhhh=hhhhhhhhhhhhhhhh.......=..........hh............=..~................=====hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhmhhhhhmmmmhmmmmmmmmmmmmmmmmmmmmmmmhmmmmmmmhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmmhmmmmmmmmmmhmmmmmhhhh=hhhhhhhhhhhhhhhh.......=..........hh............=..=...........======....=h.hhhhhhhhhhhhhhhhhhhhhhhhhhhhhmmhhhhhhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhh.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "mmmmmmmmmmmhmmmmmmmmmmmmmmmhhhhhh=hhhhhhhhhhhhhhhh.h....=....hh....hhh...........=...~........===........h.==hhhhhhhhhhhhhhhhhhhhhhhhhhhhhmmhhh~~hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmh..hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmmmmmmmmmmhmmmmmmmmmmmmmmmhhhhhh=hhhhhhhhhhhhhhhh.h....=....hh....hhh...........=...~........===........h.==hhhhhhhhhhhhhhhhhhhhhhhhhhhhhmmhhh~~hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmh.PhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmhmmmmmhmmmmmmmmmmmmmmmhhhhh=hhhhhhhhhhhhhh.h...h..==...hh.....hh...........=....~.....===.........h.hh.hh.hh.h.hhhhhhhhhhhhh===hhhhhmhhhh~h~hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmhmmmmmhmmmmmmmmmmmmmhhhhhhh=hhhhhhhhhhhhh.......==.~..hh..=..hhh..........=....~....==.............hhhhhh......hhhhhhhhhhhh=hhhhhhhmhh~~=hh~hhhmhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmmmmmmmmmh=mmmmmmmmmmmmmmhhhhhhhhhhhhhhhhhhhh......h=...~..h..=..hhh.........w=....~....=..............hhmhhh.hhh.hhhhhhhhhhhhh=hhhhhhhmhm~hhhhh=hmmhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -1375,84 +1393,84 @@
       "hhhhhhhhh=hhhhhmhhhhmmhhhhhmhhhhhhhhh....hhhhh........h..====.....www~wwwwwwwwww~=..........hhhhhhhhhhmhhhhhmhhmhhmhhhmh=hhhhhmhhmhh~hh=hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhhhhhhhh=hmhhhhhhhhhhhhhhhmhhhhhhhh.....hhhhh.hhhh.........=.....ww~wwwwwwwww~~ww.....h....hhhhhhhhhhhhhhhhhhhhhhmhhhh=hhhhhhhhhhh=hhh=hhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmhhh.hmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhmhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhh.hh..hh...h.............=....ww~wwwwwwwww~www.....hhh...hhhhhhhhhhhhhhhhhh.hhhhhhh=h==.hhhhhhh~hhhh===hhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmh...mhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "hhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhh.hhhhhh.hhh.....mhh......=....ww~wwwwwwww=wwww....hhh.h..hhhhhhhh.hhhhh.hhhmhhhhhhh==h=hhhhhhh~hhhhhhm=hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.hhhhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhh.hhhhhh.hhh.....mhh.....P=....ww~wwwwwwww=wwww....hhh.h..hhhhhhhh.hhhhh.hhhmhhhhhhh==h=hhhhhhh~hhhhhhm=hmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.hhhhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhhhhhhhh====hhhhhhhhhhhhhhhhhhhhh.hhhhhhh..h......hmh.....SS....wwwSwwwwwww~wwww.....hh.hhhhhhhhhh..hhhh...hhmhhhhhh.hhhh===hh~~~hhhmmhh=mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhh.hhhmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "hhhhhhhhmmhhhh==hhhhhhhhhhhhhhhhhhhhhh..hhm....h.......h...SSSSSS....S.......~........h..h.hhhhhhhhh.h..hhhhhh.hhhhhh...hhhhhh~~~hhmhhmhhh=mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhh.hhh.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhhhhhhmmhhhh==hhhhhhhhhhhhhhhhhhhhhh..hhm....h.......h...SSSSSS....S.......~........h..h.hhhhhhhhh.h..hhhhhh.hhhhhh...hhhhhh~~~hhmhhmhhh=mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhh.hhhPhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhhhhmmmmhhhhh=hhhhhhhhhhhhhhhhhhhhh.hh.hm....h..h......SSSSSSSSSSSSS.....~~.........hhhhhhhhhhhhh.hh...hhhhhhhhh.hhhhhhhhhh=hh.hhmhhhhmmmhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmhhhh.hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhhhhmmmhhhhhhh=hhhhhhhhhhhhhhhhhhhhhhhhhmh......h......SSSSSSSSSSSSSSS...=...........hhhhhhhhhhh.h....h.h.hhhhhhhhhh.hhhhh=~hhhhhmmmmhmmhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "hh..hhmhhhhhhhh~hhhhhhhhhhhhhhhhhhhhhhhhh.....h....hh.....SSSSSSSSSSSSSSS.~..........h.hhhh.hh.hhhhh.h.hhh.mh....hhhhhhhhh~~hhhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmhhhh.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hh..hhmhhhhhhhh~hhhhhhhhhhhhhhhhhhhhhhhhh.....h....hh.....SSSSSSSSSSSSSSSP~..........h.hhhh.hh.hhhhh.h.hhh.mh....hhhhhhhhh~~hhhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmhhhh.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mh..hhhhmhhhmhhh~hhmmmhhhhhhhh.hhhhhhhhhhhh...hh.........SSSSSSSSSSSSSSSSSS.............hhhhhh.hhhhhh...hhhhh....hhh..hhhh~hhhhhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhhmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".h.hhmmmhhmhhhhh~hhhhhhhhhhhh.hhhhhhhhhhhh.h..h........SSSSSSSSSSSSSSSSSSSS...........hhhh..hh.hhhh....hh....h....hhhh=~~~hhhhhhhhmmmmmhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmhhmmmmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..hhmmmmhhhhmmhmm~hhhhhhhhhhhhhhhhhhhhhhhhh.h.hh.......SSSSSSSSSSSSSSSSSSSSSSS.........hhhhh...hhhhhh..h..h.hh.hhh.h.~~hhhhhhhhhmhmmmmmhhhhmmmmmmmmmmmmmmmmmmmmmmmmmmmmhmhmhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".hhhhmmhhhhhmhmhh~hhhhhhmmmhhhhhhhhhhhhh.hhh.........SSSSSSSSSSSSSSSSSSSSSSSSS....hhhhhh.h...hhhhhhhh.......hhhhh..~~hhmmhhhmhhmhmmmmmhhhhmhmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmhh.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "mmhhhhhhhhhhhmmhhh~hhhhhhmmhh...mh..hhhhhhh...==.....SSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh.....h..hh.h..=...hhh..h.~=.hhhmmhhhmmhhmmmmmhhhmmmmmhmmmmmmmmmmmmmmmmmmmhhmhhmmmmmh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mmhhhhhhhhhhhmmhhh~hhhhhhmmhh...mh..hhhhhhh...==.....SSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh.....h..hh.h..=...hhh..h.~=.hhhmmhhhmmhhmmmmmhhhmmmmmhmmmmmmmmmmmmmmmmmmmhhmhhmmmmmhP..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hmhhhhhhhmhhhhhhh.=h.hhhmmhhh.h=.hhhhhhhhh.hh..=....SSSSSSSSSSSSSSSSSSSSSSSS......h.hhhh...hh..hhmhh..h=.....h.h.~hhhhhhmhhhhhmhhmmhmmhmmmmmmmhmmmmmmmmmmmmmmmmmmhmmmhhmhmh.=SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".hhhhhhhhhhhhh..h.~.hhhhh.h.h..=hhhhhhh.hh......=...SSSSSSSSSSSSSSSSSSSSSSS....hh.hhhhhh.h.h....hmh...hh=...hhhh~~hhhhhhhhmhhmhhhhhhhhmmmhmmmmmmmmmmmmmmmmmmmmmmmmmhmmmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhmmhhmmhhhhh.h.h~hh.hhhh..hh.=hhhhhhhhhh.......=..SSSSSSSSSSSSSSSSSSSSSSSS...hh.hhhhhhhhh..h..hhh..hhhh=.....h=h.hmhhhhhhhhhhmhhhhhhhhmhhhhmmmmmmmmmmmmmmmmhmmmmhmhmmm....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "hhhmhhhmmhhhh.hhh.~h..hhhh.hh.=hhhhhmhhhhhhh.....=.SSSSSSSSSSSSSSSSSSSSSSS....hh.hhhhhhhh.......hh....h.=hh..h.~...hhhhhhhhhhhmmhhmhhhhhhhhhhmmmmmmmmmmmhhhhhmmmmhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hhhmhhhmmhhhh.hhh.~h..hhhh.hh.=hhhhhmhhhhhhh.....=PSSSSSSSSSSSSSSSSSSSSSSS....hh.hhhhhhhh.......hh....h.=hh..h.~...hhhhhhhhhhhmmhhmhhhhhhhhhhmmmmmmmmmmmhhhhhmmmmhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhhhhhhhh..h..h..~hh.hhhhhhh=.hhhhhmhh.hhh.....=.SSSSSSSSSSSSSSSSSSSSSSS....h...hhhhhhh.......hh.......=hh.h~~..hhhh.hhhh.hhmmhhhmhhhhhhhmmmmmmmmmmmmmhhmmmhmmmmhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".hhh.hhhmh.......h~.....hh.hh=hh.hhhhh.hhh.......=SSSSSSSSSSSSSSSSSSSSSSS...hhhh.h.hmhhhh........hh....hh===~~.hhhhmhhhhhhhhhhhmmhhhhhhhhhhmmmmmmmmmmmmmmhmhmmmhmhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "...h..hhh.......hh~~~~~...hhh=hhhhmh...h.......SSSSSSSSSSSSSSSSSSSSSSSSS...h.hh....hhhhh..hh...=hhh....hh..~..hhhhhhhh.hhhhmmhhmhhhh.hhhhmmmmmmhmmmmmmmhhhmhmmmmmhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "..hhh.hh.h.....h.hh..h.~....h=hhhhmmh.hm......SSSSSSSSSSSSSSSSSSSSSSSSSS...hhhh..hhhhhhh.hh...hh=h.........=.h..hhhhhhhhhhhhhhhh.hhh.hhhhmmmmhmhmmmmmmhhhhhmmh.mmhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...h..hhh.......hh~~~~~...hhh=hhhhmh...h.......SSSSSSSSSSSSSSSSSSSSSSSSSP..h.hh....hhhhh..hh...=hhh....hh..~..hhhhhhhh.hhhhmmhhmhhhh.hhhhmmmmmmhmmmmmmmhhhmhmmmmmhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..hhh.hh.h.....h.hh..h.~....h=hhhhmmh.hm......SSSSSSSSSSSSSSSSSSSSSSSSSS...hhhh..hhhhhhh.hh...hh=h.........=.h..hhhhhhhhhhhhhhhh.hhh.hhhhmmmmhmhmmmmmmhhhhhmmh.mmhhhhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".h.hh.h......h.h.h.hhh.~..===.hh.hmm..hh...SSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh...hhhhhhh..hh..hh.=.........~.....hhhhhhhhhhhhhhhh.hh..mmmhmmmmmmhmmmmmhh.hhhhh....hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "..hh..........h..hhhhh..=.=.......hh...h..SSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhh....hmhh..hh.hh...=.........=...h.h..hhh.hhh.hhm......hmmmmmmhmmmhmmhmhh=hh.hh..SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..hh..........h..hhhhh..=.=.......hh...hP.SSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhh....hmhh..hh.hh...=.........=...h.h..hhh.hhh.hhm......hmmmmmmhmmmhmmhmhh=hh.hh..SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..................h.hh..~.=......h......SSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhhh....hhh....h.h...=........~~..hhhhh.hhhh...hhhhh....=mmmmmmmmhmmmmmmhhmh=..hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...................hhhh..~=...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh....hhh.hhh........=........~....hhhh.hhh......hhhh.hh=hmmmmmmmhhhmhmmmhhh.=.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".........................~...hh.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........h.h..hh.h..h........=.........=.....hh.h.hh.h.........h=hhhhhhhmmmmmmmmmhhh..=.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".......=.................~....h......SSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h....h..................S.SS......S..........hh.h......h.==hmhmhhhhhmmmmmmmmhh..=..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".......=................~....hh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSS.............h.h...........S...SSSSSSSSSSSSSS..hh....hh.........=hmhhh..hmhmmmhmmmmmhh..=SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........................~...hh.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........h.h..hh.h..h........=P........=.....hh.h.hh.h.........h=hhhhhhhmmmmmmmmmhhh..=.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=.................~....h......SSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h....h..................S.SS......S.P........hh.h......h.==hmhmhhhhhmmmmmmmmhh..=P.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=................~....hh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSP............h.h...........S...SSSSSSSSSSSSSS..hh....hh.........=hmhhh..hmhmmmhmmmmmhh..=SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........=................~....hh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS............h.............SS.SSSSSSSSSSSSSSS.........h.....=..==hmmmhhhhhhhmmmhmmmmh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".......=.................=.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......h....hh............SSSSSSSSSSSSSSSSSSSS..SS.........=..=..hhmhm=mhhmhmmhhmhmh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......=.................=.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......h....hh........P...SSSSSSSSSSSSSSSSSSSS..SS.........=..=..hhmhm=mhhmhmmhhmhmh....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........=.................~.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......................SSSSSSSSSSSSSSSSSSSSSSSh.SSSS.......====...hmmmm=hhhhhhmhmmhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".......=..................~......SSSSSSSSSSSSSSSSSSSSSSSSSSSSS............h.........SSSSSSSSSSSSSSSSSSSSSSSSSS.SS..SS.....=...h..hhhh.=hhhhhhmhmmmhh.h.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "........===................~~....SSSSSSSSSSSSSSSSSSSSSSSSSSSS....S....h............SSSSSSSSSSSSSSSSSSSSSSSSSSS..SShSSSSS.==.......hmmmh=hhhhhhhhmmmh..hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........===................~~...PSSSSSSSSSSSSSSSSSSSSSSSSSSSS....S....h............SSSSSSSSSSSSSSSSSSSSSSSSSSS..SShSSSSSP==.......hmmmh=hhhhhhhhmmmh..hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..........==................=~~~SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....h....mmmh=hh.hhmmmhmhm.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "............=....................SSSSSSSSSSSSSSSSSSSSSSSSSSSSS..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS..........hh.=hhhhhmmhhmmhh..=h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............=....................SSSSSSSSSSSSSSSSSSSSSSSSSSSSS...............P..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS..........hh.=hhhhhmmhhmmhh..=h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........=....................SSSSSSSSSSSSSSSSSSSSSSSSSSSSS................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh..=====hhhhhhmmmmmmh...==SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "............=..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh.=.h.hhhhhmhmhhhhhhh.h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "............=.................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh.=.hhhhhhmhhhhhhhhhhhh.ShSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "............S.................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........SSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh.=h.hhhhmhhhhhhmhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "...........SS....S.....SS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh.=hh..hhhmmhhhhmhhmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........P=.................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh.=.hhhhhhmhhhhhhhhhhhh.ShSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............S..........P......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........SSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh.=h.hhhhmhhhhhhmhhhhhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SS....S.....SS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP.......SSSSSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh.=hh..hhhmmhhhhmhhmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........SSSSS.SS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........h=h..hhhhhhhmhhhhmhmh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........=.hhhhhhhhmmhhhhhhmm...hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h...SSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........==..hhh.hhhmmmhhhhhhm.h.hmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h...SSSSSSSSSSSSSSSSPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........==..hhh.hhhmmmhhhhhhm.h.hmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......===..h..hhhmhmmmhhmhhmmmh.mmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......=....h..hhhhhhmhhhhmmmhmm..mmm..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h....=....hh..hhhmhhhhhhmmmhmmmhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hh...=.....h...hhhhmhhhmmmmhmmm.mmhmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hh...=.....h...hhhhmhhhmmmmhmmm.mmhmmhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......=.......hh.mmhmmhhhmhhmhmmhhmhhhmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hh..=.....h.hhhhhmhhhhhhhhmhhmmhhhhhhmmmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....=......hhhhhhhh..hhhhmhmhmmmhhhhhhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......PSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP....=......hhhhhhhh..hhhhmhmhmmmhhhhhhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS~~=~=.........h..h...hhhhhmhmhhhhhhhhhhhhmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S..h...==........hh....hhhhhhmhhhhhhhhhhmhmmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........=.h..hhh..hhh..hhhhh.hhhhhhhhhhhhmhmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hh.....hhhhhhhh.hh..hhhh.hh.hhhhhhhhhhmmhmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS...mhhhh....hhh.hhh.hh=.hhhhhhhhhhhhhhmhhhhhmmhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh........hh..h.hh.=.h.h.hhhh..hhhhhhhhhhhhhmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh........hh..h.hh.=.h.h.hhhh..hhhhhhhhhhhhhmmhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...h.h.......hh.......h=..hhhhhhh...hh..hhhhmmhmhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh............hh.....h..=h.hhhhhhh..hhh..hhhmhhmhhmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh.h...............hhh.=====....h..hhh.hhhhmhhmhhhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh.h...hhh.hhhh....hh..==.....h....==h.hhhhhmhhmhhmmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh....h.hh..h.=hhhhh.h.hh=hhhmmhhmmhhmmhhmhm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh.....hh...hhhhh....=hhhhh....mh=hhhhhhmmhhhmmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".................SSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh......hhh..hhh....=.hh......hhh=hhhhhhmmh.hhhhmmmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP..hh.....hh...hhhhh....=hhhhh....mh=hhhhhhmmhhhmmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "................PSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hh......hhh..hhh....=.hh......hhh=hhhhhhmmh.hhhhmmmm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "................=....S.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........mmhh....h.=.hhh......hh=hmhhh.hhmmhhhmmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........h.........=.hhh....====hhmmmhhhhmhhhhmhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...............=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..h.h....S........=......===hh.hhmmmh.hhhhhhhhhhhmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...............=..........SSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSS....hh.....S......==......=.hhhhhhmmmhhhhhhhhhhmmhmmmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "..............=..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........SS.....=.......=hhh.hh.hmhmhh=hhh.hhhmmhmmhmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".............==..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SSSS.....=SS...==.h..hhhhhhhhh=mhhmhhhhmmhmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "............=.................SSSSSSSSSSSSSSSSSSSSSSSP...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SSSSSS........=.......hhhh====hhhhhhmhhhhmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "..............=..........P...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........SS.....=P......=hhh.hh.hmhmhh=hhh.hhhmmhmmhmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".............==..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....SSSS.....=SS...==.h..hhhhhhhhh=mhhmhhhhmmhmmmhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............=.................SSSSSSSSSSSSSSSSSSSSSSSP...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP....SSSSSS........=.......hhhh====hhhhhhmhhhhmmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..........===..................SSSSSSSSSSSSSSSSSSSSS......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSSS.S..h...=..hhh.hhhh=hhh..hhhhhhhhhmmmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".........=...................S.SSSSSSSSSSSSSSSSSS..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSS.....=...hhhhhhh=hhhhh..hhhhhhmmmhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".............................SSSSSSSSSSSSSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S....=....hhh.hm=hhhhhhh.hhhhmmmhhhhmhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "............................SSSSSSSSSSSSSSSSSSSS............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.=....hh...h=hhhhhhhhh.hhmhhhhhmmhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "............................SSSSSSSSSSSSSSSSSSSS...h......h.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....h...hh=hmmhhhhh.hhhmhhhhmhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............................SSSSSSSSSSSSSSSSSSSS...h......h....PSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....h...hh=hmmhhhhh.hhhmhhhhmhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........................SSSSSSSSSSSSSSSSSSS...hhh.h.........hSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...S.........hh==mhhhhhh..hhhhhmmmmhhhmh.SSSSSSSSSSSSSSSSSSSSSSSSmSSSSSSSSSSSSSSSS",
       "............................SSSSSSSSSSSSSSSSS....hhh.hh..........SSSSSSS.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........h..hh.hh=hh.hh.h.hhhhhmmmmhhhhmh.SSSSSSSSSSSSSSSSSSSSSSSSmSSSSSSSSSSSSSSS",
-      "...........................SSSSSSSSSSSSSSSS......hh..hh..................h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS....hhh.hhhhh=.h.hh.hmhhhhhmmhhhhmmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...........................SSSSSSSSSSSSSSSS......hh..hh..................hP.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS....hhh.hhhhh=.h.hh.hmhhhhhmmhhhhmmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".........................SS.SSSSSSSSSSSSSS............h............hh....h........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...h.h.h.hhh=.hh.h.hmhhmmhhmhhhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".........................SSSSSSSSSSSSSSSS..................hhh............h......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh..h.hh=..h...mhhhhhhhhhhhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........................PSSSSSSSSSSSSSSSS..................hhh............h......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh..h.hh=..h...mhhhhhhhhhhhhhhhhhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........................==SSSSSSSSSSSSSSSS..............hh...h.....hhh........hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....h.h..=...hhhhmhhhhhhhhhhhhmmhmmhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".....................===.SSSSSSSSSSSSSSSS.................h...hh...hhh........h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS.S.S..m........h.=....hhhhhhhhhhhhhhhhmmmmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".....................=.....SSSSSSSSSSSSSS.P...............hh...h....hh...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSS.P.......hh..=.==hhmhhhh=..hhhhmmmmmmhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -1462,12 +1480,12 @@
       "..........=...................=......=.....hh................h..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSS........h.~.hh.=.hh=mh.hmmhhmmmhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".............................=......=.....hh.................h.....h............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...............hh~..hh.=h==.mhhmmh..mhmhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".............................=.......=.....h.h..............h......h...SS.S...h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS........S....hhh~..h..h==hhhmhmmh.h.hhhhhhmhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "........hh..........................=......................hh.h......SSSSSS..hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........h...hhh.~.....hhhmmmhmmh....hhhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........hh..........................=......................hh.h....P.SSSSSS..hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........h...hhh.~.....hhhmmmhmmh....hhhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........hh..........................=.......................h..hh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...........h...hhh.~hh...hhhhmhhhhh...hhhhhhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "........hhh........................=...............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh.......hh...~.hhhmhhmhmhmhh...hhhhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........hhh........................=...............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......hh.......hh...~.hhhmhhmhmhmhh...hhhhhhhhhhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".........hh.........h...............=...........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......h...h.hh....~~.h..hhmhhmhhhh...h.hhhhhhm..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".......h........hh.h................=.......................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S....hh..h.hhh...~.h..hhhhhmh.hh..hh....hhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "hh.h...hhhh.......hhhh...............=.................==...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..........hh.h~=.hh.hhhhmhh.....hhh...hhh.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "hh.h...hhhh.......hhhh...............=.................==P..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP.........hh.h~=.hh.hhhhmhh.....hhh...hhh.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".hhhhhhhhhhh..hhhh..h................=..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..S....h..hh..~...hh.hhhhhhh...=..........hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".h.hhhh.hhhh..hhhhhhh.................=...................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.....hh.hh.~.h.hh..hhhhh...==.......h.hhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhhhhhhhhhh.hhhhhhhh.................=..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S..h....h.~~===.hhhhhhhh...=..........hhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -1476,7 +1494,7 @@
       "hhhhhh.....hhhhhhhhhh..h...........===........=.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hh...~..hhh.hhh.hhhh.h.h=h......hhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "hhhh.........hhhhhh.h.h...........=...........==..hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhh.~...hh..h.hh..hhhhhh=hh.....hhhhhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "mmh..........hhhhhhhh.hh...h....................=.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhh.~.......h.h...hhhhhhh=h....hhh.hhhhm.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "mh.............hh..h.hhhhh.....................=.hhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h...~........hhh...hhhhh=......hhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "mh.............hh..h.hhhhh....................P=.hhmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h...~........hhh...hhhhh=......hhhhhhhhPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".......h.....h.....hh.hh.h...h...............SSSS..hmmSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h....=...hh...hh..hhhh..h=...h..hhmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..=..........h.hh.hhhh.......................SSS...hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......~.hhhhh..h.hhhhhh.hm=.....hhhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..=mmh..hhh..hhhhhh..hh.......................SS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....~.h..hhhh.hhhhhhh.hhm=hhhhhm..hhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -1484,14 +1502,14 @@
       "....h........hhhh..h........................h...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....=...hhhhhhhhhmhhhhh..=hhhhm.....h.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".............hhh...h.h......................h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...~=...hhmh.hhhmmmhhhh...=..hhh.....h.h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..............h.h..h....................hh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..~.....hhhhhhhmmhhmhmhh.=....h...hhh.hhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "...............h.h.h....................h...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSS.~.....hhhhhhhhmmhmhmmh.=..hhh.hhhm...hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "...............h.h.h....................h...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSP~.....hhhhhhhhmmhmhmmh.=..hhh.hhhm...hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "h.h.............................hhh.......hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS=~.....hhh..hhmmhhhhhmh..=hhmhh.hhhhhhhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...h....hh......h.h.............hh.h......hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.....hhhhh..hhhmmhhhhmhh.=.mhhhhhhhhh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".......h..h.....h..hh...........hhh.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh.....hh...hmhhhmmh.hmmh..=mmhhhhhhhhhmhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      ".......h..hh.......h...........hhh........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhh....hhh...hhhhhmhhhhmh..=.mh.hhhmmmmhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      ".......h..hh.......h...........hhh....P...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhh....hhh...hhhhhmhhhhmh..=.mh.hhhmmmmhhhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........hm.h..h...........hhh..h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SShhh.....h.h.hhmhmhmhhhhhh..~..hhhhhmmmh.h.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...........mhhh.h....=......hhh...hh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhhh.hhhhhhhhhhh.hh~.mhhhhhmmm.hh.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "............hhhh......=......h.....h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hh..hhhhhhh..hhhhhhhhmhhhhh~.hhh.hhmmh.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "............hhhh......=......h.....h..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hh..hhhhhhh..hhhhhhhhmhhhhh~.hhh.hhmmh...P.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "...h........hhhhh....=...............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhh..hhhhh.mhhmhhhhhh.hh=.hhhhhhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".........h....hhhh...=...............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......hhhh..h.hhhhmmmhh..hhh~.h.hh.hhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "....h..h.h.....hh....=.........h....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh.hhhh..h.hmmmmmmmm..hm.~......hmmhhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
@@ -1499,54 +1517,213 @@
       "...h.....hh..........=............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hh..h..h.hmhhmmmmmmh....h=...h.hhhhhm.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..........h.h.........=..........h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....h.....hhhhhhhmmmmhh....h~hhhhh.hhh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "..........h...........=...........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...h.....hhhhhhhhmmmmhh...h=.hhhhhmmh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "......h...............=............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.....h..=.mm.hhhhhhmmmmh...~~hhhh.h.hh.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "......h...............=............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.....h..=.mm.hhhhhhmmmmh...~~hhhh.hPhh.hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".......h...........=..=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...........=..mhhhhhhhhmmhhh.~~.hhh...SS..S..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".......h............=.=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.........=...h.mhmhhhhhhhh.~hh.h.hhSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "........h...........==.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......==...hhhhhmhhhhhhhh.~m.h.hhSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+      "........h...........==.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.......==...hhhhhmhhhhhhhhP~m.h.hhSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "........h............=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS......=..h..hhhhhhh..hh.hSShhhhhhS.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       ".....................=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SS....=..hhh..hhhhh.....ShS.S.SSh.hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
       "......................=.........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..S....=..h.hh..hhhh..hSh.mSh.S.SS..hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-      "......................==.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS..=..hhhh..hhhh.S..hhShhhSSSS....h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.",
-      "........................=======SSShhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SS..=.hhhhh.......SS...ShhhhSSSSSS.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.",
+      "......................==......PSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS..=..hhhh..hhhh.S..hhShhhSSSS....h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP",
+      "........................=======SSShhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SS.P=.hhhhh.......SS...ShhhhSSSSSS.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.",
       ".................................hhhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S..S..SShh..h.hhhh...SS.S.SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh.",
-      "................................hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSS.SS.S...S.hhh..hhSS...hS.SS.SSSSSShSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh...",
+      "................................hh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSS.SS.S...S.hhh..hhSSP..hS.SS.SSSSSShSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh...",
       "................................h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S....S....hhh.h..SS..hhh...hSSSSSSSSSSSSSSSSSSSSSS.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh...hh",
       "...........=.....................==..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS.....hh..h.SS..h..SS..SSSSSSSSSSSSSSSSSSSSSS.h.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhhhhh",
       "..........=...................h.=.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...S..hh.hmSS..hhh.SSS.SSSSSSSSSSSSSSSSSSSSSSh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSShhhh.hhh",
       "...........=..................===........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..hS..hh.h..S.hhh...SSS.SSSSSSSSSSSSSSSSSSSSS.hSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhhhhhh",
-      "...........=..............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h..SS..h...SS.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSSSSSSSSSSSSSSSSSSS.SSSSS.hhhhhhhh",
-      "............=..........................SSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..SS.hhh..hS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSSSSSSSSSSSS...hhhh.hhhhmh",
+      "...........=..............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h..SS..h...SS.hhSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSSSSSSSSSSSSSSSSSSSPSSSSS.hhhhhhhh",
+      "............=.........................PSSSS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..SS.hhh..hS..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSSSSSSSSSSSSSSS...hhhh.hhhhmh",
       "............=.........................=.SSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSS..hh..Sh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...SSSSSSSSSSSSSSSSSSSSS.hhhhhhhhhhhhhmh",
       ".............=.......................==...S....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSh..SSSSSSSSSSSSSSSSSSSSS..hhhhhhhhhhhhhm",
       ".............==....................==.......SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSS.h..hhhhhhhhhhhh",
-      "...............=...................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSShh....hhhhhhhhh",
+      "...............=...................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP.SSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSShh....hhhhhhhhh",
       "...............=..................=..........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhSSSSSSSSSSSSSSSSSSSSSSS.hh..h.hhhhhhhh.",
       "................=............................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.....hhhhhhhh.",
-      "................=..........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh........h...hh",
+      "................=..........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh.......Ph...hh",
       "h................=..........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS.....S.SSh.h",
-      "................=..........................SSSS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SS...SSSSSS.S.",
+      "................=..........................SSSSPSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SS...SSSSSS.S.",
       ".................=.....................SSS..SSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hSSSSSSSSSSSSSS",
       ".................=.....................SSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h..h.h.SSSSSSSSSSSSSS",
-      "..................=.....................SSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS....hhhhSSSSSSSSSSSSSS",
+      "..................=.....................SSSSSSSS...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPSSSSSSSSSS....hhhhSSSSSSSSSSSSSS",
       "..................=...................S..SSSS.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..SSSSSSSSSS.h..mhm.SSSSSSSSSSSSSS",
       "...................=...................SS.SSS......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSSSS.hh..mh..SSSSSSSSSSSSS",
       ".......=..........=....................SS..S.......SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhh..hh..SSSSSS..SSSSS",
       "........===........=....................SSS........SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hh....hh.SSSSShhhSSSS",
       "..........=.......=....................SSSS...S....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....Phh...hhhh...SS.hhhSSSS",
-      "...........=.......=...................SS...S...S...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hhh.mmhhhhhmhhh..hhhh.SSS",
-      "...........=.......=................SS......S....SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...Smmmmhhhhhhmhmhhhhhhhhh..SSSS",
+      "...........=.......=...................SS...S...S...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSP...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hhh.mmhhhhhmhhh..hhhh.SSS",
+      "...........=.......=................SS......S....SS.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...Smmmmhhhhhhmhmhhhhhhhhh.PSSSS",
       "............=.......=...............SS............S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShhhhhh...SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhmmhh..hhhhhhhhhh.hhh.SSS",
-      "..........==........=...............SS.........S..S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhhmmhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...mhhhhmmh...hhhhhhhhhhhh.SSSSS",
-      "..........=..........=.........~~=~.S...........S.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh...h...mmmhhh....h.h.hhhhhhhhSSSSSS",
+      "..........==........=...............SS........PS..S.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.hhhmmhh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSS...mhhhhmmh...hhhhhhhhhhhh.SSSSS",
+      "..........=..........=.........~~=~PS...........S.....SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhmmmh..SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShh...h...mmmhhh....h.h.hhhhhhhhSSSSSS",
       "..........=..........~~~~.....~...~~..................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hmmmh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSShS.hhhh.hhhh....hhhhhh.h.hhhmmSSSSSSS",
-      "...........=.........=...=~~~~.~.......................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.S.hhhmh.hh......hhhhhhhmmmhhmh...S.S",
+      "...........=.........=...=~~~~.~.......................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...hhh.SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSPS.hhhmh.hh......hhhhhhhmmmhhmh...S.S",
       "..........=.........=........~=........................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SS..hmh..hSSS....hhhmmhhhhhhmh...hhSS",
       "..........=.............................S..............SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.h.hhhSSSS..hhhhhhmhhmhmhhhmhhhSS",
       "..........=............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS..hhhh.SSSS..hhhmhmhhmmmmhhhh..h.S",
-      "..........=.............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhSSSS...hhhmhhhhmmhhhh..hhh",
-      "..........=.............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSShhSShhhhSSS.h...hhhhhhhhhhhh..hhhS"
+      "..........=............................................PSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS....hhhhSSSS...hhhmhhhhmmhhhh..hhh",
+      "..........=.............................................SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS.SSSSSSSShhSShhhhSSSPh...hhhhhhhhhhhh..hhhS"
     ]
   };
+
+  // src/data/epochs.js
+  var BASE_581 = {
+    // 고구려: 요동~평양~국내성~책성
+    \uD3C9\uC591\uC131: "goguryeo",
+    \uAD6D\uB0B4\uC131: "goguryeo",
+    \uC694\uB3D9\uC131: "goguryeo",
+    \uC548\uC2DC\uC131: "goguryeo",
+    \uBC31\uC554\uC131: "goguryeo",
+    \uC2E0\uC131: "goguryeo",
+    \uAC74\uC548\uC131: "goguryeo",
+    \uBE44\uC0AC\uC131: "goguryeo",
+    \uC624\uACE8\uC131: "goguryeo",
+    \uAC1C\uBAA8\uC131: "goguryeo",
+    \uCC45\uC131: "goguryeo",
+    // 백제: 사비 천도(538) 이후 충청·전라
+    \uC0AC\uBE44\uC131: "baekje",
+    \uC6C5\uC9C4\uC131: "baekje",
+    \uC784\uC874\uC131: "baekje",
+    \uAC00\uB9BC\uC131: "baekje",
+    // 신라: 553년 한강 하류 장악, 562년 대가야 병합 이후
+    \uAE08\uC131: "silla",
+    \uB300\uC57C\uC131: "silla",
+    \uC0BC\uB144\uC0B0\uC131: "silla",
+    \uAD00\uC0B0\uC131: "silla",
+    \uD55C\uC0B0\uC8FC: "silla",
+    \uB2F9\uD56D\uC131: "silla",
+    \uCE60\uC911\uC131: "silla",
+    // 중국 왕조: 요서 영주, 산둥 항구
+    \uC601\uC8FC: "sui",
+    \uB4F1\uC8FC: "sui",
+    \uB0B4\uC8FC: "sui",
+    // 왜: 북규슈·쓰시마
+    \uB098\uB178\uC4F0: "wa",
+    \uC4F0\uC2DC\uB9C8: "wa",
+    \uB3D9\uBAA8\uC0B0: "mohe"
+  };
+  var SEEDS_COMMON = [
+    { name: "\uD558\uC2AC\uB77C(\uAC15\uB989)", lat: 37.75, lon: 128.9, nation: "silla" },
+    { name: "\uAD6D\uC6D0(\uCDA9\uC8FC)", lat: 36.97, lon: 127.93, nation: "silla" },
+    { name: "\uAE08\uAD00(\uAE40\uD574)", lat: 35.23, lon: 128.88, nation: "silla" },
+    { name: "\uB300\uAC00\uC57C(\uACE0\uB839)", lat: 35.73, lon: 128.26, nation: "silla" },
+    { name: "\uB2E4\uC790\uC774\uD6C4", lat: 33.52, lon: 130.53, nation: "wa" },
+    { name: "\uAC70\uB780 \uADFC\uAC70\uC9C0", lat: 42.3, lon: 119.5, nation: "khitan" },
+    { name: "\uC18D\uB9D0\uB9D0\uAC08", lat: 43.8, lon: 126.5, nation: "mohe" }
+  ];
+  var SEEDS_BAEKJE_SOUTH = [
+    { name: "\uBB34\uC9C4\uC8FC(\uAD11\uC8FC)", lat: 35.15, lon: 126.85, nation: "baekje" },
+    { name: "\uB0A8\uC6D0", lat: 35.4, lon: 127.39, nation: "baekje" }
+  ];
+  var SEEDS_GOGURYEO_SOUTH = [{ name: "\uD55C\uC131(\uC7AC\uB839)", lat: 38.4, lon: 125.6, nation: "goguryeo" }];
+  var SEEDS_SHANDONG = (n) => [{ name: "\uC81C\uB0A8", lat: 36.65, lon: 117.05, nation: n }];
+  var epochs_default = [
+    {
+      id: "s581",
+      year: 581,
+      title: "581 \xB7 \uC218\uC758 \uB4F1\uC7A5",
+      note: "\uC218 \uAC74\uAD6D. \uC2E0\uB77C\uB294 \uD55C\uAC15 \uC720\uC5ED\uACFC \uAC00\uC57C \uB545\uAE4C\uC9C0 \uCC28\uC9C0\uD588\uACE0, \uACE0\uAD6C\uB824\uB294 \uC694\uB3D9\uACFC \uD55C\uBC18\uB3C4 \uBD81\uBD80, \uBC31\uC81C\uB294 \uCDA9\uCCAD\xB7\uC804\uB77C\uB97C \uC9C0\uD0A8\uB2E4.",
+      owners: { ...BASE_581 },
+      seeds: [...SEEDS_COMMON, ...SEEDS_BAEKJE_SOUTH, ...SEEDS_GOGURYEO_SOUTH, ...SEEDS_SHANDONG("sui")],
+      certainty: "\uC0BC\uAD6D \uAD6C\uB3C4\uB294 \uD655\uC2E4. \uD55C\uAC15 \uD558\uB958 \uC2E0\uB77C \uC9C0\uBC30(553~)\uB294 \uD655\uC2E4, \uB3D9\uD574\uC548 \uBD81\uCABD \uC2E0\uB77C \uACBD\uACC4\uB294 \uCD94\uC815."
+    },
+    {
+      id: "s612",
+      year: 612,
+      title: "612 \xB7 \uC0B4\uC218",
+      note: "\uC218 \uC591\uC81C\uC758 2\uCC28 \uCE68\uACF5. \uAD6D\uACBD\uC740 581\uB144\uACFC \uAC70\uC758 \uAC19\uB2E4.",
+      owners: { ...BASE_581 },
+      seeds: [...SEEDS_COMMON, ...SEEDS_BAEKJE_SOUTH, ...SEEDS_GOGURYEO_SOUTH, ...SEEDS_SHANDONG("sui")],
+      certainty: "581\uB144 \uBC30\uCE58 \uC720\uC9C0. \uC694\uC11C \uBB34\uB824\uB77C \uB4F1 \uC694\uD558 \uC11C\uCABD \uACE0\uAD6C\uB824 \uAC70\uC810\uC740 \uC544\uC9C1 \uB123\uC9C0 \uC54A\uC74C."
+    },
+    {
+      id: "s645",
+      year: 645,
+      title: "645 \xB7 \uC548\uC2DC\uC131",
+      note: "\uB2F9 \uD0DC\uC885 \uCE5C\uC815. 642\uB144 \uBC31\uC81C\uAC00 \uB300\uC57C\uC131\uC744 \uBE7C\uC557\uC544 \uC2E0\uB77C \uC11C\uBD80\uAC00 \uC704\uD0DC\uB86D\uB2E4.",
+      owners: { ...BASE_581, \uC601\uC8FC: "tang", \uB4F1\uC8FC: "tang", \uB0B4\uC8FC: "tang", \uB300\uC57C\uC131: "baekje" },
+      seeds: [...SEEDS_COMMON, ...SEEDS_BAEKJE_SOUTH, ...SEEDS_GOGURYEO_SOUTH, ...SEEDS_SHANDONG("tang")],
+      certainty: "\uB300\uC57C\uC131 \uD568\uB77D(642) \uD655\uC2E4."
+    },
+    {
+      id: "s660",
+      year: 660,
+      title: "660 \xB7 \uD669\uC0B0\uBC8C",
+      note: "\uB098\uB2F9\uC5F0\uD569\uAD70\uC758 \uBC31\uC81C \uACF5\uACA9 \uC9C1\uC804. 645\uB144 \uB2F9\uAD70\uC774 \uBE7C\uC557\uC558\uB358 \uC694\uB3D9 \uC131\uB4E4\uC740 \uCCA0\uAD70 \uB4A4 \uACE0\uAD6C\uB824\uAC00 \uB418\uCC3E\uC558\uB2E4.",
+      owners: { ...BASE_581, \uC601\uC8FC: "tang", \uB4F1\uC8FC: "tang", \uB0B4\uC8FC: "tang", \uB300\uC57C\uC131: "baekje" },
+      seeds: [...SEEDS_COMMON, ...SEEDS_BAEKJE_SOUTH, ...SEEDS_GOGURYEO_SOUTH, ...SEEDS_SHANDONG("tang")],
+      certainty: "\uC694\uB3D9 \uC131\uC758 \uACE0\uAD6C\uB824 \uC7AC\uC810\uC720\uB294 \uC720\uB825. \uB300\uC57C\uC131\uC758 \uBC31\uC81C \uC9C0\uBC30\uB294 660\uB144\uAE4C\uC9C0 \uD655\uC2E4."
+    },
+    {
+      id: "s670",
+      year: 670,
+      title: "670 \xB7 \uB098\uB2F9\uC804\uC7C1",
+      note: "\uBC31\uC81C(660)\uC640 \uACE0\uAD6C\uB824(668)\uAC00 \uBB34\uB108\uC9C0\uACE0, \uB2F9\uC740 \uD3C9\uC591\uC5D0 \uC548\uB3D9\uB3C4\uD638\uBD80, \uC6C5\uC9C4\uC5D0 \uB3C4\uB3C5\uBD80\uB97C \uB450\uC5C8\uB2E4. \uC2E0\uB77C\uC640 \uACE0\uAD6C\uB824 \uBD80\uD765\uAD70\uC774 \uB2F9\uC5D0 \uB9DE\uC120\uB2E4.",
+      owners: {
+        ...BASE_581,
+        \uC601\uC8FC: "tang",
+        \uB4F1\uC8FC: "tang",
+        \uB0B4\uC8FC: "tang",
+        \uD3C9\uC591\uC131: "tang",
+        \uC694\uB3D9\uC131: "tang",
+        \uC548\uC2DC\uC131: "tang",
+        \uBC31\uC554\uC131: "tang",
+        \uC2E0\uC131: "tang",
+        \uAC74\uC548\uC131: "tang",
+        \uBE44\uC0AC\uC131: "tang",
+        \uC624\uACE8\uC131: "tang",
+        \uAC1C\uBAA8\uC131: "tang",
+        \uAD6D\uB0B4\uC131: "tang",
+        \uCC45\uC131: "tang",
+        \uC0AC\uBE44\uC131: "tang",
+        \uC6C5\uC9C4\uC131: "tang",
+        \uC784\uC874\uC131: "tang",
+        \uAC00\uB9BC\uC131: "tang"
+      },
+      seeds: [
+        ...SEEDS_COMMON,
+        { name: "\uACE0\uAD6C\uB824 \uBD80\uD765\uAD70(\uD55C\uC131)", lat: 38.4, lon: 125.6, nation: "goguryeo" },
+        { name: "\uBB34\uC9C4\uC8FC(\uAD11\uC8FC)", lat: 35.15, lon: 126.85, nation: "tang" },
+        ...SEEDS_SHANDONG("tang")
+      ],
+      certainty: "\uC548\uB3D9\uB3C4\uD638\uBD80(\uD3C9\uC591)\xB7\uC6C5\uC9C4\uB3C4\uB3C5\uBD80\uB294 \uD655\uC2E4. \uAD6D\uB0B4\uC131\xB7\uCC45\uC131\uC758 \uB2F9 \uC9C0\uBC30 \uC2E4\uD6A8\uC131\uACFC \uBD80\uD765\uAD70 \uBC94\uC704\uB294 \uCD94\uC815(low)."
+    },
+    {
+      id: "s696",
+      year: 696,
+      title: "696 \xB7 \uB3D9\uBAA8\uC0B0\uC73C\uB85C",
+      note: "\uB098\uB2F9\uC804\uC7C1(676) \uC774\uD6C4 \uC2E0\uB77C\uAC00 \uB300\uB3D9\uAC15 \uB0A8\uCABD\uAE4C\uC9C0 \uCC28\uC9C0\uD588\uB2E4. \uB2F9\uC740 \uC548\uB3D9\uB3C4\uD638\uBD80\uB97C \uC694\uB3D9\uC73C\uB85C \uBB3C\uB838\uACE0, 696\uB144 \uAC70\uB780 \uC774\uC9C4\uCDA9\uC774 \uC601\uC8FC\uB97C \uC810\uB839\uD574 \uD63C\uB780\uC774 \uC2DC\uC791\uB41C\uB2E4.",
+      owners: {
+        ...BASE_581,
+        \uC601\uC8FC: "khitan",
+        \uB4F1\uC8FC: "tang",
+        \uB0B4\uC8FC: "tang",
+        \uD3C9\uC591\uC131: null,
+        \uC694\uB3D9\uC131: "tang",
+        \uC548\uC2DC\uC131: "tang",
+        \uBC31\uC554\uC131: "tang",
+        \uC2E0\uC131: "tang",
+        \uAC74\uC548\uC131: "tang",
+        \uBE44\uC0AC\uC131: "tang",
+        \uC624\uACE8\uC131: "tang",
+        \uAC1C\uBAA8\uC131: "tang",
+        \uAD6D\uB0B4\uC131: null,
+        \uCC45\uC131: "mohe",
+        \uC0AC\uBE44\uC131: "silla",
+        \uC6C5\uC9C4\uC131: "silla",
+        \uC784\uC874\uC131: "silla",
+        \uAC00\uB9BC\uC131: "silla",
+        \uB300\uC57C\uC131: "silla"
+      },
+      seeds: [
+        ...SEEDS_COMMON,
+        { name: "\uBB34\uC9C4\uC8FC(\uAD11\uC8FC)", lat: 35.15, lon: 126.85, nation: "silla" },
+        { name: "\uD55C\uC8FC \uBD81\uBD80(\uD3C9\uC0B0)", lat: 38.33, lon: 126.4, nation: "silla" },
+        ...SEEDS_SHANDONG("tang")
+      ],
+      certainty: "\uC601\uC8FC \uD568\uB77D(696) \uD655\uC2E4. \uC2E0\uB77C \uBD81\uACC4(\uB300\uB3D9\uAC15~\uC6D0\uC0B0\uB9CC \uBD80\uADFC)\uB294 \uCD94\uC815\uC774\uBA70, \uD3C9\uC591\xB7\uAD6D\uB0B4\uC131 \uC77C\uB300\uB294 \uC2E4\uD6A8 \uC9C0\uBC30 \uC138\uB825\uC774 \uBD88\uBD84\uBA85\uD574 \uBBF8\uC9C0\uBC30\uB85C \uB460."
+    }
+  ];
 
   // src/hex.js
   var SQRT3 = Math.sqrt(3);
@@ -1631,6 +1808,188 @@
     }
     return totals;
   }
+
+  // src/pq.js
+  var MinHeap = class {
+    constructor() {
+      this.a = [];
+    }
+    get size() {
+      return this.a.length;
+    }
+    push(item) {
+      const a = this.a;
+      a.push(item);
+      let i = a.length - 1;
+      while (i > 0) {
+        const p = i - 1 >> 1;
+        if (a[p].cost <= a[i].cost) break;
+        [a[p], a[i]] = [a[i], a[p]];
+        i = p;
+      }
+    }
+    pop() {
+      const a = this.a, top = a[0], last = a.pop();
+      if (a.length) {
+        a[0] = last;
+        let i = 0;
+        for (; ; ) {
+          const l = 2 * i + 1, r = l + 1;
+          let m = i;
+          if (l < a.length && a[l].cost < a[m].cost) m = l;
+          if (r < a.length && a[r].cost < a[m].cost) m = r;
+          if (m === i) break;
+          [a[m], a[i]] = [a[i], a[m]];
+          i = m;
+        }
+      }
+      return top;
+    }
+  };
+
+  // src/territory.js
+  var RADIUS_MP = 36;
+  var FRONTIER_MP = 90;
+  function latLonToHex(meta, lat, lon) {
+    const size2 = meta.hexKm / Math.sqrt(3);
+    const ykm = (meta.lat1 - lat) * meta.kmLat;
+    const row = Math.round((ykm - size2) / (1.5 * size2));
+    const xkm = (lon - meta.lon0) * meta.kmLon;
+    const col = Math.round((xkm - meta.hexKm / 2) / meta.hexKm - 0.5 * (row & 1));
+    return { col, row };
+  }
+  function landCost(data, tile) {
+    const t = data.terrain[tile.terrain];
+    if (t.impassable) return Infinity;
+    return t.move.spear ?? Infinity;
+  }
+  function applyEpoch(map, data, meta, sites, epoch2) {
+    const seeds = [];
+    for (const s of sites) {
+      if (!(s.type === "castle" || s.type === "capital" || s.type === "port")) continue;
+      const nation = s.name in epoch2.owners ? epoch2.owners[s.name] : null;
+      if (nation) seeds.push({ col: s.col, row: s.row, nation, name: s.name });
+    }
+    for (const s of epoch2.seeds || []) {
+      const h = latLonToHex(meta, s.lat, s.lon);
+      const t = tileAt(map, h.col, h.row);
+      if (t && landCost(data, t) !== Infinity) seeds.push({ ...h, nation: s.nation, name: s.name });
+    }
+    for (const t of map.tiles) {
+      t.owner = null;
+      t.frontier = false;
+    }
+    const best = /* @__PURE__ */ new Map();
+    const heap = new MinHeap();
+    for (const s of seeds) heap.push({ col: s.col, row: s.row, cost: 0, nation: s.nation });
+    while (heap.size) {
+      const cur = heap.pop();
+      const k = key(cur.col, cur.row);
+      if (best.has(k)) continue;
+      best.set(k, cur.nation);
+      const tile = tileAt(map, cur.col, cur.row);
+      tile.owner = cur.nation;
+      tile.frontier = cur.cost > RADIUS_MP;
+      for (const n of neighbors(cur.col, cur.row)) {
+        const t = tileAt(map, n.col, n.row);
+        if (!t || best.has(key(n.col, n.row))) continue;
+        const c = cur.cost + landCost(data, t);
+        if (c <= FRONTIER_MP) heap.push({ col: n.col, row: n.row, cost: c, nation: cur.nation });
+      }
+    }
+    return { seeds };
+  }
+
+  // src/crop.js
+  function cropFullmap(fullmap, { lon0, lon1, lat0, lat1 }) {
+    const a = latLonToHex(fullmap.meta, lat1, lon0);
+    const b = latLonToHex(fullmap.meta, lat0, lon1);
+    const row0 = Math.max(0, a.row - (a.row & 1));
+    const col0 = Math.max(0, a.col);
+    const row1 = Math.min(fullmap.rows.length - 1, b.row);
+    const col1 = Math.min(fullmap.rows[0].length - 1, b.col);
+    const rows = fullmap.rows.slice(row0, row1 + 1).map((r) => r.slice(col0, col1 + 1));
+    const inside = (s) => s.col >= col0 && s.col <= col1 && s.row >= row0 && s.row <= row1;
+    const sites = fullmap.sites.filter(inside).map((s) => ({ ...s, col: s.col - col0, row: s.row - row0 }));
+    const size2 = fullmap.meta.hexKm / Math.sqrt(3);
+    const meta = {
+      ...fullmap.meta,
+      lat1: fullmap.meta.lat1 - 1.5 * size2 * row0 / fullmap.meta.kmLat,
+      lon0: fullmap.meta.lon0 + fullmap.meta.hexKm * col0 / fullmap.meta.kmLon
+    };
+    return { rows, sites, meta, col0, row0 };
+  }
+  function snapTo(crop2, lat, lon, ok) {
+    const h = latLonToHex(crop2.meta, lat, lon);
+    let best = null, bd = Infinity;
+    for (let r = Math.max(0, h.row - 6); r <= Math.min(crop2.rows.length - 1, h.row + 6); r++) {
+      for (let c = Math.max(0, h.col - 6); c <= Math.min(crop2.rows[0].length - 1, h.col + 6); c++) {
+        if (!ok(crop2.rows[r][c], c, r)) continue;
+        const d = (c - h.col) ** 2 + (r - h.row) ** 2;
+        if (d < bd) {
+          bd = d;
+          best = { col: c, row: r };
+        }
+      }
+    }
+    return best;
+  }
+
+  // src/data/scenarios/liaodong645full.js
+  var crop = cropFullmap(fullmap_default, { lon0: 120.6, lon1: 125, lat0: 38.9, lat1: 42.3 });
+  var epoch = epochs_default.find((e) => e.id === "s645");
+  var WALLS = { \uC694\uB3D9\uC131: 150, \uC548\uC2DC\uC131: 175 };
+  var castles = crop.sites.filter((s) => s.type === "castle" || s.type === "capital").map((s) => ({ name: s.name, col: s.col, row: s.row, owner: epoch.owners[s.name] ?? null, wall: WALLS[s.name] ?? 100 }));
+  var castleAt = (name) => castles.find((c) => c.name === name);
+  var LAND = (ch) => ".hmwP".includes(ch);
+  var used = new Set(castles.map((c) => `${c.col},${c.row}`));
+  function at(lat, lon, ok = LAND) {
+    const p = snapTo(crop, lat, lon, (ch, c, r) => ok(ch) && !used.has(`${c},${r}`));
+    used.add(`${p.col},${p.row}`);
+    return p;
+  }
+  var inCastle = (name) => {
+    const c = castleAt(name);
+    return { col: c.col, row: c.row };
+  };
+  var garrison = (name, type, troops, general = null) => ({ general, nation: "goguryeo", type, troops, ...inCastle(name), hold: true });
+  var liaodong645full_default = {
+    id: "liaodong645full",
+    title: "645 \uC694\uB3D9 \uC804\uC5ED \xB7 \uC2E4\uCE21 \uC9C0\uB3C4",
+    year: 645,
+    desc: "\uC2E4\uC81C \uC9C0\uD615 \uC704\uC758 645\uB144 \uC694\uB3D9. \uB2F9\uAD70\uC740 \uC694\uD558 \uC11C\uCABD\uC5D0\uC11C \uCD9C\uBC1C\uD574 \uAC15\uC744 \uAC74\uB108\uACE0(\uC5EC\uC6B8 \uB610\uB294 \uC774\uB3C4\uC885\uC758 \uBD80\uAD50), \uC694\uB3D9\uC131\uACFC \uC548\uC2DC\uC131\uC744 \uBAA8\uB450 \uD568\uB77D\uD574\uC57C \uD569\uB2C8\uB2E4. \uC7A5\uB7C9\uC758 \uC218\uAD70\uC740 \uBC14\uB2E4\uB85C \uB3CC\uC544 \uC694\uB3D9 \uBC18\uB3C4\uC5D0 \uC0C1\uB959\uD569\uB2C8\uB2E4. \uACE0\uAD6C\uB824\uB294 \uC0B0\uC131\uB9C8\uB2E4 \uC218\uBE44\uB300\uB97C \uB450\uACE0 \uC624\uACE8\uC131 \uBC29\uBA74\uC758 \uACE0\uC5F0\uC218\xB7\uACE0\uD61C\uC9C4 \uAD6C\uC6D0\uAD70\uC774 \uB2EC\uB824\uC635\uB2C8\uB2E4.",
+    rows: crop.rows,
+    meta: crop.meta,
+    sites: crop.sites,
+    castles,
+    sides: ["tang", "goguryeo"],
+    setupMap(map, data) {
+      applyEpoch(map, data, crop.meta, crop.sites, epoch);
+    },
+    units: [
+      { general: "li_shiji", nation: "tang", type: "spear", troops: 6e3, ...at(41.85, 122.05) },
+      { general: "li_shimin", nation: "tang", type: "cavalry", troops: 6e3, ...at(41.5, 121.75) },
+      { general: "xue_rengui", nation: "tang", type: "cavalry", troops: 5e3, ...at(41.62, 121.85) },
+      { general: "zhangsun_wuji", nation: "tang", type: "archer", troops: 5e3, ...at(41.42, 121.62) },
+      { general: "li_daozong", nation: "tang", type: "spear", troops: 6e3, ...at(41.3, 121.9) },
+      { general: null, nation: "tang", type: "siege", troops: 3e3, ...at(41.5, 121.55) },
+      { general: "zhang_liang", nation: "tang", type: "spear", troops: 5e3, ...at(39.35, 121.3, (ch) => ch === "S") },
+      garrison("\uC694\uB3D9\uC131", "spear", 5e3),
+      garrison("\uAC1C\uBAA8\uC131", "spear", 3e3),
+      garrison("\uBC31\uC554\uC131", "archer", 3e3),
+      garrison("\uC2E0\uC131", "spear", 4e3),
+      garrison("\uC548\uC2DC\uC131", "spear", 6e3, "ansi_lord"),
+      { general: "ansi_vice", nation: "goguryeo", type: "archer", troops: 4e3, ...at(40.86, 122.86), hold: true },
+      garrison("\uAC74\uC548\uC131", "spear", 3e3),
+      garrison("\uBE44\uC0AC\uC131", "spear", 3e3),
+      { general: "go_yeonsu", nation: "goguryeo", type: "cavalry", troops: 6e3, ...at(40.5, 124) },
+      { general: "go_hyejin", nation: "goguryeo", type: "spear", troops: 6e3, ...at(40.6, 123.85) }
+    ],
+    victory: [
+      { nation: "tang", type: "capture", castles: ["\uC694\uB3D9\uC131", "\uC548\uC2DC\uC131"] },
+      { nation: "goguryeo", type: "survive", turns: 40 }
+    ]
+  };
 
   // src/combat.js
   var APT = { S: 1.12, A: 1.06, B: 1, C: 0.9, D: 0.8 };
@@ -1778,6 +2137,8 @@
       t.owner = c.owner;
       t.wall = t.wallMax = c.wall ?? 100;
     }
+    scenario.setupMap?.(map, data);
+    for (const c of scenario.castles || []) tileAt(map, c.col, c.row).owner = c.owner;
     return map;
   }
   function createGame(scenario, data, seed = 1) {
@@ -1846,10 +2207,10 @@
     const best = /* @__PURE__ */ new Map([[startK, 0]]);
     const prev = /* @__PURE__ */ new Map();
     const terminal = /* @__PURE__ */ new Set();
-    const frontier = [{ col: unit.col, row: unit.row, cost: 0 }];
-    while (frontier.length) {
-      frontier.sort((a, b) => a.cost - b.cost);
-      const cur = frontier.shift();
+    const frontier = new MinHeap();
+    frontier.push({ col: unit.col, row: unit.row, cost: 0 });
+    while (frontier.size) {
+      const cur = frontier.pop();
       const ck = key(cur.col, cur.row);
       if (cur.cost > best.get(ck)) continue;
       const curTile = tileAt(state2.map, cur.col, cur.row);
@@ -1921,10 +2282,12 @@
     return unit.embarked ? isNavigable(data, tile) : isWaterOnly(data, tile);
   }
   var EMBARK_DAYS = 1;
-  function travelCostMap(state2, data, type, goal) {
+  function travelCostMap(state2, data, type, goal, opts = {}) {
     const landMp = data.units[type].move, shipMp = data.ship.move;
     const dist = /* @__PURE__ */ new Map();
-    const frontier = [];
+    const frontier = new MinHeap();
+    const nearK = opts.near ? key(opts.near.col, opts.near.row) : null;
+    let stopAt = Infinity;
     const push = (col, row, mode, cost) => {
       const k = `${key(col, row)}|${mode}`;
       if (dist.has(k) && dist.get(k) <= cost) return;
@@ -1939,10 +2302,11 @@
       if (!isWaterOnly(data, t) && enterCost(data, type, t) !== Infinity) push(n.col, n.row, "land", 0.01);
       if (isNavigable(data, t)) push(n.col, n.row, "water", 0.01);
     }
-    while (frontier.length) {
-      frontier.sort((a, b) => a.cost - b.cost);
-      const cur = frontier.shift();
+    while (frontier.size) {
+      const cur = frontier.pop();
+      if (cur.cost > stopAt) break;
       if (cur.cost > dist.get(`${key(cur.col, cur.row)}|${cur.mode}`)) continue;
+      if (nearK && stopAt === Infinity && key(cur.col, cur.row) === nearK) stopAt = cur.cost + (opts.margin ?? 2);
       const curTile = tileAt(state2.map, cur.col, cur.row);
       for (const n of neighbors(cur.col, cur.row)) {
         const t = tileAt(state2.map, n.col, n.row);
@@ -2045,8 +2409,9 @@
     if (state2.winner) return state2.winner;
     for (const v of state2.scenario.victory || []) {
       if (v.type === "capture") {
-        const t = state2.map.tiles.find((x) => x.castle === v.castle);
-        if (t && t.owner === v.nation) state2.winner = v.nation;
+        const names = v.castles || [v.castle];
+        const all = names.every((n) => state2.map.tiles.find((x) => x.castle === n)?.owner === v.nation);
+        if (all) state2.winner = v.nation;
       }
     }
     if (!state2.winner) {
@@ -2111,7 +2476,8 @@
   }
   function captureTarget(state2, unit) {
     const v = (state2.scenario.victory || []).find((x) => x.type === "capture" && x.nation === unit.nation);
-    return v ? state2.map.tiles.find((t) => t.castle === v.castle) : null;
+    if (!v) return null;
+    return (v.castles || [v.castle]).map((n) => state2.map.tiles.find((t) => t.castle === n)).find((t) => t && t.owner !== unit.nation) ?? null;
   }
   function scoreAttack(state2, data, unit, target, col, row) {
     const moved = unit.moved || col !== unit.col || row !== unit.row;
@@ -2129,7 +2495,7 @@
       const kill = dmg >= target.troops ? 2e3 : 0;
       const onObjective = objective && target.col === objective.col && target.row === objective.row;
       const tt = tileAt(state2.map, target.col, target.row);
-      const wall = tt.castle && tt.wall > 0 ? unit.troops / 5e3 * data.wallDamage[unit.type] * (1 + getMods(state2, data, unit, {}).wall) * 40 * (onObjective ? 2 : 1) : 0;
+      const wall = onObjective && tt.wall > 0 ? unit.troops / 5e3 * data.wallDamage[unit.type] * (1 + getMods(state2, data, unit, {}).wall) * 80 : 0;
       const siege = (onObjective ? dmg * 1.5 + 150 : 0) + wall;
       const danger = dangerAt(state2, data, unit, col, row, kill ? target : null);
       return dmg - 0.9 * ctr + kill + siege - 0.35 * danger;
@@ -2137,11 +2503,15 @@
   }
   function goalFor(state2, data, unit) {
     const objective = captureTarget(state2, unit);
-    if (objective && objective.owner !== unit.nation && !unitAt(state2, objective.col, objective.row)) return objective;
+    if (objective && objective.owner !== unit.nation) {
+      const threat = aliveUnits(state2).filter((e) => isEnemy(e, unit) && !e.hold && distance(e, unit) <= 5).sort((a, b) => distance(unit, a) - distance(unit, b))[0];
+      if (threat) return threat;
+      return objective;
+    }
     if (unit.type === "siege") {
       if (objective && objective.owner !== unit.nation) return objective;
-      const castles = state2.map.tiles.filter((t) => t.castle && t.owner && t.owner !== unit.nation);
-      if (castles.length) return castles.sort((a, b) => distance(unit, a) - distance(unit, b))[0];
+      const castles2 = state2.map.tiles.filter((t) => t.castle && t.owner && t.owner !== unit.nation);
+      if (castles2.length) return castles2.sort((a, b) => distance(unit, a) - distance(unit, b))[0];
     }
     let best = null, bd = Infinity;
     for (const e of aliveUnits(state2)) {
@@ -2180,7 +2550,7 @@
     }
     const goal = goalFor(state2, data, unit);
     if (goal && !unit.hold) {
-      const travel = travelCostMap(state2, data, unit.type, goal);
+      const travel = travelCostMap(state2, data, unit.type, goal, { near: unit, margin: 3 });
       const here = travelDays(travel, data, unit, unit.col, unit.row, tileAt(state2.map, unit.col, unit.row)) ?? Infinity;
       for (const site of bridgeSites(state2, data, unit)) {
         const work = 1 + getMods(state2, data, unit, {}).bridge;
@@ -2253,7 +2623,12 @@
     desc: `\uACF5\uAC1C \uACE0\uB3C4 \uB370\uC774\uD130\uB85C \uC790\uB3D9 \uC0DD\uC131\uD55C ${fullmap_default.rows[0].length}\xD7${fullmap_default.rows.length}\uCE78 \uC9C0\uB3C4\uC785\uB2C8\uB2E4(1\uCE78 \u2248 6km). \uC0B0\xB7\uAD6C\uB989\uC740 \uACE0\uB3C4\uC640 \uAE30\uBCF5\uC73C\uB85C, \uAC15\uC740 \uBE57\uBB3C\uC774 \uC2E4\uC81C\uB85C \uD758\uB7EC\uAC00\uB294 \uAE38\uC744 \uACC4\uC0B0\uD574 \uADF8\uB838\uC2B5\uB2C8\uB2E4. \uD070 \uAC15(\uC9C4\uD55C \uD30C\uB791)\uC740 \uAC78\uC5B4\uC11C \uBABB \uAC74\uB108\uACE0 \uC5EC\uC6B8(\uC605\uC740 \uD30C\uB791)\uB85C\uB9CC \uAC74\uB119\uB2C8\uB2E4. \uB9C8\uC6B0\uC2A4 \uD720\uC774\uB098 +/\u2212 \uBC84\uD2BC\uC73C\uB85C \uD655\uB300\uD558\uACE0, \uB04C\uC5B4\uC11C \uC6C0\uC9C1\uC774\uC138\uC694.`,
     expect: { text: "\uD574\uC548\uC120\uC740 \uD604\uB300 \uAE30\uC900\uC774\uACE0, \uC5ED\uC0AC \uC9C0\uC810 \uC88C\uD45C\uB294 \uCD94\uC815\uC785\uB2C8\uB2E4(\uC810\uC120 \uD14C\uB450\uB9AC = \uC704\uCE58 \uB17C\uC7C1 \uC788\uC74C). \uACE0\uC99D \uD6C4 \uC218\uC815\uC774 \uD544\uC694\uD569\uB2C8\uB2E4." }
   };
-  var SCENARIOS = [FULLMAP, ...labs_default, { ...liaodong645_default, expect: { text: "AI \uB300 AI \uAE30\uC900 \uB2F9\uACFC \uACE0\uAD6C\uB824\uAC00 \uB300\uB7B5 \uBC18\uBC18\uC774 \uB418\uB3C4\uB85D \uB9DE\uCDC4\uC2B5\uB2C8\uB2E4." } }];
+  var SCENARIOS = [
+    FULLMAP,
+    { ...liaodong645full_default, expect: { text: "AI \uB300 AI \uAE30\uC900 \uC694\uB3D9\uC131\uC740 \uAC70\uC758 \uD568\uB77D\uB418\uACE0, \uC548\uC2DC\uC131\uC740 \uBC18\uBC18 \uBC84\uD301\uB2C8\uB2E4(\uC5ED\uC0AC: \uC694\uB3D9\uC131 \uD568\uB77D, \uC548\uC2DC\uC131 \uBC29\uC5B4 \uC131\uACF5)." } },
+    ...labs_default,
+    { ...liaodong645_default, title: "645 \uC548\uC2DC\uC131 \xB7 \uCD95\uC18C\uD310", expect: { text: "AI \uB300 AI \uAE30\uC900 \uB2F9\uACFC \uACE0\uAD6C\uB824\uAC00 \uB300\uB7B5 \uBC18\uBC18\uC774 \uB418\uB3C4\uB85D \uB9DE\uCDC4\uC2B5\uB2C8\uB2E4." } }
+  ];
   var $ = (id) => document.getElementById(id);
   var canvas = $("map");
   var ctx = canvas.getContext("2d");
@@ -2280,8 +2655,9 @@
     for (const id of ["auto", "step", "restart", "sim"]) $(id).hidden = viewer;
     $("side").parentElement.hidden = viewer;
     $("speed").parentElement.hidden = viewer;
-    $("zoomCtl").hidden = !viewer;
+    $("epochCtl").hidden = !viewer;
     if (viewer) {
+      $("zoomCtl").hidden = false;
       openViewer();
       return;
     }
@@ -2309,18 +2685,55 @@
     render();
     if (player() !== "none" && activeNation(state) !== player()) playAiTurn(gen);
   }
+  var cam = { s: 1, ox: 0, oy: 0, free: false };
   function resize() {
     const w0 = Math.sqrt(3) * (state.map.w + 0.5);
     const h0 = 1.5 * (state.map.h - 1) + 2;
-    size = Math.max(18, Math.min(34, 900 / w0));
-    const w = size * w0 + PAD * 2, h = size * h0 + PAD * 2;
+    const fit = 900 / w0;
+    let w, h;
+    if (fit >= 18) {
+      size = Math.min(34, fit);
+      w = size * w0 + PAD * 2;
+      h = size * h0 + PAD * 2;
+      cam = { s: 1, ox: 0, oy: 0, free: false };
+    } else {
+      size = 22;
+      w = 900;
+      h = 620;
+      cam = { s: 1, ox: 0, oy: 0, free: true, worldW: size * w0 + PAD * 2, worldH: size * h0 + PAD * 2 };
+    }
+    $("zoomCtl").hidden = !cam.free;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     canvas.style.aspectRatio = `${w} / ${h}`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     canvas._w = w;
     canvas._h = h;
+    canvas._dpr = dpr;
+    if (cam.free) {
+      const us = state.units.filter((u) => u.nation === state.sides[0] && !u.embarked);
+      const cx = us.reduce((a, u) => a + center(u.col, u.row).x, 0) / us.length;
+      const cy = us.reduce((a, u) => a + center(u.col, u.row).y, 0) / us.length;
+      cam.s = 0.75;
+      lookAt(cx, cy);
+    }
+  }
+  function lookAt(x, y) {
+    cam.ox = canvas._w / 2 - x * cam.s;
+    cam.oy = canvas._h / 2 - y * cam.s;
+  }
+  function camZoom(f, sx = canvas._w / 2, sy = canvas._h / 2) {
+    const ns = Math.min(2.5, Math.max(canvas._w / cam.worldW, cam.s * f));
+    cam.ox = sx - (sx - cam.ox) * (ns / cam.s);
+    cam.oy = sy - (sy - cam.oy) * (ns / cam.s);
+    cam.s = ns;
+    render();
+  }
+  function follow(u) {
+    if (!cam.free || !u) return;
+    const c = center(u.col, u.row);
+    const sx = c.x * cam.s + cam.ox, sy = c.y * cam.s + cam.oy;
+    if (sx < 60 || sy < 60 || sx > canvas._w - 60 || sy > canvas._h - 60) lookAt(c.x, c.y);
   }
   var player = () => $("side").value;
   var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -2332,6 +2745,7 @@
       if (g !== gen || state.winner) break;
       if (u.dead || u.acted) continue;
       fx = actUnit(state, data_default, u);
+      follow(fx.unit);
       render();
       await sleep(delay());
     }
@@ -2434,10 +2848,17 @@
     ctx.restore();
   }
   function render() {
-    ctx.clearRect(0, 0, canvas._w, canvas._h);
+    const dpr = canvas._dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#0d1320";
+    ctx.fillRect(0, 0, canvas._w, canvas._h);
+    ctx.setTransform(dpr * cam.s, 0, 0, dpr * cam.s, dpr * cam.ox, dpr * cam.oy);
+    const vx0 = -cam.ox / cam.s - size * 2, vy0 = -cam.oy / cam.s - size * 2;
+    const vx1 = (canvas._w - cam.ox) / cam.s + size * 2, vy1 = (canvas._h - cam.oy) / cam.s + size * 2;
     const targets = selected && !selected.acted ? new Set(attackTargets(state, data_default, selected).map((u) => u.id)) : /* @__PURE__ */ new Set();
     for (const t of state.map.tiles) {
       const { x, y } = center(t.col, t.row);
+      if (x < vx0 || x > vx1 || y < vy0 || y > vy1) continue;
       hexPath(x, y, size);
       ctx.fillStyle = data_default.terrain[t.terrain].color;
       ctx.fill();
@@ -2518,6 +2939,14 @@
           ctx.fillText(`\uBC18\uACA9 -${fx.res.counterDmg}`, a.x, a.y + size * 1.15);
         }
       }
+    }
+    if (cam.free) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "rgba(233,226,207,.85)";
+      ctx.fillText("\uD720\xB7\uFF0B/\u2212 \uD655\uB300 \xB7 \uB04C\uC5B4\uC11C \uC774\uB3D9 \xB7 \uD589\uB3D9\uD558\uB294 \uBD80\uB300\uB97C \uCE74\uBA54\uB77C\uAC00 \uB530\uB77C\uAC11\uB2C8\uB2E4", 10, canvas._h - 10);
     }
     renderPanels();
   }
@@ -2693,6 +3122,8 @@
     $("simout").textContent = "";
     $("simbar").hidden = true;
     const map = buildMap({ rows: fullmap_default.rows, castles: [], territory: [] }, data_default);
+    const epoch2 = epochs_default.find((e) => e.id === $("epoch").value);
+    if (epoch2) applyEpoch(map, data_default, fullmap_default.meta, fullmap_default.sites, epoch2);
     const off = document.createElement("canvas");
     const ow = Math.ceil(VS * Math.sqrt(3) * (map.w + 0.5)), oh = Math.ceil(VS * (1.5 * map.h + 0.5));
     off.width = ow;
@@ -2709,6 +3140,29 @@
       }
       o.fillStyle = data_default.terrain[t.terrain].color;
       o.fill();
+      if (t.owner && data_default.nations[t.owner] && t.terrain !== "sea") {
+        o.fillStyle = data_default.nations[t.owner].color + (t.frontier ? "3a" : "99");
+        o.fill();
+      }
+    }
+    if (epoch2) {
+      o.strokeStyle = "rgba(20,16,10,.85)";
+      o.lineWidth = 1.2;
+      for (const t of map.tiles) {
+        if (!t.owner || t.terrain === "sea") continue;
+        const p = toPixel(t.col, t.row, VS);
+        const x = p.x + VS * Math.sqrt(3) / 2, y = p.y + VS;
+        neighbors(t.col, t.row).forEach((n, i) => {
+          const nt = tileAt(map, n.col, n.row);
+          if (!nt || nt.terrain === "sea" || nt.owner === t.owner) return;
+          const [d0, d1] = EDGE_ANGLES[i];
+          const r = Math.PI / 180;
+          o.beginPath();
+          o.moveTo(x + VS * Math.cos(d0 * r), y + VS * Math.sin(d0 * r));
+          o.lineTo(x + VS * Math.cos(d1 * r), y + VS * Math.sin(d1 * r));
+          o.stroke();
+        });
+      }
     }
     const w = 900, h = Math.round(900 * oh / ow);
     const dpr = window.devicePixelRatio || 1;
@@ -2718,13 +3172,21 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     canvas._w = w;
     canvas._h = h;
-    viewerState = { map, off, ow, oh, scale: w / ow, ox: 0, oy: 0, hover: null };
+    viewerState = { map, off, ow, oh, scale: w / ow, ox: 0, oy: 0, hover: null, epoch: epoch2 };
     renderViewer();
-    $("info").innerHTML = "<h3>\uC5ED\uC0AC \uC9C0\uC810</h3>" + fullmap_default.sites.map((st) => `<div style="font-size:13px"><span style="color:${data_default.nations[st.nation]?.color ?? "var(--dim)"}">\u25CF</span> ${st.name} <span class="muted">${SITE_TYPE[st.type]} \xB7 ${CONF[st.confidence]}</span></div>`).join("");
+    const counts = {};
+    for (const t of map.tiles) if (t.owner) counts[t.owner] = (counts[t.owner] || 0) + 1;
+    const legend = epoch2 ? `<h3>${epoch2.title}</h3><div style="font-size:13px">${epoch2.note}</div><div style="margin:6px 0">${Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([n, c]) => `<span class="chip"><span style="color:${data_default.nations[n].color}">\u25A0</span> ${data_default.nations[n].name} ${c.toLocaleString()}\uCE78</span>`).join("")}</div><div class="muted" style="font-size:12.5px">\uADFC\uAC70: ${epoch2.certainty}</div><div class="muted" style="font-size:12px;margin:4px 0 10px">\uAD6D\uACBD\uC740 \uAC01 \uC131\uC5D0\uC11C \uC2E4\uC81C \uC9C0\uD615\uC744 \uB530\uB77C \uD589\uAD70 \uAC70\uB9AC\uB85C \uB113\uD600 \uC790\uB3D9 \uACC4\uC0B0\uD588\uC2B5\uB2C8\uB2E4. \uC9C4\uD55C \uC0C9\uC740 6\uC77C \uD589\uAD70 \uC548\uC758 \uD575\uC2EC \uC601\uC5ED, \uC5F0\uD55C \uC0C9\uC740 15\uC77C \uD589\uAD70\uAE4C\uC9C0\uC758 \uBCC0\uACBD, \uC0C9 \uC5C6\uB294 \uB545\uC740 \uBBF8\uC9C0\uBC30\uC785\uB2C8\uB2E4.</div>` : "";
+    $("info").innerHTML = legend + "<h3>\uC5ED\uC0AC \uC9C0\uC810</h3>" + fullmap_default.sites.map((st) => `<div style="font-size:13px"><span style="color:${data_default.nations[st.nation]?.color ?? "var(--dim)"}">\u25CF</span> ${st.name} <span class="muted">${SITE_TYPE[st.type]} \xB7 ${CONF[st.confidence]}</span></div>`).join("");
     $("tile").innerHTML = '<h3>\uC9C0\uD615</h3><div class="muted">\uCE78\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB9AC\uC138\uC694.</div>';
     $("log").textContent = "\uC804\uCCB4 \uC9C0\uB3C4 \uBCF4\uAE30\uC5D0\uC11C\uB294 \uC804\uD22C\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.";
   }
   var SITE_TYPE = { capital: "\uB3C4\uC131", castle: "\uC131", port: "\uD56D\uAD6C", battle: "\uC804\uC7A5" };
+  var EDGE_ANGLES = [[-30, 30], [-90, -30], [-150, -90], [150, 210], [90, 150], [30, 90]];
+  function fillEpochs() {
+    $("epoch").innerHTML = '<option value="">\uC9C0\uD615\uB9CC</option>' + epochs_default.map((e) => `<option value="${e.id}">${e.title}</option>`).join("");
+    $("epoch").value = "s645";
+  }
   var CONF = { high: "\uC704\uCE58 \uD655\uC2E4", mid: "\uC720\uB825\uC124", low: "\uB17C\uC7C1 \uC911" };
   function renderViewer() {
     const v = viewerState;
@@ -2741,7 +3203,8 @@
       ctx.beginPath();
       if (st.type === "castle" || st.type === "capital") ctx.rect(x - r, y - r, r * 2, r * 2);
       else ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = data_default.nations[st.nation]?.color ?? "#e9e2cf";
+      const owner = v.epoch && st.name in v.epoch.owners ? v.epoch.owners[st.name] : v.epoch ? null : st.nation;
+      ctx.fillStyle = data_default.nations[owner]?.color ?? "#e9e2cf";
       ctx.fill();
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = "#10151f";
@@ -2781,22 +3244,38 @@
     renderViewer();
   }
   var drag = null;
+  var dragged = false;
   canvas.addEventListener("wheel", (e) => {
-    if (!viewerState) return;
+    if (!viewerState && !cam.free) return;
     e.preventDefault();
     const r = canvas.getBoundingClientRect();
-    zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, (e.clientX - r.left) * (canvas._w / r.width), (e.clientY - r.top) * (canvas._h / r.height));
+    const sx = (e.clientX - r.left) * (canvas._w / r.width), sy = (e.clientY - r.top) * (canvas._h / r.height);
+    if (viewerState) zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, sx, sy);
+    else camZoom(e.deltaY < 0 ? 1.2 : 1 / 1.2, sx, sy);
   }, { passive: false });
   canvas.addEventListener("pointerdown", (e) => {
-    if (viewerState) {
-      drag = { x: e.clientX, y: e.clientY };
-      canvas.setPointerCapture(e.pointerId);
+    if (viewerState || cam.free) {
+      drag = { x: e.clientX, y: e.clientY, moved: 0 };
+      dragged = false;
     }
   });
   canvas.addEventListener("pointerup", () => {
     drag = null;
   });
   canvas.addEventListener("pointermove", (e) => {
+    if (!viewerState && cam.free && drag) {
+      const r = canvas.getBoundingClientRect(), f = canvas._w / r.width;
+      drag.moved += Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y);
+      if (drag.moved > 6) {
+        dragged = true;
+        cam.ox += (e.clientX - drag.x) * f;
+        cam.oy += (e.clientY - drag.y) * f;
+        render();
+      }
+      drag.x = e.clientX;
+      drag.y = e.clientY;
+      return;
+    }
     if (!viewerState) return;
     if (drag) {
       const r = canvas.getBoundingClientRect(), f = canvas._w / r.width;
@@ -2814,12 +3293,12 @@
     const site = fullmap_default.sites.find((st) => st.col === t.col && st.row === t.row);
     $("tile").innerHTML = tileCard(t) + `<div class="muted num" style="font-size:12px">\uCE78 (${t.col}, ${t.row}) \xB7 \uBD81\uC704 ${lat.toFixed(2)}\xB0 \uB3D9\uACBD ${lon.toFixed(2)}\xB0</div>` + (site ? `<div style="margin-top:4px"><b>${site.name}</b> <span class="muted">${SITE_TYPE[site.type]} \xB7 ${CONF[site.confidence]}</span></div>` : "");
   });
-  $("zin").onclick = () => viewerState && zoomAt(1.5);
-  $("zout").onclick = () => viewerState && zoomAt(1 / 1.5);
+  $("zin").onclick = () => viewerState ? zoomAt(1.5) : cam.free && camZoom(1.5);
+  $("zout").onclick = () => viewerState ? zoomAt(1 / 1.5) : cam.free && camZoom(1 / 1.5);
   function hexAt(evt) {
     const r = canvas.getBoundingClientRect();
-    const x = (evt.clientX - r.left) * (canvas._w / r.width);
-    const y = (evt.clientY - r.top) * (canvas._h / r.height);
+    const x = ((evt.clientX - r.left) * (canvas._w / r.width) - cam.ox) / cam.s;
+    const y = ((evt.clientY - r.top) * (canvas._h / r.height) - cam.oy) / cam.s;
     let best = null, bd = Infinity;
     for (const t of state.map.tiles) {
       const c = center(t.col, t.row);
@@ -2840,6 +3319,10 @@
   });
   canvas.addEventListener("click", (e) => {
     if (viewerState) return;
+    if (dragged) {
+      dragged = false;
+      return;
+    }
     const t = hexAt(e);
     if (!t) return;
     hover = { tile: t, unit: unitAt(state, t.col, t.row) };
@@ -2903,6 +3386,8 @@
     if (e.key === "Enter" && myTurn()) endPlayerTurn();
   });
   fillSelectors();
+  fillEpochs();
+  $("epoch").onchange = () => viewerState && openViewer();
   buildTables();
   load(0);
 })();

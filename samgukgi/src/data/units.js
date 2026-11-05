@@ -12,7 +12,7 @@ export const units = {
   // 궁병: 사거리 2. 거리 2 사격은 반격을 받지 않지만 화력 85%(combat.js RANGED_FALLOFF).
   // 인접(거리 1)하면 근접전에 말려들어 공격력 75%.
   archer:  { name: '궁병', short: '궁', atk: 1.0, def: 0.8, move: 6, range: 2, adjacentMul: 0.75 },
-  // 공성병기(충차·포차): 사람에게는 약하고 성벽에 강하다. 하루 2칸, 산·습지·여울 진입 불가
+  // 공성병기(충차·포차): 사람에게는 약하고 성벽에 강하다. 하루 2칸, 산·습지 진입 불가(여울은 분해해 운반)
   siege:   { name: '공성병기', short: '공', atk: 0.5, def: 0.6, move: 4, range: 2, adjacentMul: 0.7 },
 };
 
