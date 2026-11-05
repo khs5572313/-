@@ -63,5 +63,5 @@ window.SGK = window.SGK || {};
   U.px = (lon) => (lon - U.LON0) * U.KX;
   U.py = (lat) => (U.LAT0 - lat) * U.KY;
   S.U = U;
-  S.settings = { fast: false, historicalDeath: true, sound: false };
+  S.settings = { fast: false, historicalDeath: true, sound: false, balanceRoster: true };
 })(window.SGK);

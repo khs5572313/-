@@ -102,6 +102,23 @@
         so.status = 'active'; so.city = order[k++ % order.length];
       }
     }
+    /* 인물 수 균형: 한 나라의 장수가 가장 적은 나라보다 10% 넘게 많으면, 초과분(가상 인물·능력 합 낮은 순)은 자국 도시의 재야로 시작 → 「탐색」으로 등용 */
+    if (S.settings.balanceRoster !== false) {
+      const placed = new Set(Object.values(sc.officers).flat().map((e) => e.split('@')[0]));
+      const act = {};
+      for (const n of ['goguryeo', 'baekje', 'silla']) if (st.nations[n].alive) act[n] = G.nationOfficers(n);
+      const counts = Object.values(act).map((l) => l.length);
+      if (counts.length) {
+        const cap = Math.round(Math.min(...counts) * 1.1);
+        for (const n in act) {
+          const extra = act[n].length - cap;
+          if (extra <= 0) continue;
+          const cands = act[n].filter((id) => !placed.has(id) && st.nations[n].ruler !== id)
+            .sort((a, b) => (S.officerById[b].fic ? 1 : 0) - (S.officerById[a].fic ? 1 : 0) || st.officers[a].s.reduce((x, y) => x + y) - st.officers[b].s.reduce((x, y) => x + y));
+          cands.slice(0, extra).forEach((id) => { st.officers[id].status = 'free'; });
+        }
+      }
+    }
     /* 미래 등장: 성인(16세) 도달 */
     for (const o of S.OFFICERS) {
       const so = st.officers[o.id];
@@ -519,6 +536,19 @@
       cs.order = U.clamp(cs.order + ordDelta, 0, 100);
       cs.train = Math.min(100, cs.train + G.bldEff(cs, 'train'));
       if (cs.wall < G.wallMax(cid)) cs.wall = Math.min(G.wallMax(cid), cs.wall + 4);
+    }
+    /* 총동원령(역전 장치): 도시 5곳 이하로 몰린 삼국은 수도에서 매 계절 비상 징병 */
+    for (const n of ['goguryeo', 'baekje', 'silla']) {
+      if (!st.nations[n] || !st.nations[n].alive) continue;
+      const cs = G.citiesOf(n);
+      if (cs.length > 5) continue;
+      const cap = G.capitalOf(n);
+      if (!cap) continue;
+      const k = (6 - cs.length) * 1200;
+      const t = st.cities[cap].troops;
+      t.spear = (t.spear || 0) + k; t.bow = (t.bow || 0) + Math.round(k * 0.6);
+      rep[n].food += 400;
+      if (n === st.player) G.log(`총동원령! 수도에 의용병 ${U.fmt(k * 1.6)}명이 모였다.`, 'warn');
     }
     /* 수·당: 지도 밖 중원 본토의 보급 (대운하·관중) */
     for (const n of ['sui', 'tang']) if (st.nations[n] && st.nations[n].alive) { rep[n].gold += 450; rep[n].food += 1600; rep[n].iron += 80; rep[n].wood += 100; }

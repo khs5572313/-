@@ -63,7 +63,8 @@
   UI.settings = async () => {
     const body = el('div', { class: 'settings' },
       el('label', {}, el('input', { type: 'checkbox', checked: S.settings.fast, onchange: (e) => (S.settings.fast = e.target.checked) }), ' 빠른 전투 애니메이션'),
-      el('label', {}, el('input', { type: 'checkbox', checked: S.settings.historicalDeath, onchange: (e) => (S.settings.historicalDeath = e.target.checked) }), ' 역사 수명 (인물이 실제 사망 연도에 사망)'));
+      el('label', {}, el('input', { type: 'checkbox', checked: S.settings.historicalDeath, onchange: (e) => (S.settings.historicalDeath = e.target.checked) }), ' 역사 수명 (인물이 실제 사망 연도에 사망)'),
+      el('label', {}, el('input', { type: 'checkbox', checked: S.settings.balanceRoster !== false, onchange: (e) => (S.settings.balanceRoster = e.target.checked) }), ' 인물 수 균형 (시작 시 장수가 많은 나라의 초과 인원은 재야로 — 탐색으로 등용)'));
     await UI.modal({ title: '설정', body });
     localStorage.setItem('samgukgi_settings', JSON.stringify(S.settings));
   };

@@ -11,16 +11,16 @@
   O('geonmu', '고건무', '高建武', 'goguryeo', [80, 82, 70, 72], { role: 'king', u: 'gaema', b: 581, d: 642, sp: 'gyeolsa500', loyal: 100, src: '사기·수서', note: '영양왕의 이복동생, 618년 즉위한 영류왕.' });
   O('euljimundeok', '을지문덕', '乙支文德', 'goguryeo', [94, 80, 98, 82], { role: 'general', u: 'cav', b: 560, d: 630, sp: 'salsu', loyal: 95, src: '사기·수서' });
   O('gangisik', '강이식', '姜以式', 'goguryeo', [88, 85, 74, 60], { role: 'general', u: 'gaema', b: 555, d: 625, sp: 'imyu', loyal: 92, src: '야사', legend: true, note: '598년 임유관 전투의 병마원수로 전하나 정사에는 기록이 없다.' });
-  O('yeongaesomun', '연개소문', '淵蓋蘇文', 'goguryeo', [93, 92, 84, 76], { role: 'general', u: 'gaema', b: 603, d: 665, sp: 'odo', loyal: 90, src: '사기·신당서·서기', ambition: true });
+  O('yeongaesomun', '연개소문', '淵蓋蘇文', 'goguryeo', [93, 92, 84, 80], { role: 'general', u: 'gaema', b: 603, d: 665, sp: 'odo', loyal: 90, src: '사기·신당서·서기', ambition: true });
   O('yangmanchun', '양만춘', '楊萬春', 'goguryeo', [92, 82, 90, 84], { role: 'general', u: 'bow', b: 600, d: 670, sp: 'ansi', loyal: 98, src: '야사', legend: true, note: '안시성주는 정사에 이름이 없고, 양만춘은 조선 후기 문헌(송준길·열하일기)의 전승.' });
-  O('bojang', '보장왕', '寶臧王', 'goguryeo', [55, 40, 70, 72], { role: 'king', u: 'spear', b: 615, d: 682, sp: 'dogyo', loyal: 100, src: '사기' });
-  O('namsaeng', '연남생', '淵男生', 'goguryeo', [78, 72, 70, 66], { role: 'general', u: 'cav', b: 634, d: 679, sp: 'nyeonbong', loyal: 50, src: '사기·천남생묘지' });
+  O('bojang', '보장왕', '寶臧王', 'goguryeo', [55, 40, 74, 76], { role: 'king', u: 'spear', b: 615, d: 682, sp: 'dogyo', loyal: 100, src: '사기' });
+  O('namsaeng', '연남생', '淵男生', 'goguryeo', [78, 72, 74, 70], { role: 'general', u: 'cav', b: 634, d: 679, sp: 'nyeonbong', loyal: 50, src: '사기·천남생묘지' });
   O('namgeon', '연남건', '淵男建', 'goguryeo', [80, 82, 62, 55], { role: 'general', u: 'spear', b: 638, d: 690, sp: 'pyongyang', loyal: 85, src: '사기' });
-  O('namsan', '연남산', '淵男産', 'goguryeo', [60, 58, 65, 62], { role: 'scholar', u: 'spear', b: 639, d: 701, sp: 'sanseong', loyal: 60, src: '사기' });
+  O('namsan', '연남산', '淵男産', 'goguryeo', [60, 58, 72, 72], { role: 'scholar', u: 'spear', b: 639, d: 701, sp: 'sanseong', loyal: 60, src: '사기' });
   O('jeongto', '연정토', '淵淨土', 'goguryeo', [74, 72, 66, 64], { role: 'general', u: 'spear', b: 610, d: 680, sp: 'sanseong', loyal: 55, src: '사기', note: '666년 12성을 들어 신라에 투항.' });
   O('goyeonsu', '고연수', '高延壽', 'goguryeo', [76, 78, 55, 50], { role: 'general', u: 'mohecav', b: 600, d: 645, sp: 'mohe', loyal: 60, src: '사기·구당서' });
   O('gohyejin', '고혜진', '高惠眞', 'goguryeo', [72, 74, 58, 52], { role: 'general', u: 'bow', b: 602, d: 670, sp: 'maekgung', loyal: 55, src: '사기·구당서' });
-  O('gojeongui', '고정의', '高正義', 'goguryeo', [60, 45, 88, 70], { role: 'scholar', u: 'spear', b: 580, d: 650, sp: 'jigujeon', loyal: 90, src: '사기·구당서' });
+  O('gojeongui', '고정의', '高正義', 'goguryeo', [60, 45, 88, 74], { role: 'scholar', u: 'spear', b: 580, d: 662, sp: 'jigujeon', loyal: 90, src: '사기·구당서' });
   O('geommojam', '검모잠', '劍牟岑', 'goguryeo', [80, 78, 72, 64], { role: 'general', u: 'spear', b: 620, d: 670, sp: 'buheung', loyal: 95, src: '사기' });
   O('anseung', '안승', '安勝', 'goguryeo', [62, 55, 64, 70], { role: 'king', u: 'spear', b: 640, d: 700, sp: 'bodeok', loyal: 80, src: '사기' });
   O('goyeonmu', '고연무', '高延武', 'goguryeo', [78, 80, 62, 58], { role: 'general', u: 'cav', b: 630, d: 690, sp: 'amnok', loyal: 92, src: '사기' });
@@ -33,7 +33,7 @@
   O('seonhwa', '선화공주', '善花公主', 'baekje', [30, 15, 82, 88], { role: 'lady', u: 'spear', b: 585, d: 640, sp: 'seonhwa', loyal: 100, female: true, src: '유사', legend: true, note: '진평왕의 셋째 딸이라는 삼국유사 설화. 2009년 미륵사지 사리봉안기에는 왕후가 사택적덕의 딸로 나온다.' });
   O('sataekjeokdeok', '사택적덕', '沙乇積德', 'baekje', [45, 30, 78, 86], { role: 'scholar', u: 'spear', b: 570, d: 640, sp: 'sataek', loyal: 90, src: '미륵사지 사리봉안기' });
   O('haesu', '해수', '解讎', 'baekje', [76, 74, 60, 58], { role: 'general', u: 'cav', b: 565, d: 625, sp: 'haesu', loyal: 88, src: '사기' });
-  O('uija', '의자왕', '義慈王', 'baekje', [84, 82, 80, 72], { role: 'king', u: 'gangung', b: 599, d: 660, sp: 'haedong', loyal: 100, src: '사기' });
+  O('uija', '의자왕', '義慈王', 'baekje', [86, 82, 82, 74], { role: 'king', u: 'gangung', b: 599, d: 660, sp: 'haedong', loyal: 100, src: '사기' });
   O('gyebaek', '계백', '階伯', 'baekje', [90, 93, 72, 58], { role: 'general', u: 'gyeolsa', b: 610, d: 660, sp: 'gyebaek', loyal: 100, src: '사기' });
   O('seongchung', '성충', '成忠', 'baekje', [70, 50, 92, 88], { role: 'scholar', u: 'spear', b: 605, d: 656, sp: 'seongchung', loyal: 100, src: '사기' });
   O('heungsu', '흥수', '興首', 'baekje', [55, 40, 90, 84], { role: 'scholar', u: 'spear', b: 600, d: 661, sp: 'heungsu', loyal: 95, src: '사기' });
@@ -51,7 +51,7 @@
   O('satasangyeo', '사타상여', '沙吒相如', 'baekje', [78, 82, 60, 55], { role: 'general', u: 'cav', b: 625, d: 690, sp: 'uijik', loyal: 60, src: '사기' });
 
   /* ─── 신라 ─── */
-  O('jinpyeong', '진평왕', '眞平王', 'silla', [70, 68, 72, 82], { role: 'king', u: 'spear', b: 565, d: 632, sp: 'okdae', loyal: 100, src: '사기·유사' });
+  O('jinpyeong', '진평왕', '眞平王', 'silla', [74, 78, 72, 82], { role: 'king', u: 'spear', b: 565, d: 632, sp: 'okdae', loyal: 100, src: '사기·유사', note: '삼국유사는 키가 11척이었다고 전한다. 54년간 재위.' });
   O('seondeok', '선덕여왕', '善德女王', 'silla', [72, 30, 96, 88], { role: 'queen', u: 'spear', b: 595, d: 647, sp: 'jigi', loyal: 100, female: true, src: '사기·유사' });
   O('jindeok', '진덕여왕', '眞德女王', 'silla', [60, 30, 82, 86], { role: 'queen', u: 'spear', b: 600, d: 654, sp: 'taepyeong', loyal: 100, female: true, src: '사기' });
   O('kimchunchu', '김춘추', '金春秋', 'silla', [76, 55, 94, 95], { role: 'king', u: 'spear', b: 603, d: 661, sp: 'chunchu', loyal: 100, src: '사기', note: '654년 즉위한 태종 무열왕.' });
@@ -67,8 +67,8 @@
   O('jukjuk', '죽죽', '竹竹', 'silla', [58, 74, 52, 46], { role: 'general', u: 'spear', b: 615, d: 642, sp: 'jukjuk', loyal: 100, src: '사기 열전' });
   O('bidam', '비담', '毗曇', 'silla', [78, 76, 70, 62], { role: 'general', u: 'cav', b: 600, d: 647, sp: 'bidam', loyal: 35, src: '사기', ambition: true });
   O('alcheon', '알천', '閼川', 'silla', [80, 85, 70, 74], { role: 'general', u: 'cav', b: 590, d: 660, sp: 'alcheon', loyal: 98, src: '사기·유사' });
-  O('kimseohyeon', '김서현', '金舒玄', 'silla', [74, 70, 68, 70], { role: 'general', u: 'spear', b: 570, d: 640, sp: 'seohyeon', loyal: 95, src: '사기' });
-  O('kimyongchun', '김용춘', '金龍春', 'silla', [72, 64, 74, 76], { role: 'scholar', u: 'spear', b: 578, d: 647, sp: 'yongchun', loyal: 95, src: '사기' });
+  O('kimseohyeon', '김서현', '金舒玄', 'silla', [82, 76, 70, 72], { role: 'general', u: 'spear', b: 570, d: 640, sp: 'seohyeon', loyal: 95, src: '사기' });
+  O('kimyongchun', '김용춘', '金龍春', 'silla', [78, 68, 76, 78], { role: 'general', u: 'spear', b: 578, d: 647, sp: 'yongchun', loyal: 95, src: '사기' });
   O('munhui', '문희', '文姬', 'silla', [20, 10, 78, 80], { role: 'lady', u: 'spear', b: 605, d: 681, sp: 'munhui', loyal: 100, female: true, src: '사기·유사' });
   O('wonhyo', '원효', '元曉', 'silla', [25, 30, 97, 90], { role: 'monk', u: 'spear', b: 617, d: 686, sp: 'wonhyo', loyal: 90, src: '유사·송고승전' });
   O('uisang', '의상', '義湘', 'silla', [20, 22, 94, 88], { role: 'monk', u: 'spear', b: 625, d: 702, sp: 'uisang', loyal: 95, src: '유사' });

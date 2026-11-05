@@ -165,6 +165,7 @@
         const tp = S.CITY_TYPES[this.city.type];
         let db = tp.defBonus + G.bldEff(this.cs, 'def') + G.wonderEff(this.defNation, 'defAll');
         if (this.city.type === 'mountain' && nD === 'goguryeo') db += 0.2;
+        db += (S.NATIONS[nD].bonus || {}).cityDef || 0;
         if (tgt.oid) db += G.passive(tgt.oid, 'def');
         def *= 1 + db;
         if (!(card.wall)) def *= 1 + this.wall / 1600;
