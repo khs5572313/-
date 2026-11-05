@@ -1,9 +1,10 @@
+/* (구) 수·당·왜 포함 시나리오 — 확장판에서 재사용 예정. 현재는 scenarios3k.js 의 삼국 시나리오만 사용 */
 /* 시나리오 5종
  * cities: { 도시: [소유국, 병력배율(기본1), {개별 덧쓰기}] }
  * officers: { 도시: ['인물id' 또는 '인물id@국가'] }   free: 재야(탐색으로 등용)
  * relations: [국가A, 국가B, 상태(war|ally|truce|peace), 우호도]
  * goals: 국가별 승리 조건 (hold: 지정 연도까지 사수 / capture: 점령 / destroy: 멸망 / count: 도시 수) */
-SGK.SCENARIOS = [
+SGK.SCENARIOS_LEGACY = [
   {
     id: 's1', no: 1, title: '살수대첩', sub: '백만 대군이 온다', year: 612, season: 0, endYear: 620,
     img: 'water',
@@ -221,5 +222,5 @@ SGK.SCENARIOS = [
     },
   },
 ];
-SGK.scenarioById = {};
-SGK.SCENARIOS.forEach((s) => (SGK.scenarioById[s.id] = s));
+
+

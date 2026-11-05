@@ -125,7 +125,7 @@
   O('hirafu', '아베노 히라후', '阿倍比羅夫', 'wa', [80, 78, 64, 58], { role: 'general', u: 'wanavy', b: 615, d: 680, sp: 'hirafu', loyal: 92, src: '서기' });
   O('takutsu', '에치노 다쿠쓰', '朴市田來津', 'wa', [72, 80, 56, 48], { role: 'general', u: 'wanavy', b: 620, d: 663, sp: 'takutsu', loyal: 98, src: '서기' });
   O('doljigye', '돌지계', '突地稽', 'mohe', [74, 76, 50, 48], { role: 'general', u: 'mohecav', b: 570, d: 630, sp: 'dolji', loyal: 70, src: '수서·구당서' });
-  O('geolsabiu', '걸사비우', '乞四比羽', 'mohe', [76, 80, 52, 46], { role: 'general', u: 'mohecav', b: 640, d: 697, sp: 'geolsa', loyal: 70, src: '구당서·신당서' });
+  O('geolsabiu', '걸사비우', '乞四比羽', 'goguryeo', [76, 80, 52, 46], { role: 'general', u: 'mohecav', b: 640, d: 697, sp: 'geolsa', loyal: 70, src: '구당서·신당서', note: '고구려 멸망 후 대조영과 함께한 말갈 추장.' });
 
   SGK.OFFICERS = L;
   SGK.officerById = {};

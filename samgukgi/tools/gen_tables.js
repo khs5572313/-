@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 global.window = {};
 const root = path.join(__dirname, '..', 'js');
-const files = ['core.js', 'data/nations.js', 'data/map.js', 'data/units.js', 'data/buildings.js', 'data/specials.js', 'data/officers.js', 'data/scenarios.js', 'data/events.js'];
+const files = ['core.js', 'data/nations.js', 'data/map.js', 'data/units.js', 'data/buildings.js', 'data/specials.js', 'data/officers.js', 'data/officers2.js', 'data/scenarios.js', 'data/scenarios3k.js', 'data/events.js', 'data/events3k.js'];
 global.SGK = window.SGK = {};
 for (const f of files) eval(fs.readFileSync(path.join(root, f), 'utf8'));
 const S = window.SGK;
@@ -39,16 +39,17 @@ for (const [id, b] of Object.entries(S.BUILDINGS)) {
   P(`| ${b.cat} | ${b.name}${b.alias ? ` (${Object.entries(b.alias).map(([n, a]) => `${NAT(n)}: ${a}`).join(', ')})` : ''} | ${b.hanja} | ${cost} | ${b.desc} | ${lim} |`);
 }
 
-P('\n## 4. 인물 (' + S.OFFICERS.length + '명)\n');
-P('★ = 설화·야사 인물. 능력치 순서: 통솔/무력/지력/정치.\n');
-for (const n of ['goguryeo', 'baekje', 'silla', 'sui', 'tang', 'wa', 'mohe']) {
+P('\n## 4. 인물 (삼국 ' + S.OFFICERS.filter((o) => ['goguryeo', 'baekje', 'silla'].includes(o.nation)).length + '명, 나라별 100명)\n');
+P('★ = 설화·야사 인물, ◇ = 가상 인물(게임 창작). 능력치 순서: 통솔/무력/지력/정치. 수·당·왜 인물은 확장판용으로 데이터에만 보관.\n');
+for (const n of ['goguryeo', 'baekje', 'silla']) {
   const list = S.OFFICERS.filter((o) => o.nation === n);
-  P(`\n### ${NAT(n)} (${list.length}명)\n`);
+  const cnt = (f) => list.filter(f).length;
+  P(`\n### ${NAT(n)} (${list.length}명 — 정사 ${cnt((o) => !o.legend && !o.fic)} · 설화·야사 ${cnt((o) => o.legend)} · 가상 ${cnt((o) => o.fic)})\n`);
   P('| 인물 | 한자 | 생몰(추정) | 통 | 무 | 지 | 정 | 특수능력 | 전용 카드 | 출전 |');
   P('|---|---|---|---|---|---|---|---|---|---|');
   for (const o of list) {
     const sp = S.SPECIALS_AB[o.sp];
-    P(`| ${o.legend ? '★' : ''}${o.name} | ${o.hanja} | ${o.b}~${o.d} | ${o.s.join(' | ')} | ${sp ? sp.name : '-'} | ${sp && sp.card ? `「${sp.card.name}」 ${sp.card.desc}` : '-'} | ${o.src} |`);
+    P(`| ${o.legend ? '★' : ''}${o.fic ? '◇' : ''}${o.name} | ${o.hanja} | ${o.b}~${o.d} | ${o.s.join(' | ')} | ${sp ? sp.name : '-'} | ${sp && sp.card ? `「${sp.card.name}」 ${sp.card.desc}` : '-'} | ${o.src} |`);
   }
 }
 
@@ -63,10 +64,11 @@ P('|---|---|---|---|---|---|');
 for (const e of S.EVENTS) P(`| ${e.when.y}${e.when.to && e.when.to !== e.when.y ? `~${e.when.to}` : ''} | ${e.title} | ${e.kind === 'legend' ? '설화·야사' : '정사'} | ${e.who.map((w) => (w === 'all' ? '전체' : NAT(w))).join('·')} | ${e.choices.map((c) => c.label).join(' / ')} | ${e.src} |`);
 
 P('\n## 7. 시나리오\n');
-for (const sc of S.SCENARIOS) {
-  P(`\n### 제${sc.no}장 ${sc.year}년 「${sc.title}」 — ${sc.sub}\n`);
+for (const sc of S.SCENARIOS.slice().sort((a, b) => ['goguryeo', 'baekje', 'silla'].indexOf(a.hero) - ['goguryeo', 'baekje', 'silla'].indexOf(b.hero) || a.year - b.year)) {
+  P(`\n### [${NAT(sc.hero)}편] ${sc.year}년 「${sc.title}」 — ${sc.sub}\n`);
   P(sc.desc + '\n');
   P(`- 사료: ${sc.hist}`);
+  P(`- 핵심: ${sc.focus}`);
   P(`- 플레이 가능: ${sc.playable.map(NAT).join(', ')} / 종료: ${sc.endYear}년`);
   for (const n of sc.playable) P(`- ${NAT(n)} 승리 조건: ${(sc.goals[n] || []).map((g) => g.desc).join(', ')}`);
 }

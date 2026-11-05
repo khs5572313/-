@@ -44,14 +44,14 @@
       el('div', { class: 'title-art', html: titleArt() }),
       el('div', { class: 'title-box' },
         el('div', { class: 'logo' }, el('span', { class: 'hanja' }, '三國記'), el('span', { class: 'kor' }, '삼 국 기')),
-        el('div', { class: 'tagline' }, '수의 침공부터 나당전쟁까지 — 598~676'),
+        el('div', { class: 'tagline' }, '고구려·백제·신라 삼국 전쟁 — 590~676'),
         el('div', { class: 'title-menu' },
           el('button', { class: 'btn big gold', onclick: UI.scenarioSelect }, '새 게임'),
           el('button', { class: 'btn big', onclick: () => UI.loadMenu(slots) }, '불러오기'),
           el('button', { class: 'btn big', onclick: UI.settings }, '설정'),
           el('a', { class: 'btn big', href: 'docs/기획서.md', target: '_blank' }, '기획서'),
         ),
-        el('div', { class: 'title-foot' }, '역사 SLG · 카드 덱 전투 · 실존 인물 100여 명과 설화·야사 인물 등장')));
+        el('div', { class: 'title-foot' }, '역사 SLG · 카드 덱 전투 · 삼국 인물 300명(나라별 100명)')));
     root.appendChild(t);
   };
   const titleArt = () => `<svg viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1420"/><stop offset=".6" stop-color="#5a2a22"/><stop offset="1" stop-color="#c46a32"/></linearGradient></defs>
@@ -85,12 +85,17 @@
     const list = el('div', { class: 'sc-list' });
     const render = () => {
       list.innerHTML = '';
-      S.SCENARIOS.forEach((sc) => list.appendChild(el('button', { class: `sc-item ${sc === cur ? 'on' : ''}`, onclick: () => { cur = sc; render(); } },
-        el('div', { class: 'sc-no' }, `제${sc.no}장`), el('div', { class: 'sc-year' }, `${sc.year}년`), el('div', { class: 'sc-name' }, sc.title), el('div', { class: 'sc-sub' }, sc.sub))));
+      ['goguryeo', 'baekje', 'silla'].forEach((h) => {
+        const N = S.NATIONS[h];
+        list.appendChild(el('div', { class: 'sc-group', style: { borderColor: N.color } }, el('span', { html: A.emblem(h, 22) }), ` ${N.name}편`));
+        S.SCENARIOS.filter((sc) => sc.hero === h).sort((a, b) => a.year - b.year).forEach((sc) => list.appendChild(el('button', { class: `sc-item ${sc === cur ? 'on' : ''}`, style: { borderLeft: `5px solid ${N.color}` }, onclick: () => { cur = sc; render(); } },
+          el('div', { class: 'sc-year' }, `${sc.year}년`), el('div', { class: 'sc-name' }, sc.title), el('div', { class: 'sc-sub' }, sc.sub))));
+      });
       detail.innerHTML = '';
       detail.appendChild(el('h2', {}, `${sc_title(cur)}`));
       detail.appendChild(el('p', { class: 'sc-desc' }, cur.desc));
       detail.appendChild(el('p', { class: 'sc-hist' }, '📜 ', cur.hist));
+      if (cur.focus) detail.appendChild(el('p', { class: 'sc-focus' }, '⚔ 핵심 인물·사건: ', cur.focus));
       detail.appendChild(el('div', { class: 'sc-pick-label' }, '세력을 선택하십시오'));
       const picks = el('div', { class: 'sc-picks' });
       cur.playable.forEach((n) => {
@@ -98,8 +103,8 @@
         const ruler = cur.nations[n].ruler;
         const goals = (cur.goals[n] || []).map((g) => g.desc).join(' / ');
         const cities = Object.values(cur.cities).filter((c) => c[0] === n).length;
-        picks.appendChild(el('button', { class: 'sc-nation', style: { borderColor: N.color }, onclick: () => { G.newGame(cur.id, n); UI.startMain(true); } },
-          el('div', { class: 'scn-top' }, el('span', { html: A.emblem(n, 42) }), el('div', {}, el('div', { class: 'scn-name', style: { color: N.color } }, cur.nations[n].alias || N.name), el('div', { class: 'scn-motto' }, N.motto))),
+        picks.appendChild(el('button', { class: `sc-nation ${n === cur.hero ? 'hero' : ''}`, style: { borderColor: N.color }, onclick: () => { G.newGame(cur.id, n); UI.startMain(true); } },
+          el('div', { class: 'scn-top' }, el('span', { html: A.emblem(n, 42) }), el('div', {}, el('div', { class: 'scn-name', style: { color: N.color } }, cur.nations[n].alias || N.name, n === cur.hero ? el('span', { class: 'hero-tag' }, '주인공') : null), el('div', { class: 'scn-motto' }, N.motto))),
           el('div', { class: 'scn-ruler', html: ruler ? A.portrait(ruler, 54, { nation: n }) : '' }),
           el('div', { class: 'scn-info' }, el('div', {}, `군주: ${ruler ? S.officerById[ruler].name : '-'} · 도시 ${cities}`), el('div', { class: 'scn-trait' }, N.trait), el('div', { class: 'scn-goal' }, '🎯 ', goals))));
       });
@@ -196,6 +201,7 @@
     const g = $('#edges');
     let s = '';
     for (const [a, b, t] of S.EDGES) {
+      if (S.state.inactive && (S.state.inactive[a] || S.state.inactive[b])) continue;
       const A1 = S.cityById[a], B = S.cityById[b];
       const x1 = U.px(A1.lon), y1 = U.py(A1.lat), x2 = U.px(B.lon), y2 = U.py(B.lat);
       if (t === 'sea') { const mx = (x1 + x2) / 2 + (y2 - y1) * 0.12, my = (y1 + y2) / 2 - (x2 - x1) * 0.12; s += `<path d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" class="edge sea"/>`; }
@@ -208,16 +214,17 @@
     if (!$('#cities')) return;
     /* 영역 (보로노이 근사: 도시 주변 원) */
     let terr = '';
-    for (const c of S.CITIES) { const o = st.cities[c.id].owner; const col = S.NATIONS[o].color; terr += `<circle cx="${U.px(c.lon)}" cy="${U.py(c.lat)}" r="${c.type === 'capital' ? 120 : 85}" fill="${col}" opacity=".13"/>`; }
+    for (const c of S.CITIES) { if (st.inactive && st.inactive[c.id]) continue; const o = st.cities[c.id].owner; const col = S.NATIONS[o].color; terr += `<circle cx="${U.px(c.lon)}" cy="${U.py(c.lat)}" r="${c.type === 'capital' ? 120 : 85}" fill="${col}" opacity=".13"/>`; }
     $('#territory').innerHTML = terr;
     /* 천리장성 */
     const gw = $('#greatwall');
-    if (st.flags.cheolliBuilt || st.year >= 647) {
+    if (!(st.inactive && st.inactive.cheolli) && (st.flags.cheolliBuilt || st.year >= 647)) {
       const pts = S.GEO.greatWall.map(([a, b]) => `${U.px(a)},${U.py(b)}`).join(' ');
       gw.innerHTML = `<polyline points="${pts}" fill="none" stroke="#5a4a32" stroke-width="9" opacity=".7"/><polyline points="${pts}" fill="none" stroke="#c9b48a" stroke-width="5" stroke-dasharray="6 6"/>`;
     } else gw.innerHTML = '';
     let s = '';
     for (const c of S.CITIES) {
+      if (st.inactive && st.inactive[c.id]) continue;
       const cs = st.cities[c.id], N = S.NATIONS[cs.owner];
       const x = U.px(c.lon), y = U.py(c.lat);
       const tt = G.troopsTotal(cs);
@@ -351,7 +358,7 @@
       const isRuler = st.nations[cs.owner].ruler === id;
       ol.appendChild(el('div', { class: `off ${selOfficer === id ? 'sel' : ''} ${so.done ? 'done' : ''}`, onclick: () => { if (mine) { selOfficer = id; UI.renderSide(); } else UI.officerDetail(id); } },
         el('div', { class: 'op', html: A.portrait(id, 40) }),
-        el('div', { class: 'oinfo' }, el('div', { class: 'on' }, isRuler ? '👑 ' : '', o.name, o.legend ? el('span', { class: 'lg-tag' }, '설화') : null),
+        el('div', { class: 'oinfo' }, el('div', { class: 'on' }, isRuler ? '👑 ' : '', o.name, o.legend ? el('span', { class: 'lg-tag' }, '설화') : null, o.fic ? el('span', { class: 'lg-tag fic' }, '가상') : null),
           el('div', { class: 'os' }, so.s.map((v, i) => el('span', { class: 'st' }, `${STAT_NAMES[i][0]}${v}`))),
           el('div', { class: 'osp' }, S.SPECIALS_AB[o.sp] ? `★${S.SPECIALS_AB[o.sp].name}` : '')),
         el('button', { class: 'btn xs info', onclick: (e) => { e.stopPropagation(); UI.officerDetail(id); } }, 'i'),
@@ -582,7 +589,7 @@
     const body = el('div', { class: 'od' },
       el('div', { class: 'od-left' }, el('div', { html: A.portrait(id, 170) }), el('div', { class: 'od-card', html: A.unitCard(id, o.u in S.UNITS ? o.u : 'spear', nat, 0, { w: 150, h: 220 }) })),
       el('div', { class: 'od-right' },
-        el('h2', {}, o.name, el('span', { class: 'hj' }, o.hanja), o.legend ? el('span', { class: 'lg-tag' }, '설화·야사') : null),
+        el('h2', {}, o.name, el('span', { class: 'hj' }, o.hanja), o.legend ? el('span', { class: 'lg-tag' }, '설화·야사') : null, o.fic ? el('span', { class: 'lg-tag fic' }, '가상 인물') : null),
         el('div', { class: 'muted' }, `${S.nationName(nat)} · ${({ king: '군주·왕족', queen: '여왕·왕후', general: '장수', scholar: '문관·책사', monk: '승려', lady: '여인', hwarang: '화랑', legend: '설화 인물' })[o.role]} · ${age}세(추정, ${o.b}~${o.d || '?'}) · 충성 ${so.loyalty} · ${({ active: '현역', free: '재야', prisoner: '포로', dead: '사망', future: '미등장', none: '미등장' })[so.status]}`),
         el('div', { class: 'od-stats' }, so.s.map((v, i) => el('div', { class: 'srow' }, el('span', { class: 'sl' }, STAT_NAMES[i]), bar(v, 100, ['#a3242a', '#c4562a', '#2b6ca3', '#3a8a4a'][i]), el('b', { class: 'sv' }, v)))),
         el('div', { class: 'od-legend muted small' }, '통솔: 병력·지휘력·방어막 / 무력: 공격·방어 / 지력: 책략·외교 / 정치: 내정·회복'),
@@ -617,7 +624,7 @@
       ids.forEach((id) => {
         const so = st.officers[id], o = S.officerById[id];
         tbl.appendChild(el('tr', { onclick: () => UI.officerDetail(id) },
-          el('td', { html: A.portrait(id, 28) }), el('td', {}, o.name, o.legend ? ' ✦' : ''), el('td', {}, S.nationName(so.nation)), el('td', {}, so.city ? S.cityById[so.city].name : '-'),
+          el('td', { html: A.portrait(id, 28) }), el('td', {}, o.name, o.legend ? ' ✦' : '', o.fic ? ' ◇' : ''), el('td', {}, S.nationName(so.nation)), el('td', {}, so.city ? S.cityById[so.city].name : '-'),
           ...so.s.map((v) => el('td', { class: v >= 90 ? 'hi' : '' }, v)), el('td', { class: 'small' }, S.SPECIALS_AB[o.sp] ? S.SPECIALS_AB[o.sp].name : ''),
           el('td', {}, tab === 'prisoner' ? el('button', { class: 'btn xs', onclick: (e) => { e.stopPropagation(); const ok = G.handlePrisoner(id, st.player, 'hire'); UI.toast(ok ? '등용 성공' : '거절당했다'); render(); } }, '등용') : so.deathNote ? el('span', { class: 'small muted' }, so.deathNote) : '')));
       });

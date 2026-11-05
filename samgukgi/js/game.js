@@ -5,7 +5,7 @@
   const G = {};
   const STAT_IDX = { lead: 0, war: 1, int: 2, pol: 3 };
   const T = (y, s) => y * 4 + s;
-  const EV_DEATH = ['geonmu', 'gyebaek', 'bangul', 'gwanchang', 'kimyusin', 'haeron', 'geommojam', 'takutsu', 'pumseok', 'gotaso', 'jukjuk', 'bidam', 'gujincheon'];
+  const EV_DEATH = ['ondal', 'gwisan', 'chuhang', 'chandeok', 'nulchoe', 'biryeongja', 'geojin', 'hapjeol', 'heumun', 'yepa', 'jeokdeuk', 'boyongna', 'pilbu', 'docheom', 'boksin', 'geonmu', 'gyebaek', 'bangul', 'gwanchang', 'kimyusin', 'haeron', 'geommojam', 'takutsu', 'pumseok', 'gotaso', 'jukjuk', 'bidam', 'gujincheon'];
 
   const DEV = {
     capital: { pop: 120000, agri: 600, comm: 600, troops: 15000 },
@@ -40,6 +40,9 @@
         alias: base.alias || null, alive: false, morale: { v: 0, t: 0 }, atk: { v: 0, t: 0 } };
     }
     /* 도시 */
+    st.inactive = {};
+    for (const c of S.CITIES) if (!sc.cities[c.id]) st.inactive[c.id] = true;
+    S.rebuildAdj(st.inactive);
     for (const c of S.CITIES) {
       const def = sc.cities[c.id] || ['neutral', 0.5];
       const [owner, mul = 1, ov = {}] = def;
@@ -63,7 +66,7 @@
       if (ov.wall) cs.wall = ov.wall;
       cs.wall = Math.min(cs.wall, G.wallMax(c.id, cs));
       st.cities[c.id] = cs;
-      if (owner !== 'neutral') { st.nations[owner].alive = true; st.everOwned[c.id] = [owner]; }
+      if (owner !== 'neutral' && !st.inactive[c.id]) { st.nations[owner].alive = true; st.everOwned[c.id] = [owner]; }
     }
     /* 관계 */
     const majors = Object.keys(S.NATIONS).filter((n) => n !== 'neutral');
@@ -82,10 +85,27 @@
     };
     place(sc.officers, 'active');
     place(sc.free || {}, 'free');
+    /* 자동 배치: 시나리오에 명시되지 않았지만 그 해에 살아 있는 성인 인물 → 자국 도시(수도·국경 우선) */
+    const ex = new Set(sc.exclude || []);
+    for (const n of ['goguryeo', 'baekje', 'silla']) {
+      if (!st.nations[n].alive) continue;
+      const cities = G.citiesOf(n);
+      const cap = G.capitalOf(n);
+      const order = [cap].concat(cities.filter((c) => c !== cap && G.isBorder(c)), cities.filter((c) => c !== cap && !G.isBorder(c)));
+      let k = 0;
+      for (const o of S.OFFICERS) {
+        if (o.nation !== n || ex.has(o.id)) continue;
+        const so = st.officers[o.id];
+        if (so.status !== 'none') continue;
+        if ((o.b || 0) + 16 > sc.year || (o.d && o.d < sc.year)) continue;
+        if (o.noAuto) { so.status = 'free'; so.city = cap; continue; }
+        so.status = 'active'; so.city = order[k++ % order.length];
+      }
+    }
     /* 미래 등장: 성인(16세) 도달 */
     for (const o of S.OFFICERS) {
       const so = st.officers[o.id];
-      if (so.status !== 'none') continue;
+      if (so.status !== 'none' || ex.has(o.id)) continue;
       const adult = (o.b || 0) + 16;
       if (adult > sc.year && adult <= sc.endYear && (!o.d || o.d > adult)) { so.status = 'future'; so.spawnY = adult; }
     }
@@ -180,7 +200,7 @@
     if (cmd === 'agri') { v = (s[3] * 0.45 + 8) * (1 + G.bldEff(cs, 'agriG') + G.passive(oid, 'agri')); cs.agri = Math.min(G.ecoMax(cid), cs.agri + v); }
     if (cmd === 'comm') { v = (s[3] * 0.45 + 8) * (1 + G.bldEff(cs, 'commG') + G.passive(oid, 'comm') + (nb.comm || 0) + (cs.specialMode === 'tech' && S.SPECIALS[S.cityById[cid].special] && S.SPECIALS[S.cityById[cid].special].tech === 'comm' ? 0.2 : 0)); cs.comm = Math.min(G.ecoMax(cid), cs.comm + v); }
     if (cmd === 'tech') { const sp = S.SPECIALS[S.cityById[cid].special]; v = (s[2] * 0.4 + 6) * (1 + G.bldEff(cs, 'techG') + G.passive(oid, 'tech') + G.wonderEff(n, 'techAll') + (cs.specialMode === 'tech' && sp && sp.tech === 'tech' ? 0.2 : 0)); cs.tech = Math.min(999, cs.tech + v); }
-    if (cmd === 'wall') { v = s[0] * 0.55 + 15; cs.wall = Math.min(G.wallMax(cid), cs.wall + v); }
+    if (cmd === 'wall') { v = (s[0] * 0.55 + 15) * (1 + G.passive(oid, 'wall')); cs.wall = Math.min(G.wallMax(cid), cs.wall + v); }
     if (cmd === 'order') { v = s[3] * 0.12 + 4 + G.passive(oid, 'order') * 2; cs.order = Math.min(100, cs.order + v); }
     if (cmd === 'train') { v = s[0] * 0.2 + 5; cs.train = Math.min(100, cs.train + v); }
     so.done = true;
@@ -765,7 +785,7 @@
 
   /* ───────── 저장 ───────── */
   G.save = (slot = 1) => { localStorage.setItem(`samgukgi_save_${slot}`, JSON.stringify(S.state)); localStorage.setItem(`samgukgi_meta_${slot}`, JSON.stringify({ t: Date.now(), d: U.dateStr(S.state.year, S.state.season), n: S.nationName(S.state.player), sc: S.scenarioById[S.state.scenario].title })); };
-  G.load = (slot = 1) => { const s = localStorage.getItem(`samgukgi_save_${slot}`); if (!s) return false; S.state = JSON.parse(s); return true; };
+  G.load = (slot = 1) => { const s = localStorage.getItem(`samgukgi_save_${slot}`); if (!s) return false; S.state = JSON.parse(s); if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; S.rebuildAdj(S.state.inactive || {}); return true; };
   G.saveMeta = (slot) => { try { return JSON.parse(localStorage.getItem(`samgukgi_meta_${slot}`)); } catch (e) { return null; } };
 
   S.G = G;

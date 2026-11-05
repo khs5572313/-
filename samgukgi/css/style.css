@@ -309,3 +309,9 @@ table.sum th { background: #efe3c6; } table.sum td { border-bottom: 1px solid va
   .bt-row { gap: 8px; } .bu-card svg { width: 92px; height: 135px; }
   .au { grid-template-columns: 24px 40px 1fr; } .dip { grid-template-columns: 44px 1fr; } .od { grid-template-columns: 1fr; }
 }
+
+.sc-group { margin: 10px 0 2px; padding: 4px 6px; border-bottom: 2px solid; color: var(--gold2); font-weight: 900; font-size: 16px; display: flex; align-items: center; gap: 4px; }
+.sc-focus { font-size: 14px; color: #f6dc8a; max-width: 900px; }
+.sc-nation.hero { box-shadow: 0 0 0 3px #f6dc8a, 0 6px 16px #000a; }
+.hero-tag { font-size: 11px; background: var(--red); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 6px; vertical-align: middle; }
+.lg-tag.fic { background: #6b6b6b; }

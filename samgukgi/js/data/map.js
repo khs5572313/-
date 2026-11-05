@@ -89,6 +89,9 @@ SGK.CITIES = [
   { id: 'geumgwan', name: '금관', hanja: '金官', type: 'port', lon: 128.88, lat: 35.23, port: 'both', special: 'iron',
     note: '김해. 532년 신라에 병합된 금관가야 고지. 덩이쇠(철정)의 산지, 낙동강 하구 항구.' },
 
+  { id: 'jukryeong', name: '죽령', hanja: '竹嶺', type: 'pass', lon: 128.42, lat: 36.9, port: '', special: '',
+    note: '소백산맥을 넘는 고개. 온달은 "계립현·죽령 서쪽 땅을 되찾지 못하면 돌아오지 않겠다"고 맹세했다(590).' },
+
   /* ── 백제 ── */
   { id: 'imjon', name: '임존성', hanja: '任存城', type: 'mountain', lon: 126.82, lat: 36.6, port: '', special: '',
     note: '예산 봉수산성. 660년 이후 흑치상지·지수신의 백제 부흥운동 거점.' },
@@ -145,7 +148,7 @@ SGK.EDGES = [
   ['danghang', 'imjon', 'land'], ['samnyeon', 'ungjin', 'land'], ['samnyeon', 'tanhyeon', 'land'],
   ['samnyeon', 'sangju', 'land'], ['sangju', 'seorabeol', 'land'], ['sangju', 'daeya', 'river'],
   ['daeya', 'seorabeol', 'land'], ['daeya', 'geumgwan', 'river'], ['geumgwan', 'seorabeol', 'land'],
-  ['haseulla', 'seorabeol', 'land'], ['daeya', 'amak', 'land'],
+  ['haseulla', 'seorabeol', 'land'], ['daeya', 'amak', 'land'], ['bukhan', 'jukryeong', 'land'], ['jukryeong', 'sangju', 'land'],
   /* 백제 내륙 */
   ['sabi', 'ungjin', 'river'], ['sabi', 'gibeolpo', 'river'], ['sabi', 'hwangsan', 'land'],
   ['hwangsan', 'tanhyeon', 'land'], ['tanhyeon', 'ungjin', 'land'], ['ungjin', 'imjon', 'land'],
@@ -218,8 +221,15 @@ SGK.GEO = {
 SGK.cityById = {};
 SGK.CITIES.forEach((c) => (SGK.cityById[c.id] = c));
 SGK.ADJ = {};
-SGK.CITIES.forEach((c) => (SGK.ADJ[c.id] = []));
-SGK.EDGES.forEach(([a, b, t]) => { SGK.ADJ[a].push({ to: b, type: t }); SGK.ADJ[b].push({ to: a, type: t }); });
+/* 시나리오에서 빠진(비활성) 도시는 연결망에서 제외 */
+SGK.rebuildAdj = (inactive) => {
+  SGK.CITIES.forEach((c) => (SGK.ADJ[c.id] = []));
+  SGK.EDGES.forEach(([a, b, t]) => {
+    if (inactive && (inactive[a] || inactive[b])) return;
+    SGK.ADJ[a].push({ to: b, type: t }); SGK.ADJ[b].push({ to: a, type: t });
+  });
+};
+SGK.rebuildAdj();
 
 /* 특산품: trade 모드(돈) / tech 모드(기술·병종 보너스) */
 SGK.SPECIALS = {
