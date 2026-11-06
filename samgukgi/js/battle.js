@@ -172,7 +172,7 @@
       } else if (tgt.oid) def *= 1 + G.passive(tgt.oid, 'def') * 0.5;
       def *= 1 + tgt.defUp;
       const sq = Math.sqrt(Math.max(100, src.troops) / 1000);
-      let dmg = card.pow * 17 * sq * (atk / def) * mu * m * U.rf(0.9, 1.1);
+      let dmg = card.pow * 22 * sq * (atk / def) * mu * m * U.rf(0.9, 1.1);
       if (src.uid === 'siege' || src.uid === 'pocha') dmg *= card.wall ? 1 : 0.8;
       return { dmg: Math.max(10, Math.round(dmg)), mu };
     }
@@ -264,7 +264,12 @@
       }
       this.checkDeaths(evs);
       this.round++;
-      if (this.round > MAX_ROUNDS && !this.over) { this.over = true; this.winner = 'd'; evs.push({ type: 'over', winner: 'd', timeout: true }); }
+      if (this.round > MAX_ROUNDS && !this.over) {
+        /* 시간 초과: 공격측 잔존 병력이 수비측의 1.3배를 넘으면 공격측 승(성을 포위해 함락), 아니면 수비측 승 */
+        const rem = (side) => this.alive(side).reduce((a, u) => a + Math.max(0, u.troops), 0);
+        const w = rem('a') > rem('d') * 1.3 ? 'a' : 'd';
+        this.over = true; this.winner = w; evs.push({ type: 'over', winner: w, timeout: true });
+      }
       this.checkOver(evs);
       return evs;
     }

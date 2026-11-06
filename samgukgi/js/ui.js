@@ -153,7 +153,7 @@
     tb.appendChild(el('div', { class: 'tb-diff' }, el('div', {}, `난이도 ${G.diff().name}`), st.campaign ? el('div', { class: 'small' }, `캠페인 제${st.campaign.idx + 1}장`) : null));
     const rs = el('div', { class: 'tb-res' });
     RES.forEach(([k, name, ic]) => rs.appendChild(el('div', { class: 'res', title: name }, el('span', { class: 'ic' }, ic), el('span', { class: 'nm' }, name), el('b', {}, U.fmt(N[k])))));
-    rs.appendChild(el('div', { class: 'res ap', title: '행동력: 계절마다 군주 정치·통솔과 영토 크기로 정해짐' }, el('span', { class: 'ic' }, '⚡'), el('span', { class: 'nm' }, '행동력'), el('b', {}, `${N.ap || 0}/${G.apMax(n)}`)));
+    rs.appendChild(el('div', { class: 'res ap', title: '전체 도시의 남은 행동력 합계 (행동력은 도시마다 따로 쓴다)' }, el('span', { class: 'ic' }, '⚡'), el('span', { class: 'nm' }, '행동력'), el('b', {}, `${G.nationAp(n)}`), el('span', { class: 'nm' }, `(기본 ${G.nationApMax(n)})`)));
     rs.appendChild(el('div', { class: 'res', title: '총 병력' }, el('span', { class: 'ic' }, '⚔'), el('span', { class: 'nm' }, '병력'), el('b', {}, U.fmt(G.nationTroopTotal(n)))));
     rs.appendChild(el('div', { class: 'res', title: '도시' }, el('span', { class: 'ic' }, '🏯'), el('span', { class: 'nm' }, '도시'), el('b', {}, G.citiesOf(n).length)));
     tb.appendChild(rs);
@@ -345,7 +345,7 @@
     const stats = el('div', { class: 'cp-stats' });
     const row = (label, v, max, col, txt) => stats.appendChild(el('div', { class: 'srow' }, el('span', { class: 'sl' }, label), bar(v, max, col), el('span', { class: 'sv' }, txt || `${U.fmt(v)}${max ? `/${U.fmt(max)}` : ''}`)));
     if (known) {
-      row('인구', cs.pop, 260000, '#b08d57', U.fmt(cs.pop));
+      row('인구', cs.pop, G.popCap(cid), '#b08d57', `${U.fmt(cs.pop)}/${U.fmt(G.popCap(cid))}`);
       row('농업', cs.agri, G.ecoMax(cid), '#6a9a3a');
       row('상업', cs.comm, G.ecoMax(cid), '#c79a1e');
       row('기술', cs.tech, 999, '#5b7fb5');
@@ -400,7 +400,7 @@
     side.appendChild(sec(`장수 ${offsAll.length}`, ol));
     /* 명령 */
     if (mine) {
-      const N = st.nations[st.player];
+      const N = cs;
       const cmd = el('div', { class: 'cp-cmd six' });
       const offN = G.officersIn(cid).filter((id) => !st.officers[id].done).length;
       const mk = (icon, label, key, fn, extraDis, title) => el('button', { class: 'btn cmd cmdb', disabled: !offN || (N.ap || 0) < G.AP_COST[key] || extraDis, title: title || '', onclick: fn },
@@ -408,11 +408,13 @@
       cmd.appendChild(mk('🌾', '개발', 'agri', () => UI.devModal(), false, '농업·상업·기술·민심'));
       cmd.appendChild(mk('⚔', '군사', 'train', () => UI.milModal(), false, '징병·훈련·축성'));
       cmd.appendChild(mk('🏗', '건설', 'build', () => UI.buildModal()));
-      cmd.appendChild(mk('🚶', '이동', 'move', () => UI.moveModal(), !S.ADJ[cid].some((e) => st.cities[e.to].owner === st.player), '장수 이동·병력 수송'));
+      cmd.appendChild(mk('🚶', '이동', 'move', () => UI.moveModal(), !S.ADJ[cid].some((e) => st.cities[e.to].owner === st.player), '장수 여러 명·병력을 한 번에 이동'));
       cmd.appendChild(mk('🔍', '탐색', 'search', () => UI.search(), false, '재야 인재·숨은 재물 찾기'));
       cmd.appendChild(mk('🏯', '출진', 'attack', () => UI.attackModal(), !G.attackTargets(cid).length));
-      side.appendChild(sec(`명령 — 행동력 ⚡${N.ap || 0} / ${G.apMax(st.player)}`, el('div', {}, cmd,
-        el('div', { class: 'muted small' }, '명령은 이 도시에서 가장 알맞은 장수가 자동으로 맡습니다. 같은 장수가 한 계절에 거듭 맡으면 효과가 75% → 50%로 줄어듭니다. 남은 행동력은 최대 3까지 다음 계절로 이월됩니다.'))));
+      const parts = G.cityApParts(cid).filter((p) => p[1]);
+      side.appendChild(sec(`명령 — 이 도시 행동력 ⚡${cs.ap || 0} (계절마다 ${G.cityApMax(cid)} + 이월 최대 1)`, el('div', {}, cmd,
+        el('div', { class: 'ap-parts' }, parts.map(([k, v]) => el('span', { class: `app ${v < 0 ? 'neg' : ''}` }, `${k} ${v > 0 ? '+' : ''}${v}`))),
+        el('div', { class: 'muted small' }, '행동력은 도시마다 따로 있고, 인구·농업·상업·기술·민심이 오를수록, 관아를 키울수록 늘어납니다(최대 10). 명령은 이 도시에서 가장 알맞은 장수가 맡고, 같은 장수가 거듭 맡으면 효과가 75% → 50%로 줄어듭니다. 남은 행동력은 1까지 이월됩니다.'))));
     } else {
       /* 적 도시: 인접 아군 거점에서 출진 */
       const froms = S.ADJ[cid].filter((e) => st.cities[e.to].owner === st.player && G.attackTargets(e.to).some((x) => x.to === cid));
@@ -426,7 +428,7 @@
     const bl = el('div', { class: 'cp-blds' });
     for (let i = 0; i < tp.slots; i++) {
       const bid = cs.buildings[i];
-      if (bid) bl.appendChild(el('div', { class: `bld ${S.BUILDINGS[bid].wonder ? 'wonder' : ''}`, title: S.BUILDINGS[bid].desc, onclick: () => UI.buildingInfo(cid, bid) }, el('div', { html: A.building(bid, cs.owner, 46) }), el('div', { class: 'bn' }, S.buildingName(bid, cs.owner))));
+      if (bid) { const lv = S.bldLevel(cs, bid); bl.appendChild(el('div', { class: `bld ${S.BUILDINGS[bid].wonder ? 'wonder' : ''} lv${lv}`, title: S.BUILDINGS[bid].desc, onclick: () => UI.buildingInfo(cid, bid) }, el('div', { html: A.building(bid, cs.owner, 46) }), el('div', { class: 'bn' }, S.buildingName(bid, cs.owner)), S.BUILDINGS[bid].wonder ? null : el('span', { class: 'blv' }, `Lv${lv}`, mine && !S.canUpgrade(bid, cs) ? ' ▲' : ''))); }
       else bl.appendChild(el('div', { class: 'bld empty', onclick: () => mine && UI.buildModal() }, el('div', { class: 'plus' }, '+'), el('div', { class: 'bn' }, '빈 터')));
     }
     side.appendChild(sec(`건축물 ${cs.buildings.length}/${tp.slots}`, bl));
@@ -445,7 +447,7 @@
   const SI = { agri: 3, comm: 3, tech: 2, order: 3, train: 0, wall: 0 };
   const cmdRow = (cid, k, close) => {
     const st = S.state, C = G.COMMANDS[k], oid = UI.bestOfficer(cid, SI[k]);
-    const N = st.nations[st.player];
+    const N = st.cities[cid];
     const gain = oid ? G.calcCommand(oid, k, G.apMultOf(oid)) : 0;
     const cs = st.cities[cid];
     const cur = { agri: cs.agri, comm: cs.comm, tech: cs.tech, order: cs.order, train: cs.train, wall: cs.wall }[k];
@@ -466,7 +468,7 @@
   UI.milModal = () => {
     const cid = selCity, st = S.state;
     let close = () => { const m = document.querySelector('.modal-bg:last-child'); if (m) m.remove(); };
-    const N = st.nations[st.player];
+    const N = st.cities[cid];
     const rec = el('button', { class: 'opt-row', disabled: (N.ap || 0) < G.AP_COST.recruit, onclick: () => { close(); selOfficer = UI.bestOfficer(cid, 0); UI.recruitModal(); } },
       el('span', { class: 'oi' }, '🛡'), el('b', {}, '징병'), el('span', { class: 'og' }, `모집 가능 약 ${U.fmt(UI.bestOfficer(cid, 0) ? G.recruitAmount(UI.bestOfficer(cid, 0)) : 0)}명`), el('span', { class: 'oo' }, '병종 선택 ▸'), el('span', { class: 'oc' }, `⚡${G.AP_COST.recruit}`));
     const body = el('div', { class: 'opt-list' }, rec, cmdRow(cid, 'train', close), cmdRow(cid, 'wall', close));
@@ -485,7 +487,7 @@
       const bad = G.unitReqOk(uid, cid, n);
       const cost = G.recruitCost(n, uid, amt, cid);
       const afford = G.canPay(n, cost);
-      box.appendChild(el('button', { class: `rec ${u.nation ? 'special' : ''}`, disabled: !!bad || !afford || amt < 100 || (st.nations[n].ap || 0) < G.AP_COST.recruit, onclick: () => { const r = G.doRecruit(oid, uid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
+      box.appendChild(el('button', { class: `rec ${u.nation ? 'special' : ''}`, disabled: !!bad || !afford || amt < 100 || (st.cities[cid].ap || 0) < G.AP_COST.recruit, onclick: () => { const r = G.doRecruit(oid, uid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
         el('div', { class: 'ra', html: A.unitArt(uid, n, 96, 80) }),
         el('div', { class: 'ri' }, el('div', { class: 'rn' }, `${u.name} `, el('span', { class: 'hj' }, u.hanja), u.nation ? el('span', { class: 'sp-tag' }, '특수') : null),
           el('div', { class: 'rd' }, u.desc),
@@ -509,53 +511,78 @@
         const mul = bid === 'w_mireuk' && st.flags.mireukDiscount ? 0.6 : 1;
         const cost = {}; for (const k in b.cost) cost[k] = Math.round(b.cost[k] * mul);
         const afford = G.canPay(n, cost);
-        grid.appendChild(el('button', { class: `bopt ${b.wonder ? 'wonder' : ''}`, disabled: !!why || !afford || !UI.bestOfficer(cid, 3) || (st.nations[n].ap || 0) < G.AP_COST.build, onclick: () => { const r = G.doBuild(UI.bestOfficer(cid, 3), bid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
+        grid.appendChild(el('button', { class: `bopt ${b.wonder ? 'wonder' : ''}`, disabled: !!why || !afford || !UI.bestOfficer(cid, 3) || (st.cities[cid].ap || 0) < G.AP_COST.build, onclick: () => { const r = G.doBuild(UI.bestOfficer(cid, 3), bid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
           el('div', { html: A.building(bid, n, 58) }),
           el('div', { class: 'bi' }, el('div', { class: 'bname' }, S.buildingName(bid, n), el('span', { class: 'hj' }, b.hanja)), el('div', { class: 'bdesc' }, b.desc), el('div', { class: `bcost ${afford ? '' : 'red'}` }, resStr(cost)), why ? el('div', { class: 'red small' }, why) : null)));
       });
       body.appendChild(el('h4', { class: 'cat' }, cat));
       body.appendChild(grid);
     });
+    body.prepend(el('div', { class: 'hint' }, '이미 지은 건물은 도시 화면의 건물 칸을 눌러 Lv2·Lv3로 업그레이드할 수 있습니다(효과 ×1.7 · ×2.5).'));
     await UI.modal({ title: `건설 — ${S.cityById[cid].name} (${cs.buildings.length}/${S.CITY_TYPES[S.cityById[cid].type].slots})`, body, wide: true });
+  };
+  const effText = (b, lv) => {
+    const N = { food: '식량', gold: '돈', agriG: '농업 성장', commG: '상업 성장', techG: '기술 성장', trade: '무역', iron: '철/턴', wood: '목재/턴', recruit: '징병량', train: '훈련/턴', order: '민심/턴', wallMax: '성벽 상한', def: '수비', popCap: '인구 상한', popG: '인구 증가율', cityAp: '도시 행동력', naval: '수상전', cavCost: '기병 비용', bowAtk: '궁병', supply: '원정 식량 절감', alert: '수비 1턴 지휘력', exp: '장수 성장' };
+    return Object.entries(b.eff).map(([k, v]) => {
+      const x = k === 'cityAp' ? v * lv : v * S.BLD_MUL[lv];
+      const pct = ['food', 'gold', 'agriG', 'commG', 'techG', 'trade', 'recruit', 'def', 'naval', 'cavCost', 'bowAtk', 'popG'].includes(k);
+      return `${N[k] || k} ${x > 0 ? '+' : ''}${pct ? (k === 'popG' ? (x * 100).toFixed(1) + '%p' : Math.round(x * 100) + '%') : Math.round(x * 10) / 10}`;
+    }).join(' · ');
   };
   UI.buildingInfo = async (cid, bid) => {
     const st = S.state, cs = st.cities[cid], b = S.BUILDINGS[bid];
     const mine = cs.owner === st.player;
-    await UI.modal({ title: `${S.buildingName(bid, cs.owner)} ${b.hanja}`, body: el('div', { class: 'binfo' }, el('div', { html: A.building(bid, cs.owner, 120) }), el('p', {}, b.desc), el('p', { class: 'muted' }, `분류: ${b.cat}`)),
-      buttons: mine && !b.wonder ? [{ label: '철거', cls: 'red', fn: () => { G.doDemolish(cid, bid); UI.refresh(); } }, { label: '닫기' }] : [{ label: '닫기' }] });
+    const lv = S.bldLevel(cs, bid);
+    const why = S.canUpgrade(bid, cs);
+    const cost = !b.wonder && lv < S.BLD_MAX ? S.upgradeCost(bid, lv) : null;
+    const oid = UI.bestOfficer(cid, 3);
+    const body = el('div', { class: 'binfo' }, el('div', { html: A.building(bid, cs.owner, 120) }), el('p', {}, b.desc),
+      b.wonder ? null : el('div', { class: 'lvbox' },
+        el('div', {}, el('b', {}, `현재 Lv${lv}`), ` — ${effText(b, lv)}`),
+        lv < S.BLD_MAX ? el('div', {}, el('b', {}, `Lv${lv + 1}`), ` — ${effText(b, lv + 1)}`) : el('div', { class: 'muted' }, '최고 레벨입니다.'),
+        cost ? el('div', { class: 'muted small' }, `업그레이드 비용 ${resStr(cost)} · ⚡${G.AP_COST.upgrade} · 도시 기술 ${S.BLD_TECH[lv + 1]} 필요${why ? ` — ${why}` : ''}`) : null),
+      el('p', { class: 'muted' }, `분류: ${b.cat}`));
+    const btns = [];
+    if (mine && cost) btns.push({ label: `▲ Lv${lv + 1}로 업그레이드`, cls: 'gold', disabled: !!why || !oid || !G.canPay(st.player, cost) || (cs.ap || 0) < G.AP_COST.upgrade, fn: () => { UI.toast(G.doUpgrade(oid, bid)); UI.afterAction(); } });
+    if (mine && !b.wonder) btns.push({ label: '철거', cls: 'red', fn: () => { G.doDemolish(cid, bid); UI.refresh(); } });
+    btns.push({ label: '닫기' });
+    await UI.modal({ title: `${S.buildingName(bid, cs.owner)} ${b.hanja}${b.wonder ? '' : ` · Lv${lv}`}`, body, buttons: btns });
   };
   /* ── 이동·수송 ── */
+  /* 이동: 장수 여러 명과 병력을 한 번에 (출발 도시 행동력 1) */
   UI.moveModal = async () => {
-    const st = S.state, cid = selCity;
-    const opts = S.ADJ[cid].filter((e) => st.cities[e.to].owner === st.player);
-    if (!opts.length) return UI.toast('인접한 아군 도시가 없습니다.');
-    const offs = G.officersIn(cid).filter((id) => !st.officers[id].done);
-    let who = selOfficer && offs.includes(selOfficer) ? selOfficer : offs[0];
-    const body = el('div', {});
-    const render = () => {
-      body.innerHTML = '';
-      body.appendChild(el('div', { class: 'hint' }, `장수 이동 ⚡${G.AP_COST.move} · 병력 수송 ⚡${G.AP_COST.transport}`));
-      body.appendChild(el('div', {}, '이동할 장수: ', el('select', { onchange: (e) => { who = e.target.value; } }, offs.map((id) => el('option', { value: id, selected: id === who }, `${S.officerById[id].name} (${st.officers[id].s.join('/')})`)))));
-      body.appendChild(el('div', { class: 'opts' }, opts.map((e) => el('button', { class: 'btn', onclick: () => { UI.toast(G.doMove(who, e.to)); document.querySelector('.modal-bg:last-child').remove(); UI.afterAction(); } }, `🚶 ${S.cityById[e.to].name}로 이동 (${({ land: '육로', river: '수로', sea: '바닷길' })[e.type]})`))));
-      body.appendChild(el('button', { class: 'btn gold', style: { marginTop: '10px' }, onclick: () => { document.querySelector('.modal-bg:last-child').remove(); UI.transportModal(); } }, '🐂 병력 수송하기 ▸'));
-    };
-    render();
-    await UI.modal({ title: `이동 — ${S.cityById[cid].name}`, body });
-  };
-  UI.transportModal = async () => {
     const st = S.state, cid = selCity, cs = st.cities[cid];
     const opts = S.ADJ[cid].filter((e) => st.cities[e.to].owner === st.player);
     if (!opts.length) return UI.toast('인접한 아군 도시가 없습니다.');
+    const offs = G.officersIn(cid).filter((id) => !st.officers[id].done);
     let to = opts[0].to;
+    const pick = new Set();
     const vals = {};
-    const sel = el('select', { onchange: (e) => (to = e.target.value) }, opts.map((e) => el('option', { value: e.to }, S.cityById[e.to].name)));
-    const rows = el('div', { class: 'tp-rows' }, Object.entries(cs.troops).filter(([, v]) => v > 0).map(([uid, v]) => {
-      vals[uid] = 0;
-      const lab = el('b', {}, '0');
-      return el('div', { class: 'tp-row' }, el('span', {}, S.UNITS[uid].name), el('input', { type: 'range', min: 0, max: v, step: 100, value: 0, oninput: (e) => { vals[uid] = +e.target.value; lab.textContent = U.fmt(vals[uid]); } }), lab, el('span', { class: 'muted' }, `/ ${U.fmt(v)}`));
-    }));
-    await UI.modal({ title: '병력 수송', body: el('div', {}, el('div', {}, '목적지: ', sel), rows), buttons: [{ label: '수송', cls: 'gold', fn: () => { UI.toast(G.doTransport(UI.bestOfficer(cid, 0), to, vals)); UI.afterAction(); } }, { label: '취소' }] });
+    const body = el('div', { class: 'mv' });
+    const render = () => {
+      body.innerHTML = '';
+      body.appendChild(el('div', { class: 'hint' }, `장수 몇 명이든, 병력과 함께 한 번에 이동합니다 — 출발 도시 행동력 ⚡${G.AP_COST.move} (남은 ${cs.ap || 0})`));
+      body.appendChild(el('div', { class: 'mv-dest' }, el('b', {}, '목적지 '), opts.map((e) => el('button', { class: `btn sm ${to === e.to ? 'on' : ''}`, onclick: () => { to = e.to; render(); } }, `${S.cityById[e.to].name} (${({ land: '육로', river: '수로', sea: '바닷길' })[e.type]})`))));
+      body.appendChild(el('div', { class: 'mv-tools' }, el('b', {}, `장수 (${pick.size}/${offs.length} 선택) `),
+        el('button', { class: 'btn xs', onclick: () => { offs.forEach((id) => pick.add(id)); render(); } }, '모두 선택'),
+        el('button', { class: 'btn xs', onclick: () => { pick.clear(); render(); } }, '선택 해제')));
+      body.appendChild(el('div', { class: 'mv-offs' }, offs.map((id) => {
+        const so = st.officers[id], o = S.officerById[id];
+        return el('div', { class: `mv-off ${pick.has(id) ? 'on' : ''}`, onclick: () => { if (pick.has(id)) pick.delete(id); else pick.add(id); render(); } },
+          el('div', { html: A.portrait(id, 34) }), el('div', {}, el('div', { class: 'on' }, o.name), el('div', { class: 'muted small' }, so.s.join('/'))));
+      })));
+      body.appendChild(el('b', {}, '함께 옮길 병력'));
+      body.appendChild(el('div', { class: 'tp-rows' }, Object.entries(cs.troops).filter(([, v]) => v > 0).map(([uid, v]) => {
+        if (vals[uid] == null) vals[uid] = 0;
+        const lab = el('b', {}, U.fmt(vals[uid]));
+        return el('div', { class: 'tp-row' }, el('span', {}, S.UNITS[uid].name), el('input', { type: 'range', min: 0, max: v, step: 100, value: vals[uid], oninput: (e) => { vals[uid] = +e.target.value; lab.textContent = U.fmt(vals[uid]); } }), lab, el('span', { class: 'muted' }, `/ ${U.fmt(v)}`));
+      })));
+    };
+    render();
+    await UI.modal({ title: `이동 — ${S.cityById[cid].name}`, body, wide: true,
+      buttons: [{ label: `🚶 이동 (⚡${G.AP_COST.move})`, cls: 'gold', fn: () => { const r = G.doMoveGroup(cid, to, [...pick], vals); UI.toast(r); UI.afterAction(); } }, { label: '취소' }] });
   };
+  UI.transportModal = () => UI.moveModal();
   UI.search = async () => {
     selOfficer = UI.bestOfficer(selCity, 2);
     if (!selOfficer) return UI.toast('탐색을 맡을 장수가 없습니다.');
@@ -622,8 +649,8 @@
       const tot = army.reduce((a, u) => a + u.troops, 0);
       const food = G.expeditionFood(tot, tgt.type, n, cid);
       if (food > st.nations[n].food) { UI.toast('군량이 부족합니다.'); return false; }
-      if ((st.nations[n].ap || 0) < G.AP_COST.attack) { UI.toast(`행동력이 부족합니다. (출진 ⚡${G.AP_COST.attack})`); return false; }
-      st.nations[n].ap -= G.AP_COST.attack;
+      if ((cs.ap || 0) < G.AP_COST.attack) { UI.toast(`${S.cityById[cid].name}의 행동력이 부족합니다. (출진 ⚡${G.AP_COST.attack})`); return false; }
+      cs.ap -= G.AP_COST.attack;
       const ts = st.cities[tgt.to];
       if (!G.atWar(n, ts.owner)) G.declareWar(n, ts.owner);
       st.nations[n].food -= food;

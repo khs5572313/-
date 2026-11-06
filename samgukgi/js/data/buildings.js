@@ -11,6 +11,8 @@ SGK.BUILDINGS = {
   barracks: { name: '병영', hanja: '兵營', cat: '군사', cost: { gold: 300, wood: 150 }, eff: { recruit: 0.5, train: 3, exp: 1 }, desc: '징병량 +50%, 매 턴 훈련도 +3, 장수 성장. 결사대·조의선인 징병 가능.', alias: { goguryeo: '병영·경당', silla: '병영·화랑 수련장' } },
   stable:   { name: '목장', hanja: '牧場', cat: '군사', cost: { gold: 350, wood: 100 }, eff: { cavCost: -0.1 }, desc: '군마 사육. 기병·개마무사·화랑 기마대 징병 가능, 기병 비용 -10%.' },
   chi:      { name: '성곽', hanja: '雉·甕城', cat: '군사', cost: { gold: 400, wood: 200, iron: 50 }, eff: { wallMax: 300, def: 0.12, alert: 1 }, desc: '치(雉)·옹성·봉수대. 성벽 상한 +300, 수비 +12%, 수비전 1턴째 지휘력 +1.' },
+  housing:  { name: '민가', hanja: '民家', cat: '내정', cost: { gold: 250, wood: 150 }, eff: { popCap: 40000, popG: 0.004, order: 1 }, desc: '마을과 민가. 인구 상한 +4만, 인구 증가율 +0.4%p/계절, 민심 +1. 레벨이 오를수록 더 커진다.' },
+  office:   { name: '관아', hanja: '官衙', cat: '내정', cost: { gold: 400, wood: 150 }, eff: { cityAp: 1, order: 1 }, desc: '고을의 행정 관청. 이 도시의 행동력 +1(레벨마다 +1), 민심 +1.' },
   temple:   { name: '사찰', hanja: '寺刹', cat: '문화', cost: { gold: 350, wood: 200 }, eff: { order: 3 }, desc: '민심 +3/턴. 승려 인재 탐색 확률 상승.' },
   /* 국가별 불가사의 (수도 전용, 국가당 1개) */
   w_cheolli:   { name: '천리장성', hanja: '千里長城', cat: '불가사의', wonder: true, nation: 'goguryeo', cost: { gold: 3000, wood: 2500, iron: 300 }, eff: { order: 2, defAll: 0.1 }, desc: '631~647년 축조된 부여성~비사성 장성. 전국 수비 +10%.' },
@@ -19,6 +21,21 @@ SGK.BUILDINGS = {
   w_canal:     { name: '대운하 보급선', hanja: '大運河', cat: '불가사의', wonder: true, nation: 'sui|tang', cost: { gold: 3000, wood: 1500 }, eff: { supplyAll: 1 }, desc: '(확장판) 수 양제의 영제거. 원정 식량 -30%.' },
 };
 SGK.BUILD_CATS = ['내정', '기술', '군사', '문화', '불가사의'];
+/* 건물 레벨: Lv1 ×1 · Lv2 ×1.7 · Lv3 ×2.5 (효과 배율). 행정형 효과(cityAp)는 레벨과 같은 값.
+ * 업그레이드 비용 = 기본 비용 × (현재 레벨 + 1), 행동력 ⚡2, Lv2는 도시 기술 250 · Lv3은 500 필요 */
+SGK.BLD_MAX = 3;
+SGK.BLD_MUL = [0, 1, 1.7, 2.5];
+SGK.BLD_TECH = [0, 0, 250, 500];
+SGK.bldLevel = (cs, bid) => (cs.blv && cs.blv[bid]) || 1;
+SGK.upgradeCost = (bid, lv) => { const b = SGK.BUILDINGS[bid]; const c = {}; for (const k in b.cost) c[k] = Math.round(b.cost[k] * (lv + 1)); return c; };
+SGK.canUpgrade = (bid, cs) => {
+  const b = SGK.BUILDINGS[bid];
+  if (!b || b.wonder) return '불가사의는 업그레이드할 수 없음';
+  const lv = SGK.bldLevel(cs, bid);
+  if (lv >= SGK.BLD_MAX) return '최고 레벨';
+  if (cs.tech < SGK.BLD_TECH[lv + 1]) return `도시 기술 ${SGK.BLD_TECH[lv + 1]} 필요`;
+  return null;
+};
 SGK.buildingName = (bid, nation) => {
   const b = SGK.BUILDINGS[bid];
   if (!b) return bid;
@@ -37,6 +54,6 @@ SGK.canBuild = (bid, city, cityState, nation) => {
     for (const cid in st.cities) if (st.cities[cid].owner === nation && st.cities[cid].buildings.includes(bid)) return '국가당 1개';
   }
   if (cityState.buildings.length >= SGK.CITY_TYPES[type].slots) return '건물 슬롯 부족';
-  if ((type === 'wall' || type === 'pass') && !['chi', 'barracks', 'mine'].includes(bid) && !b.wonder) return '장성·관문은 군사 시설만 가능';
+  if ((type === 'wall' || type === 'pass') && !['chi', 'barracks', 'mine', 'office'].includes(bid) && !b.wonder) return '장성·관문은 군사·행정 시설만 가능';
   return null;
 };
