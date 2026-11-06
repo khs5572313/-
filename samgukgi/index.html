@@ -29,7 +29,7 @@
 <script src="js/battleui.js"></script>
 <script src="js/campaign.js"></script>
 <script>
-  try { Object.assign(SGK.settings, JSON.parse(localStorage.getItem('samgukgi_settings') || '{}')); } catch (e) {}
+  try { Object.assign(SGK.settings, JSON.parse(SGK.store.get('samgukgi_settings') || '{}')); } catch (e) {}
   SGK.UI.title();
 </script>
 </body>

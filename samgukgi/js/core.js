@@ -62,6 +62,13 @@ window.SGK = window.SGK || {};
   U.MAP_W = (132 - 115) * U.KX; U.MAP_H = (45 - 33) * U.KY;
   U.px = (lon) => (lon - U.LON0) * U.KX;
   U.py = (lat) => (U.LAT0 - lat) * U.KY;
+  /* 안전한 저장소: 브라우저 저장소가 막힌 환경(아티팩트 등)에서는 메모리에 보관 */
+  const mem = {};
+  S.store = {
+    get: (k) => { try { const v = window.localStorage.getItem(k); return v == null ? (k in mem ? mem[k] : null) : v; } catch (e) { return k in mem ? mem[k] : null; } },
+    set: (k, v) => { mem[k] = v; try { window.localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+    remove: (k) => { delete mem[k]; try { window.localStorage.removeItem(k); } catch (e) { /* 무시 */ } },
+  };
   S.U = U;
   S.settings = { fast: false, historicalDeath: true, sound: false, balanceRoster: true };
 })(window.SGK);

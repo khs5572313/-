@@ -55,7 +55,7 @@
           el('button', { class: 'btn big gold', onclick: () => S.Campaign.menu() }, '삼국 통일 캠페인'),
           el('button', { class: 'btn big', onclick: () => UI.loadMenu(slots) }, '불러오기'),
           el('button', { class: 'btn big', onclick: UI.settings }, '설정'),
-          el('a', { class: 'btn big', href: 'docs/기획서.md', target: '_blank' }, '기획서'),
+          el('a', { class: 'btn big', href: 'https://github.com/khs5572313/-/blob/claude/friendly-wozniak-os5s4u/samgukgi/docs/%EA%B8%B0%ED%9A%8D%EC%84%9C.md', target: '_blank', rel: 'noopener' }, '기획서'),
         ),
         el('div', { class: 'title-foot' }, '역사 SLG · 카드 덱 전투 · 삼국 인물 300명(나라별 100명)')));
     root.appendChild(t);
@@ -72,7 +72,7 @@
       el('label', {}, el('input', { type: 'checkbox', checked: S.settings.historicalDeath, onchange: (e) => (S.settings.historicalDeath = e.target.checked) }), ' 역사 수명 (인물이 실제 사망 연도에 사망)'),
       el('label', {}, el('input', { type: 'checkbox', checked: S.settings.balanceRoster !== false, onchange: (e) => (S.settings.balanceRoster = e.target.checked) }), ' 인물 수 균형 (시작 시 장수가 많은 나라의 초과 인원은 재야로 — 탐색으로 등용)'));
     await UI.modal({ title: '설정', body });
-    localStorage.setItem('samgukgi_settings', JSON.stringify(S.settings));
+    S.store.set('samgukgi_settings', JSON.stringify(S.settings));
   };
   UI.loadMenu = async (slots) => {
     const body = el('div', { class: 'slots' }, [1, 2, 3].map((i) => {

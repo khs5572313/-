@@ -7,9 +7,9 @@
   const C = {};
   const KEY = 'samgukgi_campaign';
   C.order = () => S.SCENARIOS.slice().sort((a, b) => a.year - b.year || a.season - b.season).map((s) => s.id);
-  C.load = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
-  C.save = (c) => localStorage.setItem(KEY, JSON.stringify(c));
-  C.clear = () => localStorage.removeItem(KEY);
+  C.load = () => { try { return JSON.parse(S.store.get(KEY)); } catch (e) { return null; } };
+  C.save = (c) => S.store.set(KEY, JSON.stringify(c));
+  C.clear = () => S.store.remove(KEY);
 
   /* 앞 장 결과 → 다음 장 보너스 */
   C.bonusFor = (c) => {

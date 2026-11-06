@@ -846,9 +846,9 @@
   };
 
   /* ───────── 저장 ───────── */
-  G.save = (slot = 1) => { localStorage.setItem(`samgukgi_save_${slot}`, JSON.stringify(S.state)); localStorage.setItem(`samgukgi_meta_${slot}`, JSON.stringify({ t: Date.now(), d: U.dateStr(S.state.year, S.state.season), n: S.nationName(S.state.player), sc: S.scenarioById[S.state.scenario].title })); };
-  G.load = (slot = 1) => { const s = localStorage.getItem(`samgukgi_save_${slot}`); if (!s) return false; S.state = JSON.parse(s); if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; S.rebuildAdj(S.state.inactive || {}); return true; };
-  G.saveMeta = (slot) => { try { return JSON.parse(localStorage.getItem(`samgukgi_meta_${slot}`)); } catch (e) { return null; } };
+  G.save = (slot = 1) => { S.store.set(`samgukgi_save_${slot}`, JSON.stringify(S.state)); S.store.set(`samgukgi_meta_${slot}`, JSON.stringify({ t: Date.now(), d: U.dateStr(S.state.year, S.state.season), n: S.nationName(S.state.player), sc: S.scenarioById[S.state.scenario].title })); };
+  G.load = (slot = 1) => { const s = S.store.get(`samgukgi_save_${slot}`); if (!s) return false; try { S.state = JSON.parse(s); } catch (e) { return false; } if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; S.rebuildAdj(S.state.inactive || {}); return true; };
+  G.saveMeta = (slot) => { try { return JSON.parse(S.store.get(`samgukgi_meta_${slot}`)); } catch (e) { return null; } };
 
   S.G = G;
 })(window.SGK);
