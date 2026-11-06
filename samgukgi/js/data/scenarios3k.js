@@ -76,28 +76,28 @@
         pyongyang: ['yeongyang', 'geonmu', 'euljimundeok'], maeso: ['goseung'], yodong: ['gangisik'] },
       free: { seorabeol: ['bihyeong'], sangju: ['gasil', 'seolssinyeo'] },
       goals: {
-        baekje: [{ type: 'capture', cities: ['amak'], desc: '아막성 공략 (602년의 설욕)' }, { type: 'count', n: 15, desc: '도시 15곳 이상 확보' }],
+        baekje: [{ type: 'capture', cities: ['amak'], desc: '아막성 공략 (602년의 설욕)' }, { type: 'count', n: 13, desc: '도시 13곳 이상 확보' }],
         silla: [{ type: 'hold', cities: ['amak', 'daeya'], until: 615, desc: '615년 겨울까지 아막성·대야성 사수' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan'], desc: '북한산성 함락 (603 고승의 원정 완수)' }],
       },
     },
     {
       id: 'b2',
-      offmap: { goguryeo: { holdWest: true } }, /* 수·당(지도 밖)에 대비해 요동 병력은 서쪽에 묶여 있다 */ no: 5, hero: 'baekje', title: '황산벌', sub: '계백의 결사대', year: 660, season: 1, endYear: 668, img: 'field',
+      offmap: { goguryeo: { holdWest: true, aggr: 1.5, drain: 0.02 }, silla: { reinforce: { city: 'danghang', amount: 1500, until: 661 } } }, /* 당군(지도 밖): 신라에 원군, 고구려는 당의 침공에 대비 */ /* 수·당(지도 밖)에 대비해 요동 병력은 서쪽에 묶여 있다 */ no: 5, hero: 'baekje', title: '황산벌', sub: '계백의 결사대', year: 660, season: 1, endYear: 668, img: 'field',
       desc: '660년 여름. 김유신의 신라군 5만이 탄현을 넘어 황산벌로 향하고, 바다 건너에서는 당의 대군이 기벌포를 노린다(지도 밖 세력). 성충은 옥중에서 죽으며 "탄현과 기벌포를 막으라" 했고, 귀양 간 흥수도 같은 말을 남겼다. 계백은 처자를 베고 결사대 5천을 이끌고 나선다. 백제의 마지막 여름이다.',
       hist: '삼국사기 계백전: 계백은 네 번 싸워 모두 이겼으나 반굴·관창의 죽음에 신라군이 분발하여 마침내 전사하였다.',
       focus: '계백·의자왕·흥수 vs 김유신·관창·반굴 · 사비성 함락 이후 부흥운동',
       playable: ALL3,
       nations: NAT({ gold: 4500, food: 9000, iron: 1000, wood: 1800, ruler: 'bojang' }, { gold: 4500, food: 7000, iron: 600, wood: 1400, ruler: 'uija' }, { gold: 6000, food: 10000, iron: 1000, wood: 1800, ruler: 'kimchunchu' }),
-      relations: [['baekje', 'silla', 'war', 0], ['goguryeo', 'silla', 'war', 10], ['goguryeo', 'baekje', 'ally', 70]],
-      cities: own({ daeya: 'baekje', amak: 'baekje' }, { samnyeon: 5.0, sangju: 1.8, danghang: 1.8, sabi: 1.25, ungjin: 1.05, tanhyeon: 0.6, gibeolpo: 0.8, hwangsan: 0.8, pyongyang: 1.8, maeso: 1.4 }, { hwangsan: { troops: { gyeolsa: 5000 } } }),
+      relations: [['baekje', 'silla', 'war', 0], ['goguryeo', 'silla', 'truce', 10, 663], ['goguryeo', 'baekje', 'ally', 70]],
+      cities: own({ daeya: 'baekje', amak: 'baekje' }, { samnyeon: 5.0, sangju: 2.2, danghang: 2.2, bukhan: 1.8, chiljung: 1.6, seorabeol: 1.7, haseulla: 1.3, sabi: 1.25, ungjin: 1.05, tanhyeon: 0.6, gibeolpo: 0.8, hwangsan: 0.8, pyongyang: 1.8, maeso: 1.4 }, { hwangsan: { troops: { gyeolsa: 5000 } } }),
       officers: { sabi: ['uija', 'buyeoyung', 'buyeotae', 'uijik', 'eungo'], hwangsan: ['gyebaek', 'chungsang', 'sangyeong'], imjon: ['heukchi', 'jisusin', 'satasangyeo'], jullyu: ['boksin', 'docheom'], gosa: ['heungsu'], ungjin: ['yesikjin', 'yegun'],
         seorabeol: ['kimchunchu', 'munhui', 'wonhyo', 'uisang', 'gangsu'], samnyeon: ['kimyusin', 'kimheumsun', 'pumil', 'bangul', 'gwanchang', 'munyeong'], danghang: ['munmu', 'kiminmun'], sangju: ['kimyangdo', 'yeolgi'], chiljung: ['pilbu'],
         pyongyang: ['bojang', 'yeongaesomun', 'namgeon', 'namsan'], gungnae: ['namsaeng'], maeso: ['noeeumsin', 'saenghae'] },
       free: {},
       spawn: [{ id: 'buyeopung', year: 661, city: 'jullyu', nation: 'baekje' }],
       goals: {
-        baekje: [{ type: 'hold', cities: ['sabi', 'ungjin', 'hwangsan'], until: 662, desc: '662년 겨울까지 사비성·웅진성·황산벌 사수' }],
+        baekje: [{ type: 'hold', cities: ['sabi', 'ungjin'], until: 662, desc: '662년 겨울까지 사비성·웅진성 사수 (한 번이라도 빼앗기면 실패)' }],
         silla: [{ type: 'capture', cities: ['sabi', 'ungjin'], desc: '사비성·웅진성 함락' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan', 'chiljung'], desc: '북한산성·칠중성 함락' }],
       },
@@ -118,7 +118,7 @@
         pyongyang: ['geonmu', 'bojang', 'seondohae', 'gojeongui'], yodong: ['yeongaesomun'], ansi: ['yangmanchun'] },
       free: { seorabeol: ['jigwi'] },
       goals: {
-        silla: [{ type: 'capture', cities: ['daeya'], desc: '대야성 사수(또는 탈환)' }, { type: 'count', n: 17, desc: '도시 17곳 이상 확보 (잃은 서쪽 성 회복)' }],
+        silla: [{ type: 'capture', cities: ['daeya'], desc: '대야성 사수(또는 탈환)' }, { type: 'count', n: 15, desc: '도시 15곳 이상 확보 (잃은 서쪽 성 회복)' }],
         baekje: [{ type: 'capture', cities: ['daeya', 'sangju', 'samnyeon'], desc: '대야성·상주·삼년산성 공략' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan', 'danghang'], desc: '북한산성·당항성 회복 (죽령 서북 반환 요구)' }],
       },
@@ -148,7 +148,7 @@
     },
   ];
   /* 체감 난이도 별점(보통 기준): tools/sim_report.js 60회 측정값(v1.5 도시 행동력 기준) — AI가 그 나라를 맡았을 때 목표 달성률 ≥45% ★, ≥25% ★★, ≥10% ★★★, 그 미만 ★★★★ */
-  const STARS = {"g1":{"goguryeo":2,"baekje":4,"silla":4},"g2":{"goguryeo":3,"baekje":2,"silla":3},"b1":{"goguryeo":3,"baekje":2,"silla":3},"b2":{"goguryeo":2,"baekje":2,"silla":2},"s1":{"goguryeo":4,"baekje":2,"silla":1},"s2":{"goguryeo":4,"baekje":3,"silla":1}};
+  const STARS = {"g1":{"goguryeo":2,"baekje":4,"silla":3},"g2":{"goguryeo":1,"baekje":2,"silla":4},"b1":{"goguryeo":1,"baekje":2,"silla":2},"b2":{"goguryeo":1,"baekje":2,"silla":3},"s1":{"goguryeo":3,"baekje":2,"silla":3},"s2":{"goguryeo":1,"baekje":2,"silla":2}};
   SGK.SCENARIOS.forEach((s) => (s.stars = STARS[s.id]));
   SGK.scenarioById = {};
   SGK.SCENARIOS.forEach((s) => (SGK.scenarioById[s.id] = s));

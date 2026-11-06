@@ -16,7 +16,7 @@ console.log(`반복 ${REPS}회 · 난이도 ${DIFF}\n시나리오 | 나라: 목�
 for (const sc of S.SCENARIOS.filter((x) => !ONLY || x.id === ONLY)) {
   const acc = {};
   N3.forEach((n) => (acc[n] = { goal: 0, alive: 0, c0: 0, c1: 0 }));
-  const turns = Math.min(56, (sc.endYear - sc.year + 1) * 4);
+  const turns = Math.min(168, (sc.endYear - sc.year + 1) * 12); /* 월 단위 */
   for (let r = 0; r < REPS; r++) {
     G.newGame(sc.id, sc.hero, { diff: DIFF });
     const st = S.state;

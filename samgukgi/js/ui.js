@@ -69,6 +69,7 @@
   UI.settings = async () => {
     const body = el('div', { class: 'settings' },
       el('label', {}, el('input', { type: 'checkbox', checked: S.settings.fast, onchange: (e) => (S.settings.fast = e.target.checked) }), ' 빠른 전투 애니메이션'),
+      el('label', {}, el('input', { type: 'checkbox', checked: S.settings.marchAnim !== false, onchange: (e) => (S.settings.marchAnim = e.target.checked) }), ' 행군 모션 (병력 이동·출진 시 지도 위 이동 애니메이션)'),
       el('label', {}, el('input', { type: 'checkbox', checked: S.settings.historicalDeath, onchange: (e) => (S.settings.historicalDeath = e.target.checked) }), ' 역사 수명 (인물이 실제 사망 연도에 사망)'),
       el('label', {}, el('input', { type: 'checkbox', checked: S.settings.balanceRoster !== false, onchange: (e) => (S.settings.balanceRoster = e.target.checked) }), ' 인물 수 균형 (시작 시 장수가 많은 나라의 초과 인원은 재야로 — 탐색으로 등용)'));
     await UI.modal({ title: '설정', body });
@@ -139,7 +140,7 @@
     UI.refreshLog();
     if (fresh) {
       const sc = S.scenarioById[S.state.scenario];
-      await UI.modal({ title: `${sc.year}년 · ${sc.title}`, wide: true, body: el('div', { class: 'intro' }, el('div', { class: 'intro-em', html: A.emblem(S.state.player, 70) }), el('p', {}, sc.desc), el('h3', {}, '승리 조건'), el('ul', {}, G.goalStatus(S.state.player).map((g) => el('li', {}, g.desc))), el('p', { class: 'hint' }, '💡 도시를 클릭해 내정 명령을 내리세요. 장수 1명당 한 턴에 1개 명령. 인접 적 도시를 클릭하면 출진할 수 있습니다.')), buttons: [{ label: '출정', cls: 'gold' }] });
+      await UI.modal({ title: `${sc.year}년 · ${sc.title}`, wide: true, body: el('div', { class: 'intro' }, el('div', { class: 'intro-em', html: A.emblem(S.state.player, 70) }), el('p', {}, sc.desc), el('h3', {}, '승리 조건'), el('ul', {}, G.goalStatus(S.state.player).map((g) => el('li', {}, g.desc))), el('p', { class: 'hint' }, '💡 1턴은 1개월입니다. 도시를 클릭해 그 도시의 행동력(⚡)으로 내정·이동·출진 명령을 내리세요. 인접 적 도시를 클릭하면 출진할 수 있습니다. 식량은 9월 추수 때 크게 들어옵니다.')), buttons: [{ label: '출정', cls: 'gold' }] });
       await UI.runEvents();
     }
   };
@@ -149,7 +150,7 @@
     if (!tb) return;
     tb.innerHTML = '';
     tb.appendChild(el('div', { class: 'tb-nation', style: { background: S.NATIONS[n].color } }, el('span', { html: A.emblem(n, 34) }), el('div', {}, el('div', { class: 'tb-nname' }, S.nationName(n)), el('div', { class: 'tb-ruler' }, N.ruler ? `군주 ${S.officerById[N.ruler].name}` : ''))));
-    tb.appendChild(el('div', { class: 'tb-date' }, el('div', { class: 'y' }, `${st.year}년`), el('div', { class: 's' }, U.SEASONS[st.season])));
+    tb.appendChild(el('div', { class: 'tb-date' }, el('div', { class: 'y' }, `${st.year}년 ${st.month}월`), el('div', { class: 's' }, U.SEASONS[st.season])));
     tb.appendChild(el('div', { class: 'tb-diff' }, el('div', {}, `난이도 ${G.diff().name}`), st.campaign ? el('div', { class: 'small' }, `캠페인 제${st.campaign.idx + 1}장`) : null));
     const rs = el('div', { class: 'tb-res' });
     RES.forEach(([k, name, ic]) => rs.appendChild(el('div', { class: 'res', title: name }, el('span', { class: 'ic' }, ic), el('span', { class: 'nm' }, name), el('b', {}, U.fmt(N[k])))));
@@ -198,7 +199,7 @@
       <g id="greatwall"></g>
       ${S.GEO.seas.map((x) => `<text x="${U.px(x.lon)}" y="${U.py(x.lat)}" class="sealabel">${x.name}</text>`).join('')}
       ${S.GEO.regions.map((x) => `<text x="${U.px(x.lon)}" y="${U.py(x.lat)}" class="reglabel">${x.name}</text>`).join('')}
-      <g id="edges"></g><g id="armies"></g><g id="cities"></g>
+      <g id="edges"></g><g id="armies"></g><g id="cities"></g><g id="marches"></g>
     </svg>`;
     $('#map').innerHTML = s;
     UI.drawEdges();
@@ -221,6 +222,79 @@
     }
     g.innerHTML = s;
   };
+  /* ───────── 행군 모션: 도시 사이 연결로를 따라 깃발 부대가 이동 ─────────
+   * kind: 'move'(아군 이동·수송) | 'attack'(출진) — 공격은 도착 지점에 충돌 이펙트 */
+  UI.edgeType = (a, b) => { const e = S.EDGES.find(([x, y]) => (x === a && y === b) || (x === b && y === a)); return e ? e[2] : 'land'; };
+  UI.marchPath = (a, b) => {
+    const x1 = S.POS[a].x, y1 = S.POS[a].y, x2 = S.POS[b].x, y2 = S.POS[b].y;
+    if (UI.edgeType(a, b) === 'sea') {
+      /* drawEdges와 같은 곡선: 간선 정의 방향(a→b) 기준 제어점 */
+      const e = S.EDGES.find(([x, y]) => (x === a && y === b) || (x === b && y === a));
+      const [p, q] = e && e[0] === a ? [[x1, y1], [x2, y2]] : [[x2, y2], [x1, y1]];
+      const mx = (p[0] + q[0]) / 2 + (q[1] - p[1]) * 0.12, my = (p[1] + q[1]) / 2 - (q[0] - p[0]) * 0.12;
+      return (t) => { const u = 1 - t; return [u * u * x1 + 2 * u * t * mx + t * t * x2, u * u * y1 + 2 * u * t * my + t * t * y2]; };
+    }
+    return (t) => [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
+  };
+  UI.march = (from, to, nation, opts = {}) => new Promise((resolve) => {
+    const layer = document.getElementById('marches');
+    if (!layer || S.settings.marchAnim === false || !S.POS[from] || !S.POS[to] || document.hidden) return resolve();
+    const N = S.NATIONS[nation] || S.NATIONS.neutral;
+    const f = UI.marchPath(from, to);
+    const sea = UI.edgeType(from, to) === 'sea' || UI.edgeType(from, to) === 'river';
+    const dur = (opts.dur || 950) * (S.settings.fast ? 0.45 : 1);
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'march');
+    const [sx, sy] = f(0), [ex, ey] = f(1);
+    const trail = document.createElementNS(NS, 'path');
+    trail.setAttribute('class', `march-trail ${opts.kind === 'attack' ? 'atk' : ''}`);
+    trail.setAttribute('stroke', N.color);
+    g.appendChild(trail);
+    const unit = document.createElementNS(NS, 'g');
+    const label = opts.troops ? `<rect x="-26" y="16" width="52" height="15" rx="4" fill="${N.dark}" opacity=".9"/><text y="27" class="march-n">${opts.troops >= 10000 ? (opts.troops / 10000).toFixed(1) + '만' : U.fmt(opts.troops)}</text>` : '';
+    /* 육로: 말 탄 깃발 부대 / 수로: 배 */
+    const body = sea
+      ? `<path d="M-16 4 L16 4 L10 13 L-10 13Z" fill="#6b4a2a" stroke="#2a1a0a" stroke-width="1.5"/><line x1="0" y1="4" x2="0" y2="-24" stroke="#2a1a0a" stroke-width="2"/><path d="M1 -22 L15 -14 L1 -6Z" fill="${N.color}" stroke="${N.dark}" stroke-width="1.2"/>`
+      : `<ellipse cx="0" cy="10" rx="15" ry="4" fill="#0004"/><circle cx="-7" cy="3" r="6" fill="${N.dark}"/><circle cx="7" cy="3" r="6" fill="${N.dark}"/><circle cx="0" cy="-1" r="7.5" fill="${N.color}" stroke="${N.dark}" stroke-width="1.5"/><line x1="0" y1="-2" x2="0" y2="-30" stroke="#3a2a14" stroke-width="2.2"/><path class="march-flag" d="M1 -29 L19 -24 L1 -17Z" fill="${N.color}" stroke="${N.dark}" stroke-width="1.2"/>`;
+    unit.innerHTML = `<g class="march-bob">${body}</g>${label}`;
+    g.appendChild(unit);
+    layer.appendChild(g);
+    const dust = [];
+    const t0 = performance.now();
+    let lastDust = 0;
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; /* ease-in-out */
+      const [x, y] = f(e);
+      const flip = ex < sx ? -1 : 1;
+      unit.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+      unit.firstChild.setAttribute('transform', `scale(${flip},1)`);
+      /* 지나온 길 */
+      const pts = []; for (let i = 0; i <= 12; i++) { const [px, py] = f((e * i) / 12); pts.push(`${px.toFixed(1)},${py.toFixed(1)}`); }
+      trail.setAttribute('d', 'M' + pts.join(' L'));
+      /* 흙먼지(수로는 물보라) */
+      if (now - lastDust > 70 && k < 1) {
+        lastDust = now;
+        const c = document.createElementNS(NS, 'circle');
+        c.setAttribute('cx', (x + (Math.random() - 0.5) * 8).toFixed(1)); c.setAttribute('cy', (y + 8 + (Math.random() - 0.5) * 4).toFixed(1));
+        c.setAttribute('r', '4'); c.setAttribute('class', sea ? 'march-foam' : 'march-dust');
+        g.insertBefore(c, unit); dust.push(c);
+        if (dust.length > 14) dust.shift().remove();
+      }
+      if (k < 1) return requestAnimationFrame(step);
+      if (opts.kind === 'attack') {
+        const b = document.createElementNS(NS, 'g');
+        b.setAttribute('transform', `translate(${ex},${ey})`);
+        b.innerHTML = `<circle r="10" class="march-clash"/><path d="M-12 -12 L12 12 M12 -12 L-12 12" stroke="#fff" stroke-width="4" stroke-linecap="round" class="march-x"/>`;
+        g.appendChild(b);
+      }
+      g.classList.add('done');
+      setTimeout(() => { g.remove(); resolve(); }, opts.kind === 'attack' ? 380 * (S.settings.fast ? 0.5 : 1) : 220);
+    };
+    requestAnimationFrame(step);
+    /* 탭이 숨겨지는 등으로 rAF가 멈추면 안전하게 끝낸다 */
+    setTimeout(() => { if (g.isConnected) { g.remove(); resolve(); } }, dur + 1500);
+  });
   UI.renderMap = () => {
     const st = S.state;
     if (!$('#cities')) return;
@@ -382,7 +456,7 @@
     const ol = el('div', { class: 'cp-offs' });
     if (offsAll.length > 4) ol.appendChild(el('div', { class: 'off-tools' },
       el('select', { onchange: (e) => { offSort = e.target.value; UI.renderSide(); } }, [['base', '기본 순서'], ['sum', '능력 합'], ['lead', '통솔'], ['war', '무력'], ['int', '지력'], ['pol', '정치']].map(([v, l]) => el('option', { value: v, selected: offSort === v }, `정렬: ${l}`))),
-      mine ? el('label', {}, el('input', { type: 'checkbox', checked: offReady, onchange: (e) => { offReady = e.target.checked; UI.renderSide(); } }), ' 이번 계절 미사용만') : null));
+      mine ? el('label', {}, el('input', { type: 'checkbox', checked: offReady, onchange: (e) => { offReady = e.target.checked; UI.renderSide(); } }), ' 이번 달 미사용만') : null));
     offs.forEach((id) => {
       const so = st.officers[id], o = S.officerById[id];
       const isRuler = st.nations[cs.owner].ruler === id;
@@ -412,7 +486,7 @@
       cmd.appendChild(mk('🔍', '탐색', 'search', () => UI.search(), false, '재야 인재·숨은 재물 찾기'));
       cmd.appendChild(mk('🏯', '출진', 'attack', () => UI.attackModal(), !G.attackTargets(cid).length));
       const parts = G.cityApParts(cid).filter((p) => p[1]);
-      side.appendChild(sec(`명령 — 이 도시 행동력 ⚡${cs.ap || 0} (계절마다 ${G.cityApMax(cid)} + 이월 최대 1)`, el('div', {}, cmd,
+      side.appendChild(sec(`명령 — 이 도시 행동력 ⚡${cs.ap || 0} (매달 ${G.cityApMax(cid)} + 이월 최대 1)`, el('div', {}, cmd,
         el('div', { class: 'ap-parts' }, parts.map(([k, v]) => el('span', { class: `app ${v < 0 ? 'neg' : ''}` }, `${k} ${v > 0 ? '+' : ''}${v}`))),
         el('div', { class: 'muted small' }, '행동력은 도시마다 따로 있고, 인구·농업·상업·기술·민심이 오를수록, 관아를 키울수록 늘어납니다(최대 10). 명령은 이 도시에서 가장 알맞은 장수가 맡고, 같은 장수가 거듭 맡으면 효과가 75% → 50%로 줄어듭니다. 남은 행동력은 1까지 이월됩니다.'))));
     } else {
@@ -441,7 +515,7 @@
     UI.refresh();
   };
 
-  /* 명령을 맡을 장수: 이번 계절 덜 쓴 장수 → 해당 능력치 높은 순 */
+  /* 명령을 맡을 장수: 이번 달 덜 쓴 장수 → 해당 능력치 높은 순 */
   UI.bestOfficer = (cid, si) => G.officersIn(cid).filter((id) => !S.state.officers[id].done)
     .sort((a, b) => (S.state.officers[a].uses || 0) - (S.state.officers[b].uses || 0) || S.state.officers[b].s[si] - S.state.officers[a].s[si])[0];
   const SI = { agri: 3, comm: 3, tech: 2, order: 3, train: 0, wall: 0 };
@@ -580,7 +654,7 @@
     };
     render();
     await UI.modal({ title: `이동 — ${S.cityById[cid].name}`, body, wide: true,
-      buttons: [{ label: `🚶 이동 (⚡${G.AP_COST.move})`, cls: 'gold', fn: () => { const r = G.doMoveGroup(cid, to, [...pick], vals); UI.toast(r); UI.afterAction(); } }, { label: '취소' }] });
+      buttons: [{ label: `🚶 이동 (⚡${G.AP_COST.move})`, cls: 'gold', fn: () => { const apBefore = cs.ap; const tot = Object.values(vals).reduce((a, v) => a + (+v || 0), 0); const r = G.doMoveGroup(cid, to, [...pick], vals); UI.toast(r); const moved = S.state.cities[cid].ap !== apBefore; if (moved) UI.march(cid, to, S.state.player, { kind: 'move', troops: tot }).then(() => UI.afterAction()); else UI.afterAction(); } }, { label: '취소' }] });
   };
   UI.transportModal = () => UI.moveModal();
   UI.search = async () => {
@@ -655,7 +729,7 @@
       if (!G.atWar(n, ts.owner)) G.declareWar(n, ts.owner);
       st.nations[n].food -= food;
       army.forEach((u) => (cs.troops[u.uid] -= u.troops));
-      setTimeout(() => UI.launchBattle({ from: cid, to: tgt.to, att: army, attNation: n, edgeType: tgt.type }, auto));
+      setTimeout(async () => { UI.centerOn(tgt.to, 1); await UI.march(cid, tgt.to, n, { kind: 'attack', troops: tot }); UI.launchBattle({ from: cid, to: tgt.to, att: army, attNation: n, edgeType: tgt.type }, auto); });
     };
     await UI.modal({ title: `출진 — ${S.cityById[cid].name}`, body, wide: true, buttons: [{ label: `⚔ 직접 지휘 (카드 전투) ⚡${G.AP_COST.attack}`, cls: 'gold', fn: () => go(false) }, { label: '자동 전투', fn: () => go(true) }, { label: '취소' }] });
   };
@@ -832,6 +906,8 @@
       $('#busytxt').textContent = `${S.nationName(n)}이(가) 행동 중…`;
       await U.sleep(30);
       const atks = G.aiTurn(n);
+      const shown = atks.filter((a) => st.cities[a.to].owner !== a.attNation).slice(0, 6);
+      if (shown.length) await Promise.all(shown.map((a, i) => U.sleep(i * 90).then(() => UI.march(a.from, a.to, a.attNation, { kind: 'attack', troops: a.att.reduce((x, u) => x + u.troops, 0), dur: 800 }))));
       for (const a of atks) {
         if (st.cities[a.to].owner === st.player) playerDefense.push(a);
         else if (st.cities[a.to].owner !== a.attNation) {
@@ -851,14 +927,14 @@
         buttons: [{ label: '⚔ 직접 지휘', cls: 'gold', value: 'manual' }, { label: '자동 전투', value: 'auto' }] });
       await UI.launchBattle(a, choice === 'auto');
     }
-    /* 계절 진행 */
+    /* 한 달 진행 */
     G.advance();
     G.lifeCycle();
     const rep = G.income();
     for (const n in st.nations) G.checkAlive(n);
     UI.refresh();
-    UI.toast(`${U.dateStr(st.year, st.season)} — 수입: 🪙${U.fmt(rep.gold)} 🌾${U.fmt(rep.food - rep.upkeep)} ⛓${U.fmt(rep.iron)} 🪵${U.fmt(rep.wood)}`, 'good');
-    if (st.season === 2) UI.toast('가을 추수! 식량 수입이 크게 늘었습니다.', 'good');
+    UI.toast(`${U.dateStr(st.year, st.season, st.month)} — 수입: 🪙${U.fmt(rep.gold)} 🌾${U.fmt(rep.food - rep.upkeep)} ⛓${U.fmt(rep.iron)} 🪵${U.fmt(rep.wood)}`, 'good');
+    if (st.month === 9) UI.toast('9월 추수! 식량 수입이 크게 늘었습니다.', 'good');
     await UI.runEvents();
     const end = G.checkEnd();
     if (end.end) await UI.gameEnd(end);
@@ -869,7 +945,7 @@
     if (S.Campaign && S.state.campaign && (await S.Campaign.onEnd(end))) return;
     const sc = S.scenarioById[S.state.scenario];
     await UI.modal({ title: end.win ? '🏆 승리' : end.timeout ? '⏳ 시나리오 종료' : '💀 패배', closable: false, wide: true,
-      body: el('div', { class: 'end' }, el('span', { html: A.emblem(S.state.player, 90) }), el('h2', {}, end.msg), el('p', {}, `${sc.title} · ${U.dateStr(S.state.year, S.state.season)} · 점수 ${U.fmt(G.score())}`), el('p', { class: 'muted' }, `도시 ${G.citiesOf(S.state.player).length} · 병력 ${U.fmt(G.nationTroopTotal(S.state.player))} · 장수 ${G.nationOfficers(S.state.player).length} · 전투 ${S.state.battleCount}회`)),
+      body: el('div', { class: 'end' }, el('span', { html: A.emblem(S.state.player, 90) }), el('h2', {}, end.msg), el('p', {}, `${sc.title} · ${U.dateStr(S.state.year, S.state.season, S.state.month)} · 점수 ${U.fmt(G.score())}`), el('p', { class: 'muted' }, `도시 ${G.citiesOf(S.state.player).length} · 병력 ${U.fmt(G.nationTroopTotal(S.state.player))} · 장수 ${G.nationOfficers(S.state.player).length} · 전투 ${S.state.battleCount}회`)),
       buttons: [{ label: '계속 플레이', value: 'go' }, { label: '타이틀로', cls: 'gold', fn: () => setTimeout(UI.title) }] });
   };
 

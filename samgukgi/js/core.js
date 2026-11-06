@@ -56,7 +56,9 @@ window.SGK = window.SGK || {};
   U.sleep = (ms) => new Promise((r) => setTimeout(r, S.settings && S.settings.fast ? ms * 0.35 : ms));
   U.deepCopy = (o) => JSON.parse(JSON.stringify(o));
   U.SEASONS = ['봄', '여름', '가을', '겨울'];
-  U.dateStr = (y, s) => `${y}년 ${U.SEASONS[s]}`;
+  /* 1턴 = 1개월. 계절은 음력 기준(1~3월 봄, 4~6월 여름, 7~9월 가을, 10~12월 겨울) */
+  U.seasonOf = (m) => Math.floor((m - 1) / 3);
+  U.dateStr = (y, s, m) => (m ? `${y}년 ${m}월` : `${y}년 ${U.SEASONS[s]}`);
   /* 지도 투영: 경위도 → SVG 좌표 */
   U.LON0 = 115; U.LAT0 = 45; U.KX = 175; U.KY = 230;
   U.MAP_W = (132 - 115) * U.KX; U.MAP_H = (45 - 33) * U.KY;
@@ -70,5 +72,5 @@ window.SGK = window.SGK || {};
     remove: (k) => { delete mem[k]; try { window.localStorage.removeItem(k); } catch (e) { /* 무시 */ } },
   };
   S.U = U;
-  S.settings = { fast: false, historicalDeath: true, sound: false, balanceRoster: true };
+  S.settings = { fast: false, historicalDeath: true, sound: false, balanceRoster: true, marchAnim: true };
 })(window.SGK);

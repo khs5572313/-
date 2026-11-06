@@ -144,7 +144,7 @@ button { font-family: inherit; }
 #toasts { position: fixed; right: 16px; bottom: 16px; z-index: 300; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 .toast { background: #1b1410ee; color: #f3ead6; padding: 8px 14px; border-radius: 6px; border-left: 4px solid var(--gold); font-size: 14px; animation: pop .2s; transition: opacity .5s; max-width: 420px; }
 .toast.good { border-color: #3a8a4a; } .toast.bad { border-color: #d33; } .toast.out { opacity: 0; }
-.busy { position: fixed; inset: 0; background: #0007; z-index: 200; display: flex; align-items: center; justify-content: center; }
+.busy { position: fixed; inset: 0; background: #0002; z-index: 200; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 40px; } /* 행군 모션이 보이도록 지도는 가리지 않음 */
 .busy-box { background: var(--panel); padding: 20px 30px; border-radius: 10px; display: flex; gap: 14px; align-items: center; }
 .spinner { width: 26px; height: 26px; border: 4px solid var(--line); border-top-color: var(--red); border-radius: 50%; animation: spin 1s linear infinite; }
 .intro { display: grid; grid-template-columns: 80px 1fr; gap: 12px; } .intro > *:not(.intro-em) { grid-column: 2; } .intro p { line-height: 1.7; }
@@ -367,3 +367,21 @@ table.sum th { background: #efe3c6; } table.sum td { border-bottom: 1px solid va
 .mv-offs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 280px; overflow-y: auto; margin-bottom: 8px; }
 .mv-off { display: flex; gap: 6px; align-items: center; padding: 4px; border: 2px solid var(--line); border-radius: 8px; cursor: pointer; background: #fff; }
 .mv-off.on { border-color: var(--red); background: #fff1e6; }
+
+/* ───── 행군 모션 ───── */
+.march { pointer-events: none; }
+.march-trail { fill: none; stroke-width: 5; stroke-dasharray: 2 9; stroke-linecap: round; opacity: .85; }
+.march-trail.atk { stroke-width: 6; stroke-dasharray: 10 6; }
+.march.done .march-trail { transition: opacity .3s; opacity: 0; }
+.march-n { fill: #fff; font-size: 11px; font-weight: 700; text-anchor: middle; }
+.march-bob { animation: marchBob .28s ease-in-out infinite alternate; }
+@keyframes marchBob { from { translate: 0 0; } to { translate: 0 -3px; } }
+.march-flag { animation: marchFlag .4s ease-in-out infinite alternate; transform-origin: 1px -23px; }
+@keyframes marchFlag { from { transform: skewY(0deg); } to { transform: skewY(-12deg) scaleX(.85); } }
+.march-dust { fill: #9c8458; opacity: .55; animation: marchDust .7s ease-out forwards; }
+.march-foam { fill: #e9f4fa; opacity: .7; animation: marchDust .7s ease-out forwards; }
+@keyframes marchDust { to { r: 11px; opacity: 0; } }
+.march-clash { fill: #ff5a2a; opacity: .9; animation: marchClash .38s ease-out forwards; }
+@keyframes marchClash { to { r: 42px; opacity: 0; } }
+.march-x { animation: marchX .38s ease-out forwards; }
+@keyframes marchX { from { transform: scale(.4); } 60% { transform: scale(1.3); } to { transform: scale(1); opacity: 0; } }

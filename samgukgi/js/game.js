@@ -4,7 +4,10 @@
   const U = S.U;
   const G = {};
   const STAT_IDX = { lead: 0, war: 1, int: 2, pol: 3 };
-  const T = (y, s) => y * 4 + s;
+  /* 시간 색인: 월 단위 (y*12 + 월-1). T(y, s)는 그 계절의 첫 달 */
+  const T = (y, s) => y * 12 + s * 3;
+  const NOW = () => S.state.year * 12 + S.state.month - 1;
+  const TEND = (y) => y * 12 + 11;
   const EV_DEATH = ['ondal', 'gwisan', 'chuhang', 'chandeok', 'nulchoe', 'biryeongja', 'geojin', 'hapjeol', 'heumun', 'yepa', 'jeokdeuk', 'boyongna', 'pilbu', 'docheom', 'boksin', 'geonmu', 'gyebaek', 'bangul', 'gwanchang', 'kimyusin', 'haeron', 'geommojam', 'takutsu', 'pumseok', 'gotaso', 'jukjuk', 'bidam', 'gujincheon'];
 
   const DEV = {
@@ -40,7 +43,8 @@
   G.diff = () => G.DIFF[(S.state && S.state.diff) || 'normal'] || G.DIFF.normal;
   G.newGame = (scId, player, opts = {}) => {
     const sc = S.scenarioById[scId];
-    const st = { ver: 1, scenario: scId, year: sc.year, season: sc.season, startT: T(sc.year, sc.season), player, diff: opts.diff || 'normal', campaign: opts.campaign || null,
+    const m0 = sc.month || sc.season * 3 + 1;
+    const st = { ver: 2, scenario: scId, year: sc.year, month: m0, season: U.seasonOf(m0), startT: sc.year * 12 + m0 - 1, player, diff: opts.diff || 'normal', campaign: opts.campaign || null,
       nations: {}, rel: {}, cities: {}, officers: {}, fired: {}, flags: {}, log: [], everOwned: {}, turnCount: 0, battleCount: 0 };
     S.state = st;
     for (const nid in S.NATIONS) {
@@ -154,10 +158,10 @@
     if (opts.bonus) {
       const N = st.nations[player];
       for (const k of ['gold', 'food', 'iron', 'wood']) N[k] += opts.bonus[k] || 0;
-      if (opts.bonus.morale) { N.morale.v = opts.bonus.morale; N.morale.t = 6; }
+      if (opts.bonus.morale) { N.morale.v = opts.bonus.morale; N.morale.t = 18; }
     }
     G.refreshCityAp(false);
-    G.log(`${U.dateStr(st.year, st.season)} — 시나리오 「${sc.title}」 개막. ${S.nationName(player)} 선택 · 난이도 ${D.name}.`);
+    G.log(`${U.dateStr(st.year, st.season, st.month)} — 시나리오 「${sc.title}」 개막. ${S.nationName(player)} 선택 · 난이도 ${D.name}.`);
     return st;
   };
 
@@ -227,26 +231,26 @@
   };
   G.log = (msg, kind = 'info') => {
     const st = S.state;
-    st.log.unshift({ t: U.dateStr(st.year, st.season), msg, kind });
+    st.log.unshift({ t: U.dateStr(st.year, st.season, st.month), msg, kind });
     if (st.log.length > 200) st.log.length = 200;
     if (S.UI && S.UI.refreshLog) S.UI.refreshLog();
   };
 
   /* ───────── 내정 명령 ───────── */
   G.COMMANDS = {
-    agri: { name: '개간', icon: '🌾', cost: { gold: 60 }, stat: 'pol', desc: '농업 +' },
-    comm: { name: '상업 투자', icon: '💰', cost: { gold: 80 }, stat: 'pol', desc: '상업 +' },
-    tech: { name: '기술 연구', icon: '⚒', cost: { gold: 100, iron: 20 }, stat: 'int', desc: '기술 +' },
-    wall: { name: '축성', icon: '🧱', cost: { wood: 90, gold: 30 }, stat: 'lead', desc: '성벽 +' },
-    order: { name: '민심 안정', icon: '🙏', cost: { food: 180 }, stat: 'pol', desc: '민심 +' },
-    train: { name: '훈련', icon: '⚔', cost: { food: 100 }, stat: 'lead', desc: '훈련도 +' },
+    agri: { name: '개간', icon: '🌾', cost: { gold: 30 }, stat: 'pol', desc: '농업 +' },
+    comm: { name: '상업 투자', icon: '💰', cost: { gold: 40 }, stat: 'pol', desc: '상업 +' },
+    tech: { name: '기술 연구', icon: '⚒', cost: { gold: 50, iron: 10 }, stat: 'int', desc: '기술 +' },
+    wall: { name: '축성', icon: '🧱', cost: { wood: 45, gold: 15 }, stat: 'lead', desc: '성벽 +' },
+    order: { name: '민심 안정', icon: '🙏', cost: { food: 90 }, stat: 'pol', desc: '민심 +' },
+    train: { name: '훈련', icon: '⚔', cost: { food: 50 }, stat: 'lead', desc: '훈련도 +' },
   };
   /* ───────── 도시 행동력 ─────────
    * 행동력은 도시마다 따로 있고, 그 도시의 내정 수준으로 정해진다 (1~10):
    *   기본 1 + 인구 5만마다 1(최대 3) + 농업·상업 합 500마다 1(최대 3) + 기술 350마다 1(최대 2)
    *   + 민심 80 이상 1 / 40 미만 -1 + 수도 1 + 요새(산성·장성·관문·군진) 1 + 주둔군 1.5만 이상 1 + 관아 레벨
-   * 명령은 그 도시의 행동력을 쓴다(출진=출발 도시, 외교=수도). 남은 1점은 다음 계절로 이월.
-   * 같은 장수가 한 계절에 거듭 명령하면 효과가 줄어든다(100% → 75% → 50%) */
+   * 명령은 그 도시의 행동력을 쓴다(출진=출발 도시, 외교=수도). 남은 1점은 다음 달로 이월.
+   * 같은 장수가 한 달에 거듭 명령하면 효과가 줄어든다(100% → 75% → 50%) */
   G.AP_COST = { agri: 1, comm: 1, tech: 1, order: 1, train: 1, wall: 1, recruit: 2, build: 2, upgrade: 2, move: 1, transport: 1, search: 1, attack: 2, diplo: 2 };
   G.AP_MULT = [1, 0.75, 0.5];
   G.cityApParts = (cid) => {
@@ -299,7 +303,7 @@
     if (cmd === 'wall') { v = (s[0] * 0.55 + 15) * (1 + G.passive(oid, 'wall')); }
     if (cmd === 'order') { v = s[3] * 0.12 + 4 + G.passive(oid, 'order') * 2; }
     if (cmd === 'train') { v = s[0] * 0.2 + 5; }
-    return Math.round(v * 1.3);
+    return Math.round(v * 0.65); /* 월 단위 턴: 1회 효과는 계절 턴의 절반 */
   };
   G.doCommand = (oid, cmd) => {
     const st = S.state, so = st.officers[oid], cid = so.city, cs = st.cities[cid], n = so.nation;
@@ -339,8 +343,8 @@
   G.recruitAmount = (oid) => {
     const so = S.state.officers[oid], cs = S.state.cities[so.city], n = so.nation;
     const nb = S.NATIONS[n].bonus || {};
-    let a = 1.6 * (900 + so.s[0] * 14) * (1 + G.bldEff(cs, 'recruit') + (nb.recruit || 0) + G.passive(oid, 'recruit') + (S.cityById[so.city].type === 'jin' ? 0.25 : 0));
-    a = Math.min(a, cs.pop * 0.12);
+    let a = 0.8 * (900 + so.s[0] * 14) * (1 + G.bldEff(cs, 'recruit') + (nb.recruit || 0) + G.passive(oid, 'recruit') + (S.cityById[so.city].type === 'jin' ? 0.25 : 0));
+    a = Math.min(a, cs.pop * 0.06);
     return Math.max(0, Math.floor(a / 100) * 100);
   };
   G.doRecruit = (oid, uid) => {
@@ -485,7 +489,7 @@
     } else if (kind === 'truce') {
       if (r.status !== 'war') return '전쟁 중이 아닙니다.';
       const p = (r.val / 100) * 0.9 + es[2] / 500 + bonus * 0.3 - (G.nationTroopTotal(target) > G.nationTroopTotal(n) * 1.8 ? 0.25 : 0);
-      if (Math.random() < p) { G.setRel(n, target, 'truce', r.val + 5, T(st.year, st.season) + 8); msg = `${S.nationName(target)}과 휴전(2년) 성립!`; }
+      if (Math.random() < p) { G.setRel(n, target, 'truce', r.val + 5, NOW() + 24); msg = `${S.nationName(target)}과 휴전(2년) 성립!`; }
       else { G.setRel(n, target, r.status, r.val - 3); msg = `${S.nationName(target)}이(가) 휴전을 거절했다.`; }
     } else if (kind === 'ally') {
       if (r.status === 'war') return '전쟁 중인 나라와는 동맹할 수 없습니다.';
@@ -642,7 +646,8 @@
   /* ───────── 턴 진행 ───────── */
   G.income = () => {
     const st = S.state;
-    const autumn = st.season === 2;
+    const harvest = st.month === 9; /* 9월 추수 */
+    const M = 1 / 3; /* 월 수입 = 계절 수입의 1/3 */
     const rep = {};
     for (const n in st.nations) rep[n] = { gold: 0, food: 0, iron: 0, wood: 0, upkeep: 0 };
     for (const cid in st.cities) {
@@ -652,39 +657,50 @@
       const nb = S.NATIONS[n].bonus || {};
       const of = cs.order / 100;
       const sp = S.SPECIALS[c.special];
-      let gold = cs.comm * 0.18 * of * (1 + G.bldEff(cs, 'gold') + (nb.comm || 0)) + cs.pop / 5000;
-      if (sp && cs.specialMode === 'trade') gold += sp.trade * 0.6 * (1 + G.bldEff(cs, 'trade')) * (c.port ? 1.25 : 1) * of;
+      let gold = (cs.comm * 0.18 * of * (1 + G.bldEff(cs, 'gold') + (nb.comm || 0)) + cs.pop / 5000) * 0.45;
+      if (sp && cs.specialMode === 'trade') gold += sp.trade * 0.6 * (1 + G.bldEff(cs, 'trade')) * (c.port ? 1.25 : 1) * of * 0.45;
       let foodMul = 1 + G.bldEff(cs, 'food') + (sp && cs.specialMode === 'tech' && sp.tech === 'food' ? 0.18 : 0);
-      let food = cs.agri * (autumn ? 3.6 : 0.5) * of * foodMul;
-      let iron = 4 + G.bldEff(cs, 'iron') + cs.tech / 60 + (sp && cs.specialMode === 'tech' && sp.tech === 'iron' ? 60 : 0);
-      let wood = 12 + G.bldEff(cs, 'wood') + (c.type === 'mountain' ? 12 : 0);
-      const up = G.troopsTotal(cs) * 0.02;
+      let food = cs.agri * (harvest ? 3.6 : 0.14) * of * foodMul;
+      let iron = (4 + G.bldEff(cs, 'iron') + cs.tech / 60 + (sp && cs.specialMode === 'tech' && sp.tech === 'iron' ? 60 : 0)) * M;
+      let wood = (12 + G.bldEff(cs, 'wood') + (c.type === 'mountain' ? 12 : 0)) * M;
+      const up = G.troopsTotal(cs) * 0.02 * M;
       rep[n].gold += gold; rep[n].food += food; rep[n].iron += iron; rep[n].wood += wood; rep[n].upkeep += up;
       /* 성장 */
-      cs.pop = Math.round(Math.min(G.popCap(cid), cs.pop * (1 + (0.004 + G.bldEff(cs, 'popG')) * of)));
+      cs.pop = Math.round(Math.min(G.popCap(cid), cs.pop * (1 + (0.004 + G.bldEff(cs, 'popG')) * of * M)));
       const ordDelta = G.bldEff(cs, 'order') + G.wonderEff(n, 'order') * 0.5 + (cs.order < 55 ? 1 : cs.order > 80 ? -0.6 : 0) + (st.season === 3 && sp && cs.specialMode === 'tech' && sp.name === '담비가죽' ? 1 : 0);
-      cs.order = U.clamp(cs.order + ordDelta, 0, 100);
-      cs.train = Math.min(100, cs.train + G.bldEff(cs, 'train'));
-      if (cs.wall < G.wallMax(cid)) cs.wall = Math.min(G.wallMax(cid), cs.wall + 4);
+      cs.order = U.clamp(cs.order + ordDelta * M, 0, 100);
+      cs.train = Math.min(100, cs.train + G.bldEff(cs, 'train') * M);
+      if (cs.wall < G.wallMax(cid)) cs.wall = Math.min(G.wallMax(cid), cs.wall + 4 * M);
     }
-    /* 총동원령(역전 장치): 도시 5곳 이하로 몰린 삼국은 수도에서 매 계절 비상 징병 */
+    /* 총동원령(역전 장치): 도시 5곳 이하로 몰린 삼국은 수도에서 매달 비상 징병(분기량의 1/3) */
     for (const n of ['goguryeo', 'baekje', 'silla']) {
       if (!st.nations[n] || !st.nations[n].alive) continue;
       const cs = G.citiesOf(n);
       if (cs.length > 5) continue;
       const cap = G.capitalOf(n);
       if (!cap) continue;
-      const k = (6 - cs.length) * 1200;
+      const k = Math.round((6 - cs.length) * 1200 * M);
       const t = st.cities[cap].troops;
       t.spear = (t.spear || 0) + k; t.bow = (t.bow || 0) + Math.round(k * 0.6);
-      rep[n].food += 400;
+      rep[n].food += 400 * M;
       if (n === st.player) G.log(`총동원령! 수도에 의용병 ${U.fmt(k * 1.6)}명이 모였다.`, 'warn');
     }
-    /* 지도 밖 세력의 압박(시나리오 설정): 매 계절 병력 감소 */
+    /* 지도 밖 세력의 압박(시나리오 설정): 매달 병력 감소(분기량의 1/3) */
     const OFF = (S.scenarioById[st.scenario] || {}).offmap || {};
-    for (const n in OFF) if (st.nations[n] && st.nations[n].alive && OFF[n].drain) for (const c of G.citiesOf(n)) { const t = st.cities[c].troops; for (const k in t) t[k] = Math.round(t[k] * (1 - OFF[n].drain)); }
+    for (const n in OFF) if (st.nations[n] && st.nations[n].alive && OFF[n].drain) for (const c of G.citiesOf(n)) { const t = st.cities[c].troops; for (const k in t) t[k] = Math.round(t[k] * (1 - OFF[n].drain * M)); }
+    /* 지도 밖 원군(시나리오 설정): 지정 도시에 매달 병력 합류 (예: 660~661 당군이 당항성으로) */
+    for (const n in OFF) {
+      const R = OFF[n].reinforce;
+      if (!R || !st.nations[n] || !st.nations[n].alive || st.year > R.until) continue;
+      const cid = st.cities[R.city] && st.cities[R.city].owner === n ? R.city : G.capitalOf(n);
+      if (!cid) continue;
+      const t = st.cities[cid].troops;
+      t.bubyeong = (t.bubyeong || 0); /* 당 부병은 신라 편성에 없으므로 창병·기병으로 환산 */
+      t.spear = (t.spear || 0) + Math.round(R.amount * 0.6); t.cav = (t.cav || 0) + Math.round(R.amount * 0.4);
+      if (!t.bubyeong) delete t.bubyeong;
+    }
     /* 수·당: 지도 밖 중원 본토의 보급 (대운하·관중) */
-    for (const n of ['sui', 'tang']) if (st.nations[n] && st.nations[n].alive) { rep[n].gold += 450; rep[n].food += 1600; rep[n].iron += 80; rep[n].wood += 100; }
+    for (const n of ['sui', 'tang']) if (st.nations[n] && st.nations[n].alive) { rep[n].gold += 450 * M; rep[n].food += 1600 * M; rep[n].iron += 80 * M; rep[n].wood += 100 * M; }
     for (const n in rep) {
       if (!st.nations[n].alive) continue;
       const N = st.nations[n], r = rep[n];
@@ -701,7 +717,7 @@
   };
   G.lifeCycle = () => {
     const st = S.state;
-    const ys = T(st.year, st.season);
+    const ys = NOW();
     for (const id in st.officers) {
       const so = st.officers[id], o = S.officerById[id];
       if (so.status === 'future' && so.spawnY && st.year >= so.spawnY) {
@@ -714,7 +730,7 @@
       }
       /* 이벤트로 최후를 맞는 인물은 이벤트가 비켜가면 가상 역사로 15년 더 산다 */
       const dY = o.d ? (EV_DEATH.includes(id) ? o.d + 15 : o.d) : null;
-      if (S.settings.historicalDeath && dY && ['active', 'free', 'prisoner'].includes(so.status) && (st.year > dY || (st.year === dY && st.season === 3))) G.killOfficer(id, '천수를 다함');
+      if (S.settings.historicalDeath && dY && ['active', 'free', 'prisoner'].includes(so.status) && (st.year > dY || (st.year === dY && st.month === 12))) G.killOfficer(id, '천수를 다함');
     }
     /* 휴전 만료 */
     for (const k in st.rel) { const r = st.rel[k]; if (r.until && ys >= r.until) { if (r.status === 'truce') { r.status = 'war'; const [a, b] = k.split('|'); G.log(`${S.nationName(a)}·${S.nationName(b)} 휴전 만료 — 전쟁 재개`, 'diplo'); } r.until = null; } }
@@ -723,8 +739,10 @@
   };
   G.advance = () => {
     const st = S.state;
-    st.season++;
-    if (st.season > 3) { st.season = 0; st.year++; }
+    for (const n of ['goguryeo', 'baekje', 'silla']) if (st.nations[n] && st.nations[n].alive) G.goalStatus(n); /* 사수 실패 기록 */
+    st.month++;
+    if (st.month > 12) { st.month = 1; st.year++; }
+    st.season = U.seasonOf(st.month);
     st.turnCount++;
     for (const id in st.officers) { st.officers[id].done = false; st.officers[id].uses = 0; }
     /* 도시 행동력 회복: 남은 행동력은 1까지 이월 */
@@ -755,7 +773,7 @@
       if (border && N.gold > 1800 && tt < 30000 && free() >= 2 && tryRecruit(U.shuffle(S.UNIT_ORDER.filter((u) => !G.unitReqOk(u, cid, n) && u !== 'navy')))) return true;
       const doCmd = (cmd, si) => { if (free() < 1) return false; const oid = best(cid, si); if (!oid) return false; const before = cs.ap; G.doCommand(oid, cmd); return cs.ap < before; };
       if (border && cs.wall < G.wallMax(cid) * 0.7 && N.wood > 200 && doCmd('wall', 0)) return true;
-      if (N.gold > 700 && free() >= 2) {
+      if (N.gold > 900 + 60 * myCities.length && free() >= 2) {
         const oid = best(cid, 3);
         if (oid && cs.buildings.length < S.CITY_TYPES[S.cityById[cid].type].slots) {
           const pri = ['field', 'market', 'housing', 'office', 'barracks', 'mine', 'stable', 'chi', 'workshop', 'temple', 'shipyard'];
@@ -768,6 +786,8 @@
       }
       if (cs.order < 50 && doCmd('order', 3)) return true;
       if (tt < 4000 && N.gold > 200 && free() >= 2 && tryRecruit(['spear', 'bow', 'cav'].filter((u) => !G.unitReqOk(u, cid, n)))) return true;
+      /* 군자금 비축: 개발은 일정 금액 이상 남을 때만 (전쟁에 쓸 돈을 남긴다) */
+      if (N.gold < 500 + 60 * myCities.length) return doCmd('train', 0);
       const pick = U.pick(['agri', 'comm', 'comm', 'tech', 'train']);
       return doCmd(pick, pick === 'tech' ? 2 : pick === 'train' ? 0 : 3);
     };
@@ -833,9 +853,9 @@
     for (const m in st.nations) {
       if (m === n || !st.nations[m].alive || m === 'neutral') continue;
       const r = G.getRel(n, m);
-      if (r.status === 'peace' && r.val < 18 && G.nationTroopTotal(n) > G.nationTroopTotal(m) * 1.6 && Math.random() < 0.08 && m !== st.player) { G.declareWar(n, m); G.log(`${S.nationName(n)}이(가) ${S.nationName(m)}에 선전포고`, 'diplo'); }
-      if (r.status === 'peace' && r.val < 15 && m === st.player && Math.random() < 0.05 && G.nationTroopTotal(n) > G.nationTroopTotal(m) * 1.3) { G.declareWar(n, m); G.log(`${S.nationName(n)}이(가) 우리에게 선전포고했다!`, 'warn'); }
-      if (r.status === 'war' && m !== st.player && G.nationTroopTotal(n) < G.nationTroopTotal(m) * 0.5 && Math.random() < 0.06) { G.setRel(n, m, 'truce', r.val + 10, T(st.year, st.season) + 6); G.log(`${S.nationName(n)}·${S.nationName(m)} 휴전`, 'diplo'); }
+      if (r.status === 'peace' && r.val < 18 && G.nationTroopTotal(n) > G.nationTroopTotal(m) * 1.6 && Math.random() < 0.027 && m !== st.player) { G.declareWar(n, m); G.log(`${S.nationName(n)}이(가) ${S.nationName(m)}에 선전포고`, 'diplo'); }
+      if (r.status === 'peace' && r.val < 15 && m === st.player && Math.random() < 0.017 && G.nationTroopTotal(n) > G.nationTroopTotal(m) * 1.3) { G.declareWar(n, m); G.log(`${S.nationName(n)}이(가) 우리에게 선전포고했다!`, 'warn'); }
+      if (r.status === 'war' && m !== st.player && G.nationTroopTotal(n) < G.nationTroopTotal(m) * 0.5 && Math.random() < 0.02) { G.setRel(n, m, 'truce', r.val + 10, NOW() + 18); G.log(`${S.nationName(n)}·${S.nationName(m)} 휴전`, 'diplo'); }
     }
     return attacks;
   };
@@ -866,9 +886,15 @@
       let ok = false, prog = '';
       if (g.type === 'capture') { const have = g.cities.filter((c) => st.cities[c].owner === n).length; ok = have === g.cities.length; prog = `${have}/${g.cities.length}`; }
       if (g.type === 'count') { const have = G.citiesOf(n).length; ok = have >= g.n; prog = `${have}/${g.n}`; }
-      if (g.type === 'hold') { const held = g.cities.every((c) => st.cities[c].owner === n); ok = held && (st.year > g.until); prog = held ? `사수 중 (${g.until}년까지)` : '함락됨'; g.failed = !held; }
+      if (g.type === 'hold') { /* 사수: 기한 전에 한 번이라도 빼앗기면 실패 (되찾아도 무효) */
+        const held = g.cities.every((c) => st.cities[c].owner === n);
+        st.holdLost = st.holdLost || {};
+        const key = n + ':' + g.cities.join(',');
+        if (!held && st.year <= g.until) st.holdLost[key] = true;
+        const lost = !!st.holdLost[key];
+        ok = held && !lost && st.year > g.until; prog = lost ? '함락됨 (사수 실패)' : held ? `사수 중 (${g.until}년까지)` : '함락됨'; }
       if (g.type === 'destroy') { ok = !st.nations[g.nation].alive; prog = ok ? '멸망' : '존속'; }
-      return { desc: g.desc, ok, prog, failed: g.type === 'hold' && !g.cities.every((c) => st.cities[c].owner === n) };
+      return { desc: g.desc, ok, prog, failed: g.type === 'hold' && !!(st.holdLost && st.holdLost[n + ':' + g.cities.join(',')]) };
     });
   };
   G.checkEnd = () => {
@@ -900,8 +926,8 @@
     freeAt: (id, c) => { const so = S.state.officers[id]; return !!so && so.status === 'free' && so.city === c; },
     flag: (k, v) => { S.state.flags[k] = v; },
     flagv: (k) => S.state.flags[k],
-    morale: (n, v, t) => { const N = S.state.nations[n]; if (!N) return; N.morale.v = U.clamp((N.morale.v || 0) + v, -50, 50); N.morale.t = Math.max(N.morale.t, t); },
-    buffAtk: (n, v, t) => { const N = S.state.nations[n]; N.atk.v = v; N.atk.t = t; },
+    morale: (n, v, t) => { const N = S.state.nations[n]; if (!N) return; N.morale.v = U.clamp((N.morale.v || 0) + v, -50, 50); N.morale.t = Math.max(N.morale.t, t * 3); }, /* t: 계절 단위 → 개월 */
+    buffAtk: (n, v, t) => { const N = S.state.nations[n]; N.atk.v = v; N.atk.t = t * 3; },
     addTroops: (c, type, n) => { const cs = S.state.cities[c]; cs.troops[type] = Math.max(0, (cs.troops[type] || 0) + n); },
     nationTroops: (n, pct) => { for (const c of G.citiesOf(n)) { const cs = S.state.cities[c]; for (const k in cs.troops) cs.troops[k] = Math.round(cs.troops[k] * (1 + pct)); } },
     cityTroops: (c, pct) => { const cs = S.state.cities[c]; for (const k in cs.troops) cs.troops[k] = Math.round(cs.troops[k] * (1 + pct)); },
@@ -909,7 +935,7 @@
     city: (c, o) => { const cs = S.state.cities[c]; for (const k in o) { if (k === 'wall') cs.wall = U.clamp(cs.wall + o[k], 0, G.wallMax(c)); else if (k === 'order') cs.order = U.clamp(cs.order + o[k], 0, 100); else cs[k] = Math.max(0, cs[k] + o[k]); } },
     cityAll: (n, o) => { for (const c of G.citiesOf(n)) E.city(c, o); },
     rel: (a, b, d) => { const r = G.getRel(a, b); G.setRel(a, b, r.status, r.val + d, r.until); },
-    truce: (a, b, turns) => { const r = G.getRel(a, b); G.setRel(a, b, 'truce', r.val + 10, T(S.state.year, S.state.season) + turns); },
+    truce: (a, b, turns) => { const r = G.getRel(a, b); G.setRel(a, b, 'truce', r.val + 10, NOW() + turns * 3); }, /* turns: 계절 단위 */
     war: (a, b) => G.declareWar(a, b),
     ally: (a, b) => { const r = G.getRel(a, b); G.setRel(a, b, 'ally', Math.max(r.val, 75)); G.log(`${S.nationName(a)}·${S.nationName(b)} 동맹`, 'diplo'); },
     stat: (id, k, d) => { const so = S.state.officers[id]; if (so) so.s[STAT_IDX[k]] = U.clamp(so.s[STAT_IDX[k]] + d, 1, 100); },
@@ -946,12 +972,12 @@
   };
   G.E = E;
   G.pendingEvents = () => {
-    const st = S.state, now = T(st.year, st.season);
+    const st = S.state, now = NOW();
     const out = [];
     for (const ev of S.EVENTS) {
       if (st.fired[ev.id]) continue;
       const start = T(ev.when.y, ev.when.s == null ? 0 : ev.when.s);
-      const end = T(ev.when.to == null ? ev.when.y : ev.when.to, 3);
+      const end = TEND(ev.when.to == null ? ev.when.y : ev.when.to);
       if (now < start || now > end) continue;
       let ok = false;
       try { ok = ev.cond(E); } catch (e) { console.warn('event cond', ev.id, e); }
@@ -973,8 +999,8 @@
   };
 
   /* ───────── 저장 ───────── */
-  G.save = (slot = 1) => { S.store.set(`samgukgi_save_${slot}`, JSON.stringify(S.state)); S.store.set(`samgukgi_meta_${slot}`, JSON.stringify({ t: Date.now(), d: U.dateStr(S.state.year, S.state.season), n: S.nationName(S.state.player), sc: S.scenarioById[S.state.scenario].title })); };
-  G.load = (slot = 1) => { const s = S.store.get(`samgukgi_save_${slot}`); if (!s) return false; try { S.state = JSON.parse(s); } catch (e) { return false; } if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; S.rebuildAdj(S.state.inactive || {}); for (const c in S.state.cities) S.state.cities[c].buildings = S.state.cities[c].buildings.filter((b) => S.BUILDINGS[b]); for (const c in S.state.cities) { const cs = S.state.cities[c]; if (!cs.blv) cs.blv = {}; if (cs.ap == null) cs.ap = G.cityApMax(c); } return true; };
+  G.save = (slot = 1) => { S.store.set(`samgukgi_save_${slot}`, JSON.stringify(S.state)); S.store.set(`samgukgi_meta_${slot}`, JSON.stringify({ t: Date.now(), d: U.dateStr(S.state.year, S.state.season, S.state.month), n: S.nationName(S.state.player), sc: S.scenarioById[S.state.scenario].title })); };
+  G.load = (slot = 1) => { const s = S.store.get(`samgukgi_save_${slot}`); if (!s) return false; try { S.state = JSON.parse(s); } catch (e) { return false; } if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; if (!S.state.month) { S.state.month = S.state.season * 3 + 1; } S.rebuildAdj(S.state.inactive || {}); for (const c in S.state.cities) S.state.cities[c].buildings = S.state.cities[c].buildings.filter((b) => S.BUILDINGS[b]); for (const c in S.state.cities) { const cs = S.state.cities[c]; if (!cs.blv) cs.blv = {}; if (cs.ap == null) cs.ap = G.cityApMax(c); } return true; };
   G.saveMeta = (slot) => { try { return JSON.parse(S.store.get(`samgukgi_meta_${slot}`)); } catch (e) { return null; } };
 
   S.G = G;

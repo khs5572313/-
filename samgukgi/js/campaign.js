@@ -58,7 +58,7 @@
     const choice = await S.UI.modal({
       title: end.win ? `🏆 제${c.idx + 1}장 승리` : `⏳ 제${c.idx + 1}장 종료`, closable: false, wide: true,
       body: el('div', { class: 'end' }, el('span', { html: A.emblem(st.player, 90) }), el('h2', {}, end.msg),
-        el('p', {}, `${sc.title} · ${U.dateStr(st.year, st.season)} · 이번 장 점수 ${U.fmt(score)}${end.win ? ' (승리 보너스 +3,000 포함)' : ''}`),
+        el('p', {}, `${sc.title} · ${U.dateStr(st.year, st.season, st.month)} · 이번 장 점수 ${U.fmt(score)}${end.win ? ' (승리 보너스 +3,000 포함)' : ''}`),
         last ? el('p', { class: 'hint' }, '마지막 장입니다. 캠페인 결과를 확인하세요.') : el('p', { class: 'hint' }, `다음 장: ${S.scenarioById[C.order()[c.idx + 1]].year}년 「${S.scenarioById[C.order()[c.idx + 1]].title}」`)),
       buttons: [
         last ? { label: '캠페인 결과', cls: 'gold', value: 'result' } : { label: '다음 장으로 ▶', cls: 'gold', value: 'next' },
