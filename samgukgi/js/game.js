@@ -29,9 +29,16 @@
   };
 
   /* ───────── 상태 생성 ───────── */
-  G.newGame = (scId, player) => {
+  /* 난이도: 보통이 기준(모든 배율 1). 플레이어·AI 자원, AI 병력·공격성에만 작용하고 역사 데이터는 건드리지 않는다 */
+  G.DIFF = {
+    easy:   { name: '쉬움',   desc: '자원 ×1.5 · 아군 병력 ×1.2 · 적 병력 ×0.85 · 적이 플레이어를 덜 노림', playerRes: 1.5, playerTroops: 1.2, aiTroops: 0.85, aiIncome: 0.9, aggr: 1.2, aiAtt: 0, vsPlayer: 1.2 },
+    normal: { name: '보통',   desc: '역사 기준 밸런스 (권장)', playerRes: 1, playerTroops: 1, aiTroops: 1, aiIncome: 1, aggr: 1, aiAtt: 0, vsPlayer: 1 },
+    hard:   { name: '어려움', desc: '자원 ×0.8 · 적 병력 ×1.2 · 적 수입 ×1.15 · 적이 플레이어를 우선 공격', playerRes: 0.8, playerTroops: 1, aiTroops: 1.2, aiIncome: 1.15, aggr: 1, aiAtt: 1, vsPlayer: 0.8 },
+  };
+  G.diff = () => G.DIFF[(S.state && S.state.diff) || 'normal'] || G.DIFF.normal;
+  G.newGame = (scId, player, opts = {}) => {
     const sc = S.scenarioById[scId];
-    const st = { ver: 1, scenario: scId, year: sc.year, season: sc.season, startT: T(sc.year, sc.season), player,
+    const st = { ver: 1, scenario: scId, year: sc.year, season: sc.season, startT: T(sc.year, sc.season), player, diff: opts.diff || 'normal', campaign: opts.campaign || null,
       nations: {}, rel: {}, cities: {}, officers: {}, fired: {}, flags: {}, log: [], everOwned: {}, turnCount: 0, battleCount: 0 };
     S.state = st;
     for (const nid in S.NATIONS) {
@@ -127,7 +134,27 @@
       if (adult > sc.year && adult <= sc.endYear && (!o.d || o.d > adult)) { so.status = 'future'; so.spawnY = adult; }
     }
     for (const sp of sc.spawn || []) { const so = st.officers[sp.id]; if (so && so.status !== 'active') { so.status = 'future'; so.spawnY = sp.year; so.spawnCity = sp.city; so.nation = sp.nation; } }
-    G.log(`${U.dateStr(st.year, st.season)} — 시나리오 「${sc.title}」 개막. ${S.nationName(player)} 선택.`);
+    /* 난이도 적용 */
+    const D = G.DIFF[st.diff] || G.DIFF.normal;
+    for (const n in st.nations) {
+      if (n === 'neutral') continue;
+      const N = st.nations[n];
+      const rm = n === player ? D.playerRes : 1;
+      for (const k of ['gold', 'food', 'iron', 'wood']) N[k] = Math.round(N[k] * rm);
+    }
+    for (const cid in st.cities) {
+      const cs = st.cities[cid];
+      if (cs.owner === 'neutral') continue;
+      const tm = cs.owner === player ? D.playerTroops : D.aiTroops;
+      if (tm !== 1) for (const k in cs.troops) cs.troops[k] = Math.round((cs.troops[k] * tm) / 100) * 100;
+    }
+    /* 캠페인 계승 보너스 (앞 장의 전공) */
+    if (opts.bonus) {
+      const N = st.nations[player];
+      for (const k of ['gold', 'food', 'iron', 'wood']) N[k] += opts.bonus[k] || 0;
+      if (opts.bonus.morale) { N.morale.v = opts.bonus.morale; N.morale.t = 6; }
+    }
+    G.log(`${U.dateStr(st.year, st.season)} — 시나리오 「${sc.title}」 개막. ${S.nationName(player)} 선택 · 난이도 ${D.name}.`);
     return st;
   };
 
@@ -555,6 +582,7 @@
     for (const n in rep) {
       if (!st.nations[n].alive) continue;
       const N = st.nations[n], r = rep[n];
+      if (n !== st.player) { const m = G.diff().aiIncome; r.gold *= m; r.food *= m; }
       N.gold += Math.round(r.gold); N.food += Math.round(r.food - r.upkeep); N.iron += Math.round(r.iron); N.wood += Math.round(r.wood);
       if (N.food < 0) {
         /* 군량 부족: 탈영 */
@@ -601,7 +629,7 @@
     if (!N.alive || n === st.player) return [];
     const myCities = G.citiesOf(n);
     const attacks = [];
-    const aggressive = n === 'sui' || n === 'tang' ? 1.05 : S.NATIONS[n].major ? 1.3 : 1.8;
+    const aggressive = (n === 'sui' || n === 'tang' ? 1.05 : S.NATIONS[n].major ? 1.3 : 1.8) * G.diff().aggr;
     for (const cid of myCities) {
       const cs = st.cities[cid];
       const offs = G.officersIn(cid).filter((id) => !st.officers[id].done);
@@ -646,21 +674,25 @@
       if (movers.length > 1) st.officers[movers[movers.length - 1]].city = to;
     }
     /* 공격 결정 */
-    let maxAtt = S.NATIONS[n].major ? 2 : 1;
+    let maxAtt = (S.NATIONS[n].major ? 2 : 1) + G.diff().aiAtt;
     for (const cid of U.shuffle(myCities)) {
       if (maxAtt <= 0) break;
       const cs = st.cities[cid];
       const offs = G.officersIn(cid).filter((id) => !st.officers[id].done || true);
       const tt = G.troopsTotal(cs);
       if (tt < 5000 || !offs.length) continue;
-      for (const e of U.shuffle(G.attackTargets(cid))) {
+      const fav = st.focus || st.player; /* 난이도 기준이 되는 나라(플레이어, 시뮬레이션에서는 주인공) */
+      const D = G.diff();
+      let tgts = U.shuffle(G.attackTargets(cid));
+      if (D.vsPlayer < 1) tgts.sort((a, b) => (st.cities[b.to].owner === fav ? 1 : 0) - (st.cities[a.to].owner === fav ? 1 : 0));
+      for (const e of tgts) {
         const ts = st.cities[e.to];
         if (!G.atWar(n, ts.owner)) continue;
         if (ts.owner === 'neutral' && Math.random() < 0.6) continue;
         const defPow = G.troopsTotal(ts) * (1 + ts.wall / 1500) * (1 + S.CITY_TYPES[S.cityById[e.to].type].defBonus * 0.6) + 800;
         const myPow = tt * 0.75 * (1 + (N.morale.v || 0) / 100);
         const food = G.expeditionFood(tt * 0.75, e.type, n, cid);
-        if (myPow > defPow * aggressive && N.food > food) {
+        if (myPow > defPow * aggressive * (ts.owner === fav ? D.vsPlayer : 1) && N.food > food) {
           const army = G.aiArmy(cid, 0.75);
           if (!army.length) continue;
           N.food -= food;

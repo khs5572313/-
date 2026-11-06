@@ -30,7 +30,7 @@
       playable: ALL3,
       nations: NAT({ gold: 3500, food: 8000, iron: 800, wood: 1500, ruler: 'pyeongwon' }, { gold: 3200, food: 6500, iron: 500, wood: 1200, ruler: 'wideok' }, { gold: 4000, food: 8000, iron: 800, wood: 1500, ruler: 'jinpyeong' }),
       relations: [['goguryeo', 'silla', 'war', 10], ['baekje', 'silla', 'war', 15], ['goguryeo', 'baekje', 'peace', 45]],
-      cities: own({}, { pyongyang: 1.5, maeso: 1.5, hanseong_g: 1.2, bukhan: 2.0, chiljung: 1.6, danghang: 1.4, haseulla: 1.3, samnyeon: 1.4, sangju: 1.4, daeya: 1.3, amak: 1.3, seorabeol: 1.7, sabi: 1.3, jukryeong: 1.0 }, { bukhan: { wall: 600 }, chiljung: { wall: 600 } }),
+      cities: own({}, { pyongyang: 1.5, maeso: 1.7, hanseong_g: 1.3, bukhan: 1.8, chiljung: 1.5, danghang: 1.4, haseulla: 1.3, samnyeon: 1.4, sangju: 1.4, daeya: 1.3, amak: 1.3, seorabeol: 1.7, sabi: 1.3, jukryeong: 1.0 }, { bukhan: { wall: 600 }, chiljung: { wall: 600 } }),
       officers: { maeso: ['ondal'], pyongyang: ['pyeongwon', 'yeongyang', 'pyeonggang', 'euljimundeok'], yodong: ['gangisik'], seorabeol: ['jinpyeong', 'maya'], bukhan: ['kimseohyeon', 'chandeok'], sabi: ['wideok', 'hyewang'], gujiha: ['haesu'] },
       free: {},
       goals: {
@@ -47,13 +47,13 @@
       playable: ALL3,
       nations: NAT({ gold: 5000, food: 10000, iron: 1200, wood: 2000, ruler: 'bojang' }, { gold: 4800, food: 8000, iron: 700, wood: 1500, ruler: 'uija' }, { gold: 6000, food: 10000, iron: 1100, wood: 1800, ruler: 'kimchunchu' }),
       relations: [['goguryeo', 'silla', 'war', 5], ['baekje', 'silla', 'war', 0], ['goguryeo', 'baekje', 'ally', 80]],
-      cities: own({ daeya: 'baekje', amak: 'baekje' }, { pyongyang: 1.6, maeso: 1.9, hanseong_g: 1.4, biyeol: 1.2, bukhan: 2.2, chiljung: 1.9, danghang: 1.7, haseulla: 1.5, jukryeong: 1.3, sangju: 2.2, samnyeon: 1.9, seorabeol: 2.0, geumgwan: 1.3, sabi: 1.3, daeya: 1.4 }, { bukhan: { wall: 700 }, chiljung: { wall: 650 }, samnyeon: { wall: 700 } }),
+      cities: own({ daeya: 'baekje', amak: 'baekje' }, { pyongyang: 1.6, maeso: 2.3, hanseong_g: 1.6, biyeol: 1.3, bukhan: 1.7, chiljung: 1.45, danghang: 1.7, haseulla: 1.5, jukryeong: 1.3, sangju: 2.2, samnyeon: 1.9, seorabeol: 2.0, geumgwan: 1.3, sabi: 1.3, daeya: 1.4 }, { bukhan: { wall: 600 }, chiljung: { wall: 520 }, samnyeon: { wall: 700 } }),
       officers: { pyongyang: ['bojang', 'yeongaesomun', 'namgeon', 'namsan'], maeso: ['noeeumsin', 'saenghae', 'ango'], gungnae: ['namsaeng'], biyeol: ['jeongto'], ansi: ['yangmanchun'],
         sabi: ['uija', 'seongchung', 'heungsu', 'buyeohyo', 'eungo'], daeya: ['eunsang', 'yunchung'], hwangsan: ['gyebaek'],
         seorabeol: ['kimchunchu', 'munmu', 'munhui', 'gangsu'], sangju: ['kimyusin', 'kimheumsun', 'heumun', 'yepa', 'jeokdeuk', 'boyongna'], bukhan: ['dongtacheon'], chiljung: ['pilbu'] },
       free: {},
       goals: {
-        goguryeo: [{ type: 'capture', cities: ['bukhan', 'chiljung', 'danghang'], desc: '북한산성·칠중성·당항성 장악 (한강 수복)' }],
+        goguryeo: [{ type: 'capture', cities: ['bukhan', 'chiljung'], desc: '북한산성·칠중성 장악 (한강 수복)' }],
         baekje: [{ type: 'capture', cities: ['sangju', 'samnyeon'], desc: '상주·삼년산성 공략' }],
         silla: [{ type: 'hold', cities: ['bukhan', 'chiljung', 'danghang'], until: 661, desc: '661년 겨울까지 북한산성·칠중성·당항성 사수' }],
       },
@@ -67,13 +67,13 @@
       playable: ALL3,
       nations: NAT({ gold: 4000, food: 8500, iron: 900, wood: 1500, ruler: 'yeongyang' }, { gold: 3800, food: 7000, iron: 600, wood: 1300, ruler: 'muwang' }, { gold: 3500, food: 7000, iron: 700, wood: 1300, ruler: 'jinpyeong' }),
       relations: [['baekje', 'silla', 'war', 10], ['goguryeo', 'silla', 'war', 15], ['goguryeo', 'baekje', 'peace', 45]],
-      cities: own({}, { sabi: 1.3, gujiha: 1.8, gosa: 1.3, amak: 1.3, daeya: 1.2, seorabeol: 1.3, pyongyang: 1.5, maeso: 1.4, bukhan: 1.3 }),
+      cities: own({}, { sabi: 1.3, gujiha: 2.1, gosa: 1.4, amak: 1.15, daeya: 1.1, seorabeol: 1.3, pyongyang: 1.5, maeso: 1.4, bukhan: 1.3 }),
       officers: { sabi: ['muwang', 'sataekjeokdeok'], iksan: ['seonhwa', 'jimyeong'], gujiha: ['haesu'],
         amak: ['mueun', 'gwisan', 'chuhang'], seorabeol: ['jinpyeong', 'maya', 'wongwang', 'kimhuji'], daeya: ['kimseohyeon'],
         pyongyang: ['yeongyang', 'geonmu', 'euljimundeok'], maeso: ['goseung'], yodong: ['gangisik'] },
       free: { seorabeol: ['bihyeong'], sangju: ['gasil', 'seolssinyeo'] },
       goals: {
-        baekje: [{ type: 'capture', cities: ['amak', 'daeya', 'sangju'], desc: '아막성·대야성·상주 공략 (신라 서부 장악)' }],
+        baekje: [{ type: 'capture', cities: ['amak'], desc: '아막성 공략 (602년의 설욕)' }, { type: 'count', n: 11, desc: '도시 11곳 이상 확보' }],
         silla: [{ type: 'hold', cities: ['amak', 'daeya'], until: 615, desc: '615년 겨울까지 아막성·대야성 사수' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan'], desc: '북한산성 함락 (603 고승의 원정 완수)' }],
       },
@@ -86,14 +86,14 @@
       playable: ALL3,
       nations: NAT({ gold: 4500, food: 9000, iron: 1000, wood: 1800, ruler: 'bojang' }, { gold: 4500, food: 7000, iron: 600, wood: 1400, ruler: 'uija' }, { gold: 6000, food: 10000, iron: 1000, wood: 1800, ruler: 'kimchunchu' }),
       relations: [['baekje', 'silla', 'war', 0], ['goguryeo', 'silla', 'war', 10], ['goguryeo', 'baekje', 'ally', 70]],
-      cities: own({ daeya: 'baekje', amak: 'baekje' }, { samnyeon: 3.5, sangju: 1.5, danghang: 1.5, sabi: 1.4, ungjin: 1.2, tanhyeon: 0.6, gibeolpo: 0.8, hwangsan: 0.8, pyongyang: 1.8, maeso: 1.4 }, { hwangsan: { troops: { gyeolsa: 5000 } } }),
+      cities: own({ daeya: 'baekje', amak: 'baekje' }, { samnyeon: 4.0, sangju: 1.7, danghang: 1.8, sabi: 1.25, ungjin: 1.05, tanhyeon: 0.6, gibeolpo: 0.8, hwangsan: 0.8, pyongyang: 1.8, maeso: 1.4 }, { hwangsan: { troops: { gyeolsa: 5000 } } }),
       officers: { sabi: ['uija', 'buyeoyung', 'buyeotae', 'uijik', 'eungo'], hwangsan: ['gyebaek', 'chungsang', 'sangyeong'], imjon: ['heukchi', 'jisusin', 'satasangyeo'], jullyu: ['boksin', 'docheom'], gosa: ['heungsu'], ungjin: ['yesikjin', 'yegun'],
         seorabeol: ['kimchunchu', 'munhui', 'wonhyo', 'uisang', 'gangsu'], samnyeon: ['kimyusin', 'kimheumsun', 'pumil', 'bangul', 'gwanchang', 'munyeong'], danghang: ['munmu', 'kiminmun'], sangju: ['kimyangdo', 'yeolgi'], chiljung: ['pilbu'],
         pyongyang: ['bojang', 'yeongaesomun', 'namgeon', 'namsan'], gungnae: ['namsaeng'], maeso: ['noeeumsin', 'saenghae'] },
       free: {},
       spawn: [{ id: 'buyeopung', year: 661, city: 'jullyu', nation: 'baekje' }],
       goals: {
-        baekje: [{ type: 'hold', cities: ['sabi', 'ungjin'], until: 662, desc: '662년 겨울까지 사비성·웅진성 사수' }],
+        baekje: [{ type: 'hold', cities: ['sabi', 'ungjin', 'hwangsan'], until: 662, desc: '662년 겨울까지 사비성·웅진성·황산벌 사수' }],
         silla: [{ type: 'capture', cities: ['sabi', 'ungjin'], desc: '사비성·웅진성 함락' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan', 'chiljung'], desc: '북한산성·칠중성 함락' }],
       },
@@ -107,13 +107,13 @@
       playable: ALL3,
       nations: NAT({ gold: 4500, food: 9000, iron: 1000, wood: 1800, ruler: 'geonmu' }, { gold: 5000, food: 8000, iron: 700, wood: 1500, ruler: 'uija' }, { gold: 4000, food: 7000, iron: 700, wood: 1400, ruler: 'seondeok' }),
       relations: [['baekje', 'silla', 'war', 5], ['goguryeo', 'silla', 'war', 25], ['goguryeo', 'baekje', 'peace', 55]],
-      cities: own({ amak: 'baekje' }, { daeya: 0.8, sabi: 1.3, hwangsan: 1.4, amak: 1.3, gujiha: 1.2, seorabeol: 1.5, sangju: 1.8, samnyeon: 1.3, bukhan: 1.3, pyongyang: 1.6 }, { daeya: { wall: 400 } }),
+      cities: own({ amak: 'baekje' }, { daeya: 0.9, sabi: 1.3, hwangsan: 1.4, amak: 1.2, gujiha: 1.2, seorabeol: 1.5, sangju: 2.0, samnyeon: 1.3, bukhan: 1.3, pyongyang: 1.6 }, { daeya: { wall: 400 } }),
       officers: { sabi: ['uija', 'seongchung', 'sataekjijeok', 'buyeoyung', 'eungo'], hwangsan: ['yunchung', 'gyebaek'], amak: ['uijik', 'eunsang'], gujiha: ['heungsu'],
         daeya: ['pumseok', 'gotaso', 'jukjuk', 'yongseok', 'geomil'], seorabeol: ['seondeok', 'jindeok', 'kimchunchu', 'alcheon', 'bidam', 'munhui', 'munmu', 'kimyongchun', 'cheonmyeong'], sangju: ['kimyusin', 'kimheumsun', 'biryeongja'],
         pyongyang: ['geonmu', 'bojang', 'seondohae', 'gojeongui'], yodong: ['yeongaesomun'], ansi: ['yangmanchun'] },
       free: { seorabeol: ['jigwi'] },
       goals: {
-        silla: [{ type: 'capture', cities: ['daeya', 'amak'], desc: '대야성 사수(또는 탈환)·아막성 탈환' }],
+        silla: [{ type: 'capture', cities: ['daeya'], desc: '대야성 사수(또는 탈환)' }, { type: 'count', n: 16, desc: '도시 16곳 이상 확보 (잃은 서쪽 성 회복)' }],
         baekje: [{ type: 'capture', cities: ['daeya', 'sangju', 'samnyeon'], desc: '대야성·상주·삼년산성 공략' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan', 'danghang'], desc: '북한산성·당항성 회복 (죽령 서북 반환 요구)' }],
       },
@@ -140,6 +140,9 @@
       },
     },
   ];
+  /* 체감 난이도 별점(보통 기준): tools/sim_report.js 80회 측정값 — AI가 그 나라를 맡았을 때 목표 달성률 ≥45% ★, ≥25% ★★, ≥10% ★★★, 그 미만 ★★★★ */
+  const STARS = {"g1":{"goguryeo":3,"baekje":2,"silla":1},"g2":{"goguryeo":2,"baekje":1,"silla":3},"b1":{"goguryeo":3,"baekje":3,"silla":1},"b2":{"goguryeo":3,"baekje":2,"silla":1},"s1":{"goguryeo":3,"baekje":3,"silla":1},"s2":{"goguryeo":1,"baekje":2,"silla":2}};
+  SGK.SCENARIOS.forEach((s) => (s.stars = STARS[s.id]));
   SGK.scenarioById = {};
   SGK.SCENARIOS.forEach((s) => (SGK.scenarioById[s.id] = s));
 })();

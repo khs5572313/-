@@ -315,3 +315,17 @@ table.sum th { background: #efe3c6; } table.sum td { border-bottom: 1px solid va
 .sc-nation.hero { box-shadow: 0 0 0 3px #f6dc8a, 0 6px 16px #000a; }
 .hero-tag { font-size: 11px; background: var(--red); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 6px; vertical-align: middle; }
 .lg-tag.fic { background: #6b6b6b; }
+
+.diff-pick { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+.diff-desc { font-size: 13px; color: #d8c8a0; margin-left: 6px; }
+.modal .diff-desc { color: var(--muted); }
+.scn-stars { color: #b8860b; font-weight: 800; letter-spacing: 1px; }
+.tb-diff { font-size: 12px; text-align: center; padding: 0 8px; border-right: 1px solid #fff3; color: var(--gold2); }
+.off-tools { display: flex; gap: 8px; align-items: center; font-size: 12px; margin-bottom: 4px; }
+.off-tools select { font-size: 12px; }
+.osearch { padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit; }
+.otbl th.sortable { cursor: pointer; text-decoration: underline dotted; }
+.otbl th.sortable.on { color: #fff; }
+.camp-list { columns: 2; font-size: 14px; }
+.camp-pick { display: flex; gap: 8px; }
+.camp-pick .btn { display: flex; align-items: center; gap: 4px; }
