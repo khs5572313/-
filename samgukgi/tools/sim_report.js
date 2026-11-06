@@ -4,7 +4,7 @@
 const fs = require('fs'), path = require('path');
 global.window = {}; global.SGK = window.SGK = {};
 global.localStorage = { getItem: () => null, setItem: () => {} };
-const files = ['core.js', 'data/nations.js', 'data/map.js', 'data/units.js', 'data/buildings.js', 'data/specials.js', 'data/officers.js', 'data/officers2.js',
+const files = ['core.js', 'data/nations.js', 'data/map.js', 'data/units.js', 'data/buildings.js', 'data/specials.js', 'data/officers.js', 'data/officers2.js', 'data/balance.js',
   'data/scenarios.js', 'data/scenarios3k.js', 'data/events.js', 'data/events3k.js', 'game.js', 'battle.js'];
 for (const f of files) eval(fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8'));
 const S = window.SGK, G = S.G;

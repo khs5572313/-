@@ -3,8 +3,8 @@
  * port: '' | 'river' (하천 나루) | 'sea' (바다 항구) | 'both'
  * 위치 비정이 학계에서 갈리는 곳은 note 에 '설'로 표기 */
 SGK.CITY_TYPES = {
-  capital:  { name: '수도',   slots: 8, wallMul: 1.3, ecoMul: 1.3, defBonus: 0.15, desc: '국가의 심장. 함락 시 전국 민심 -20, 사기 붕괴.' },
-  plain:    { name: '평지성', slots: 6, wallMul: 0.8, ecoMul: 1.2, defBonus: 0.0,  desc: '농업·상업에 유리, 방어는 약함.' },
+  capital:  { name: '수도',   slots: 7, wallMul: 1.3, ecoMul: 1.3, defBonus: 0.15, desc: '국가의 심장. 함락 시 전국 민심 -20, 사기 붕괴.' },
+  plain:    { name: '평지성', slots: 5, wallMul: 0.8, ecoMul: 1.2, defBonus: 0.0,  desc: '농업·상업에 유리, 방어는 약함.' },
   mountain: { name: '산성',   slots: 4, wallMul: 1.6, ecoMul: 0.7, defBonus: 0.3,  desc: '험준한 지형. 수비 +30%, 공격측 기병 -20%.' },
   port:     { name: '항구',   slots: 5, wallMul: 0.9, ecoMul: 1.1, defBonus: 0.0,  desc: '바다·하천 항로 출진, 조선소·무역관 건설.' },
   wall:     { name: '장성',   slots: 3, wallMul: 2.2, ecoMul: 0.3, defBonus: 0.45, desc: '국경 방어선. 경제 거의 없음, 수비 +45%.' },
@@ -245,4 +245,31 @@ SGK.SPECIALS = {
   craft:   { name: '금동공예', trade: 150, tech: 'tech', techDesc: '기술 성장 +25%' },
   rice:    { name: '쌀', trade: 70, tech: 'food', techDesc: '식량 +20%' },
   silver:  { name: '은(銀)', trade: 140, tech: 'comm', techDesc: '상업 성장 +15%' },
+};
+
+/* 표시 좌표: 실제 경위도 위치를 기준으로, 서로 너무 가까운 도시(사비·웅진·황산벌·탄현·익산 등)를
+ * 겹치지 않게 자동으로 벌려 놓는다. 원래 위치에서 최대 70px까지만 움직인다. */
+SGK.POS = {};
+SGK.layoutCities = (inactive) => {
+  const U = SGK.U, MIN = 92, MAXD = 70;
+  const list = SGK.CITIES.filter((c) => !(inactive && inactive[c.id]));
+  const home = {}, p = {};
+  list.forEach((c) => { home[c.id] = { x: U.px(c.lon), y: U.py(c.lat) }; p[c.id] = { x: home[c.id].x, y: home[c.id].y }; });
+  for (let it = 0; it < 240; it++) {
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = p[list[i].id], b = p[list[j].id];
+      let dx = b.x - a.x, dy = b.y - a.y; let d = Math.hypot(dx, dy);
+      if (d >= MIN) continue;
+      if (d < 0.01) { dx = 1; dy = 0; d = 1; }
+      const push = (MIN - d) / 2 * 0.5;
+      a.x -= (dx / d) * push; a.y -= (dy / d) * push; b.x += (dx / d) * push; b.y += (dy / d) * push;
+    }
+    list.forEach((c) => {
+      const q = p[c.id], h = home[c.id];
+      q.x += (h.x - q.x) * 0.02; q.y += (h.y - q.y) * 0.02;
+      const dx = q.x - h.x, dy = q.y - h.y, d = Math.hypot(dx, dy);
+      if (d > MAXD) { q.x = h.x + (dx / d) * MAXD; q.y = h.y + (dy / d) * MAXD; }
+    });
+  }
+  SGK.CITIES.forEach((c) => (SGK.POS[c.id] = p[c.id] || { x: U.px(c.lon), y: U.py(c.lat) }));
 };

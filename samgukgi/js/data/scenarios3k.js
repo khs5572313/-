@@ -106,14 +106,14 @@
       focus: '김춘추·김유신·선덕여왕 vs 의자왕·윤충 · 구토지설 · 연개소문의 정변 · 비담의 난',
       playable: ALL3,
       nations: NAT({ gold: 4500, food: 9000, iron: 1000, wood: 1800, ruler: 'geonmu' }, { gold: 5000, food: 8000, iron: 700, wood: 1500, ruler: 'uija' }, { gold: 4000, food: 7000, iron: 700, wood: 1400, ruler: 'seondeok' }),
-      relations: [['baekje', 'silla', 'war', 5], ['goguryeo', 'silla', 'war', 25], ['goguryeo', 'baekje', 'peace', 55]],
+      relations: [['baekje', 'silla', 'war', 5], ['goguryeo', 'silla', 'truce', 25, 645], ['goguryeo', 'baekje', 'peace', 55]],
       cities: own({ amak: 'baekje' }, { daeya: 0.9, sabi: 1.3, hwangsan: 1.4, amak: 1.2, gujiha: 1.2, seorabeol: 1.5, sangju: 2.0, samnyeon: 1.3, bukhan: 1.3, pyongyang: 1.6 }, { daeya: { wall: 400 } }),
       officers: { sabi: ['uija', 'seongchung', 'sataekjijeok', 'buyeoyung', 'eungo'], hwangsan: ['yunchung', 'gyebaek'], amak: ['uijik', 'eunsang'], gujiha: ['heungsu'],
         daeya: ['pumseok', 'gotaso', 'jukjuk', 'yongseok', 'geomil'], seorabeol: ['seondeok', 'jindeok', 'kimchunchu', 'alcheon', 'bidam', 'munhui', 'munmu', 'kimyongchun', 'cheonmyeong'], sangju: ['kimyusin', 'kimheumsun', 'biryeongja'],
         pyongyang: ['geonmu', 'bojang', 'seondohae', 'gojeongui'], yodong: ['yeongaesomun'], ansi: ['yangmanchun'] },
       free: { seorabeol: ['jigwi'] },
       goals: {
-        silla: [{ type: 'capture', cities: ['daeya'], desc: '대야성 사수(또는 탈환)' }, { type: 'count', n: 16, desc: '도시 16곳 이상 확보 (잃은 서쪽 성 회복)' }],
+        silla: [{ type: 'capture', cities: ['daeya'], desc: '대야성 사수(또는 탈환)' }, { type: 'count', n: 15, desc: '도시 15곳 이상 확보 (잃은 서쪽 성 회복)' }],
         baekje: [{ type: 'capture', cities: ['daeya', 'sangju', 'samnyeon'], desc: '대야성·상주·삼년산성 공략' }],
         goguryeo: [{ type: 'capture', cities: ['bukhan', 'danghang'], desc: '북한산성·당항성 회복 (죽령 서북 반환 요구)' }],
       },
@@ -122,11 +122,13 @@
       id: 's2', no: 6, hero: 'silla', title: '삼한일통', sub: '문무왕과 김유신', year: 661, season: 2, endYear: 676, img: 'sea',
       desc: '661년 가을. 사비성은 무너졌지만 백제는 끝나지 않았다. 복신과 도침은 주류성에서, 흑치상지는 임존성에서 부흥군을 일으켰고, 왜에 있던 왕자 풍이 돌아온다. 북쪽에서는 연개소문이 건재하고, 뇌음신의 군대가 북한산성을 두들긴다. 막 즉위한 문무왕과 노장 김유신은 두 전선을 동시에 감당해야 한다.',
       hist: '삼국사기: 662년 김유신은 눈보라 속에 평양까지 군량을 날랐다. 663년 부흥군은 복신이 도침을, 풍이 복신을 죽이는 내분으로 무너졌다. 665년 연개소문이 죽고 아들들이 다투자 668년 평양성이 함락되었다.',
-      focus: '문무왕·김유신·열기 vs 복신·흑치상지·부여풍 vs 연개소문·연남생·연남건',
+      focus: '문무왕·김유신·열기 vs 복신·흑치상지·부여풍 vs 연개소문·연남생·연남건 · 지도 밖 당군이 고구려·부흥군을 압박',
       playable: ALL3,
       nations: NAT({ gold: 5000, food: 9000, iron: 1100, wood: 1900, ruler: 'bojang' }, { gold: 2500, food: 4000, iron: 400, wood: 900, ruler: 'boksin', alias: '백제 부흥군' }, { gold: 7000, food: 12000, iron: 1300, wood: 2000, ruler: 'munmu' }),
       relations: [['baekje', 'silla', 'war', 0], ['goguryeo', 'silla', 'war', 5], ['goguryeo', 'baekje', 'ally', 75]],
-      cities: own({ sabi: 'silla', ungjin: 'silla', hwangsan: 'silla', tanhyeon: 'silla', gibeolpo: 'silla', iksan: 'silla' }, { jullyu: 1.6, imjon: 1.8, gosa: 1.2, sabi: 1.3, ungjin: 1.2, seorabeol: 1.4, bukhan: 1.4, pyongyang: 2.0, maeso: 2.0, hanseong_g: 1.4 }, { imjon: { wall: 700 }, jullyu: { wall: 650 } }),
+      /* 지도 밖 당군의 압박: 매 계절 병력 감소 + 공격성 저하 (평양 포위전·웅진도독부) */
+      offmap: { goguryeo: { drain: 0.03, aggr: 1.35 }, baekje: { drain: 0.045, aggr: 1.3 } },
+      cities: own({ sabi: 'silla', ungjin: 'silla', hwangsan: 'silla', tanhyeon: 'silla', gibeolpo: 'silla', iksan: 'silla' }, { jullyu: 1.6, imjon: 1.8, gosa: 1.2, sabi: 1.3, ungjin: 1.2, seorabeol: 1.4, bukhan: 1.4, pyongyang: 2.0, maeso: 2.0, hanseong_g: 1.4 }, { imjon: { wall: 600 }, jullyu: { wall: 550 } }),
       officers: { jullyu: ['boksin', 'docheom', 'yeojasin'], imjon: ['heukchi', 'satasangyeo', 'jisusin'], gosa: ['chungseung'],
         seorabeol: ['munmu', 'kimyusin', 'kimheumsun', 'munhui', 'gangsu', 'wonhyo'], sabi: ['kiminmun', 'intae', 'munyeong'], sangju: ['pumil', 'yeolgi', 'gugeun', 'kimyangdo'], bukhan: ['dongtacheon'],
         pyongyang: ['bojang', 'yeongaesomun', 'namgeon', 'namsan'], gungnae: ['namsaeng'], maeso: ['noeeumsin', 'saenghae'], biyeol: ['jeongto'] },
@@ -134,14 +136,14 @@
       exclude: ['kimchunchu', 'uija', 'buyeoyung', 'buyeotae', 'buyeohyo', 'buyeoyeon', 'buyeoyong', 'yesikjin', 'yegun', 'eungo', 'gyebaek', 'chungsang', 'sangyeong', 'cheonbok', 'gukbyeon', 'bangul', 'gwanchang', 'uijik'],
       spawn: [{ id: 'buyeopung', year: 661, city: 'jullyu', nation: 'baekje' }],
       goals: {
-        silla: [{ type: 'capture', cities: ['jullyu', 'imjon', 'pyongyang'], desc: '주류성·임존성·평양성 확보 (삼한일통)' }],
+        silla: [{ type: 'capture', cities: ['jullyu', 'imjon'], desc: '주류성·임존성 함락 (백제 부흥군 진압)' }, { type: 'count', n: 22, desc: '도시 22곳 이상 확보 (고구려 남부 진출)' }],
         baekje: [{ type: 'capture', cities: ['sabi', 'ungjin'], desc: '사비성·웅진성 수복 (백제 부흥)' }],
         goguryeo: [{ type: 'hold', cities: ['pyongyang'], until: 668, desc: '668년 겨울까지 평양성 사수' }],
       },
     },
   ];
-  /* 체감 난이도 별점(보통 기준): tools/sim_report.js 80회 측정값 — AI가 그 나라를 맡았을 때 목표 달성률 ≥45% ★, ≥25% ★★, ≥10% ★★★, 그 미만 ★★★★ */
-  const STARS = {"g1":{"goguryeo":3,"baekje":2,"silla":1},"g2":{"goguryeo":2,"baekje":1,"silla":3},"b1":{"goguryeo":3,"baekje":3,"silla":1},"b2":{"goguryeo":3,"baekje":2,"silla":1},"s1":{"goguryeo":3,"baekje":3,"silla":1},"s2":{"goguryeo":1,"baekje":2,"silla":2}};
+  /* 체감 난이도 별점(보통 기준): tools/sim_report.js 60회 측정값(v1.4 행동력 제도 기준) — AI가 그 나라를 맡았을 때 목표 달성률 ≥45% ★, ≥25% ★★, ≥10% ★★★, 그 미만 ★★★★ */
+  const STARS = {"g1":{"goguryeo":2,"baekje":3,"silla":1},"g2":{"goguryeo":1,"baekje":3,"silla":4},"b1":{"goguryeo":3,"baekje":1,"silla":1},"b2":{"goguryeo":1,"baekje":3,"silla":4},"s1":{"goguryeo":4,"baekje":4,"silla":2},"s2":{"goguryeo":1,"baekje":3,"silla":2}};
   SGK.SCENARIOS.forEach((s) => (s.stars = STARS[s.id]));
   SGK.scenarioById = {};
   SGK.SCENARIOS.forEach((s) => (SGK.scenarioById[s.id] = s));

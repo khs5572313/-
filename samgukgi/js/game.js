@@ -24,16 +24,16 @@
     mohe: { mohecav: 0.7, bow: 0.3 }, neutral: { spear: 0.6, bow: 0.4 },
   };
   const DEFAULT_BLD = {
-    capital: ['field', 'market', 'barracks', 'stable', 'bowshop'], plain: ['field', 'market'], mountain: ['beacon'],
-    port: ['shipyard'], wall: ['beacon'], pass: [], jin: ['barracks', 'stable'],
+    capital: ['field', 'market', 'barracks', 'stable', 'workshop'], plain: ['field', 'market'], mountain: ['chi'],
+    port: ['shipyard'], wall: ['chi'], pass: [], jin: ['barracks', 'stable'],
   };
 
   /* ───────── 상태 생성 ───────── */
   /* 난이도: 보통이 기준(모든 배율 1). 플레이어·AI 자원, AI 병력·공격성에만 작용하고 역사 데이터는 건드리지 않는다 */
   G.DIFF = {
-    easy:   { name: '쉬움',   desc: '자원 ×1.5 · 아군 병력 ×1.2 · 적 병력 ×0.85 · 적이 플레이어를 덜 노림', playerRes: 1.5, playerTroops: 1.2, aiTroops: 0.85, aiIncome: 0.9, aggr: 1.2, aiAtt: 0, vsPlayer: 1.2 },
-    normal: { name: '보통',   desc: '역사 기준 밸런스 (권장)', playerRes: 1, playerTroops: 1, aiTroops: 1, aiIncome: 1, aggr: 1, aiAtt: 0, vsPlayer: 1 },
-    hard:   { name: '어려움', desc: '자원 ×0.8 · 적 병력 ×1.2 · 적 수입 ×1.15 · 적이 플레이어를 우선 공격', playerRes: 0.8, playerTroops: 1, aiTroops: 1.2, aiIncome: 1.15, aggr: 1, aiAtt: 1, vsPlayer: 0.8 },
+    easy:   { name: '쉬움',   desc: '자원 ×1.5 · 아군 병력 ×1.2 · 적 병력 ×0.85 · 적이 플레이어를 덜 노림', playerRes: 1.5, playerTroops: 1.2, aiTroops: 0.85, aiIncome: 0.9, aggr: 1.2, aiAtt: 0, vsPlayer: 1.2, aiAp: -1 },
+    normal: { name: '보통',   desc: '역사 기준 밸런스 (권장)', playerRes: 1, playerTroops: 1, aiTroops: 1, aiIncome: 1, aggr: 1, aiAtt: 0, vsPlayer: 1, aiAp: 0 },
+    hard:   { name: '어려움', desc: '자원 ×0.8 · 적 병력 ×1.2 · 적 수입 ×1.15 · 적이 플레이어를 우선 공격', playerRes: 0.8, playerTroops: 1, aiTroops: 1.2, aiIncome: 1.15, aggr: 1, aiAtt: 1, vsPlayer: 0.8, aiAp: 2 },
   };
   G.diff = () => G.DIFF[(S.state && S.state.diff) || 'normal'] || G.DIFF.normal;
   G.newGame = (scId, player, opts = {}) => {
@@ -61,9 +61,7 @@
         tech: TECH0[owner] || 150, wall: Math.round(300 * tp.wallMul), order: 70, train: 40,
         troops: {}, buildings: (DEFAULT_BLD[c.type] || []).slice(), specialMode: 'trade',
       };
-      if (owner === 'goguryeo' && (c.type === 'mountain' || c.type === 'wall')) cs.buildings.push('chi');
       if (c.port && !cs.buildings.includes('shipyard') && ['capital', 'port'].includes(c.type)) cs.buildings.push('shipyard');
-      if (owner === 'goguryeo' && c.type === 'capital') cs.buildings.push('school');
       cs.buildings = cs.buildings.slice(0, tp.slots);
       const total = Math.round(d.troops * mul * (owner === 'neutral' ? 0.5 : 1));
       const mix = MIX[owner] || MIX.neutral;
@@ -154,6 +152,7 @@
       for (const k of ['gold', 'food', 'iron', 'wood']) N[k] += opts.bonus[k] || 0;
       if (opts.bonus.morale) { N.morale.v = opts.bonus.morale; N.morale.t = 6; }
     }
+    for (const n in st.nations) if (st.nations[n].alive) st.nations[n].ap = G.apMax(n);
     G.log(`${U.dateStr(st.year, st.season)} — 시나리오 「${sc.title}」 개막. ${S.nationName(player)} 선택 · 난이도 ${D.name}.`);
     return st;
   };
@@ -230,26 +229,63 @@
     order: { name: '민심 안정', icon: '🙏', cost: { food: 180 }, stat: 'pol', desc: '민심 +' },
     train: { name: '훈련', icon: '⚔', cost: { food: 100 }, stat: 'lead', desc: '훈련도 +' },
   };
+  /* ───────── 행동력(政令) ─────────
+   * 나라마다 계절당 행동력을 받는다: 5 + 군주 정치/20 + 군주 통솔/40 + 도시 수/6 (4~16)
+   * 명령 1회의 효과는 장수 1명=1명령 시절보다 크게 잡았다(개발 ×2.2, 징병 ×2.5)
+   * 명령마다 행동력을 쓰고, 같은 장수가 한 계절에 거듭 명령하면 효과가 줄어든다(1회 100% → 2회 75% → 3회 이상 50%) */
+  G.AP_COST = { agri: 1, comm: 1, tech: 1, order: 1, train: 1, wall: 1, recruit: 2, build: 2, move: 1, transport: 1, search: 1, attack: 2, diplo: 2 };
+  G.AP_MULT = [1, 0.75, 0.5];
+  G.apMax = (n) => {
+    const st = S.state, N = st.nations[n];
+    const r = N && N.ruler && st.officers[N.ruler] && st.officers[N.ruler].status === 'active' ? st.officers[N.ruler].s : [50, 50, 50, 50];
+    const base = 4 + Math.floor(r[3] / 20) + Math.floor(r[0] / 40) + Math.floor(G.citiesOf(n).length / 6) + 1;
+    return U.clamp(base + (n !== st.player ? G.diff().aiAp || 0 : 0), 4, 16);
+  };
+  G.apCheck = (oid, key) => {
+    const so = S.state.officers[oid];
+    if (!so) return '장수가 없습니다.';
+    if (so.done) return '출진 중인 장수입니다.';
+    const N = S.state.nations[so.nation];
+    if ((N.ap || 0) < G.AP_COST[key]) return `행동력이 부족합니다. (필요 ${G.AP_COST[key]})`;
+    return null;
+  };
+  G.apSpend = (oid, key) => {
+    const so = S.state.officers[oid];
+    S.state.nations[so.nation].ap -= G.AP_COST[key];
+    const m = G.AP_MULT[Math.min(so.uses || 0, 2)];
+    so.uses = (so.uses || 0) + 1;
+    return m;
+  };
+  G.apMultOf = (oid) => G.AP_MULT[Math.min((S.state.officers[oid] || {}).uses || 0, 2)];
   G.canPay = (n, cost) => { const N = S.state.nations[n]; return Object.keys(cost).every((k) => N[k] >= cost[k]); };
   G.pay = (n, cost, mul = 1) => { const N = S.state.nations[n]; for (const k in cost) N[k] = Math.max(0, N[k] - Math.round(cost[k] * mul)); };
+  /* 명령 효과 계산 (미리보기·실행 공용) */
+  G.calcCommand = (oid, cmd, mult = 1) => {
+    const so = S.state.officers[oid], cid = so.city, cs = S.state.cities[cid], n = so.nation;
+    const s = so.s.map((x) => x * mult);
+    const nb = S.NATIONS[n].bonus || {};
+    let v = 0;
+    if (cmd === 'agri') { v = (s[3] * 0.45 + 8) * (1 + G.bldEff(cs, 'agriG') + G.passive(oid, 'agri')); }
+    if (cmd === 'comm') { v = (s[3] * 0.45 + 8) * (1 + G.bldEff(cs, 'commG') + G.passive(oid, 'comm') + (nb.comm || 0) + (cs.specialMode === 'tech' && S.SPECIALS[S.cityById[cid].special] && S.SPECIALS[S.cityById[cid].special].tech === 'comm' ? 0.2 : 0)); }
+    if (cmd === 'tech') { const sp = S.SPECIALS[S.cityById[cid].special]; v = (s[2] * 0.4 + 6) * (1 + G.bldEff(cs, 'techG') + G.passive(oid, 'tech') + G.wonderEff(n, 'techAll') + (cs.specialMode === 'tech' && sp && sp.tech === 'tech' ? 0.2 : 0)); }
+    if (cmd === 'wall') { v = (s[0] * 0.55 + 15) * (1 + G.passive(oid, 'wall')); }
+    if (cmd === 'order') { v = s[3] * 0.12 + 4 + G.passive(oid, 'order') * 2; }
+    if (cmd === 'train') { v = s[0] * 0.2 + 5; }
+    return Math.round(v * 2.2);
+  };
   G.doCommand = (oid, cmd) => {
     const st = S.state, so = st.officers[oid], cid = so.city, cs = st.cities[cid], n = so.nation;
     const C = G.COMMANDS[cmd];
-    if (so.done) return '이미 행동한 장수입니다.';
+    const bad = G.apCheck(oid, cmd);
+    if (bad) return bad;
     if (!G.canPay(n, C.cost)) return '자원이 부족합니다.';
     G.pay(n, C.cost);
-    const s = so.s;
-    const nb = S.NATIONS[n].bonus || {};
-    let v = 0;
-    if (cmd === 'agri') { v = (s[3] * 0.45 + 8) * (1 + G.bldEff(cs, 'agriG') + G.passive(oid, 'agri')); cs.agri = Math.min(G.ecoMax(cid), cs.agri + v); }
-    if (cmd === 'comm') { v = (s[3] * 0.45 + 8) * (1 + G.bldEff(cs, 'commG') + G.passive(oid, 'comm') + (nb.comm || 0) + (cs.specialMode === 'tech' && S.SPECIALS[S.cityById[cid].special] && S.SPECIALS[S.cityById[cid].special].tech === 'comm' ? 0.2 : 0)); cs.comm = Math.min(G.ecoMax(cid), cs.comm + v); }
-    if (cmd === 'tech') { const sp = S.SPECIALS[S.cityById[cid].special]; v = (s[2] * 0.4 + 6) * (1 + G.bldEff(cs, 'techG') + G.passive(oid, 'tech') + G.wonderEff(n, 'techAll') + (cs.specialMode === 'tech' && sp && sp.tech === 'tech' ? 0.2 : 0)); cs.tech = Math.min(999, cs.tech + v); }
-    if (cmd === 'wall') { v = (s[0] * 0.55 + 15) * (1 + G.passive(oid, 'wall')); cs.wall = Math.min(G.wallMax(cid), cs.wall + v); }
-    if (cmd === 'order') { v = s[3] * 0.12 + 4 + G.passive(oid, 'order') * 2; cs.order = Math.min(100, cs.order + v); }
-    if (cmd === 'train') { v = s[0] * 0.2 + 5; cs.train = Math.min(100, cs.train + v); }
-    so.done = true;
+    const mult = G.apSpend(oid, cmd);
+    const v = G.calcCommand(oid, cmd, mult);
+    const cap = { agri: G.ecoMax(cid), comm: G.ecoMax(cid), tech: 999, wall: G.wallMax(cid), order: 100, train: 100 }[cmd];
+    cs[cmd] = Math.min(cap, cs[cmd] + v);
     G.gainExp(oid, 6);
-    return `${S.officerById[oid].name}: ${C.name} +${Math.round(v)}`;
+    return `${S.officerById[oid].name}: ${C.name} +${Math.round(v)}${mult < 1 ? ` (연속 명령 ${Math.round(mult * 100)}%)` : ''}`;
   };
   G.recruitCost = (n, uid, amount, cid) => {
     const u = S.UNITS[uid];
@@ -275,31 +311,33 @@
   G.recruitAmount = (oid) => {
     const so = S.state.officers[oid], cs = S.state.cities[so.city], n = so.nation;
     const nb = S.NATIONS[n].bonus || {};
-    let a = (900 + so.s[0] * 14) * (1 + G.bldEff(cs, 'recruit') + (nb.recruit || 0) + G.passive(oid, 'recruit') + (S.cityById[so.city].type === 'jin' ? 0.25 : 0));
-    a = Math.min(a, cs.pop * 0.08);
+    let a = 2.5 * (900 + so.s[0] * 14) * (1 + G.bldEff(cs, 'recruit') + (nb.recruit || 0) + G.passive(oid, 'recruit') + (S.cityById[so.city].type === 'jin' ? 0.25 : 0));
+    a = Math.min(a, cs.pop * 0.15);
     return Math.max(0, Math.floor(a / 100) * 100);
   };
   G.doRecruit = (oid, uid) => {
     const so = S.state.officers[oid], cid = so.city, cs = S.state.cities[cid], n = so.nation;
-    if (so.done) return '이미 행동한 장수입니다.';
+    const ap = G.apCheck(oid, 'recruit');
+    if (ap) return ap;
     const bad = G.unitReqOk(uid, cid, n);
     if (bad) return bad;
-    const amt = G.recruitAmount(oid);
+    const amt = Math.floor((G.recruitAmount(oid) * G.apMultOf(oid)) / 100) * 100;
     if (amt < 100) return '인구가 부족합니다.';
     const cost = G.recruitCost(n, uid, amt, cid);
     if (!G.canPay(n, cost)) return '자원이 부족합니다.';
     G.pay(n, cost);
+    G.apSpend(oid, 'recruit');
     cs.troops[uid] = (cs.troops[uid] || 0) + amt;
     cs.pop -= amt;
     cs.order = Math.max(0, cs.order - 3 * (1 + ((S.NATIONS[n].bonus || {}).orderLoss || 0)));
     cs.train = Math.max(10, cs.train - Math.round((amt / Math.max(1, G.troopsTotal(cs))) * 20));
-    so.done = true;
     G.gainExp(oid, 5);
     return `${S.officerById[oid].name}: ${S.UNITS[uid].name} ${U.fmt(amt)}명 징병`;
   };
   G.doBuild = (oid, bid) => {
     const so = S.state.officers[oid], cid = so.city, cs = S.state.cities[cid], n = so.nation;
-    if (so.done) return '이미 행동한 장수입니다.';
+    const ap = G.apCheck(oid, 'build');
+    if (ap) return ap;
     const why = S.canBuild(bid, S.cityById[cid], cs, n);
     if (why) return why;
     const b = S.BUILDINGS[bid];
@@ -307,8 +345,8 @@
     const cost = {}; for (const k in b.cost) cost[k] = Math.round(b.cost[k] * mul);
     if (!G.canPay(n, cost)) return '자원이 부족합니다.';
     G.pay(n, cost);
+    G.apSpend(oid, 'build');
     cs.buildings.push(bid);
-    so.done = true;
     G.gainExp(oid, 5);
     if (b.wonder) G.log(`${S.nationName(n)}, 불가사의 「${b.name}」 완공!`, 'great');
     return `${S.buildingName(bid, n)} 건설 완료`;
@@ -316,25 +354,29 @@
   G.doDemolish = (cid, bid) => { const cs = S.state.cities[cid]; cs.buildings = cs.buildings.filter((b) => b !== bid); };
   G.doMove = (oid, to) => {
     const so = S.state.officers[oid];
-    if (so.done) return '이미 행동한 장수입니다.';
+    const ap = G.apCheck(oid, 'move');
+    if (ap) return ap;
     if (!S.ADJ[so.city].some((e) => e.to === to)) return '인접 도시가 아닙니다.';
     if (S.state.cities[to].owner !== so.nation) return '아군 도시가 아닙니다.';
-    so.city = to; so.done = true;
+    G.apSpend(oid, 'move');
+    so.city = to;
     return `${S.officerById[oid].name} → ${S.cityById[to].name}`;
   };
   G.doTransport = (oid, to, troops) => {
     const so = S.state.officers[oid], from = so.city;
-    if (so.done) return '이미 행동한 장수입니다.';
+    const ap = G.apCheck(oid, 'transport');
+    if (ap) return ap;
     const fs = S.state.cities[from], ts = S.state.cities[to];
     if (ts.owner !== so.nation) return '아군 도시가 아닙니다.';
+    G.apSpend(oid, 'transport');
     for (const k in troops) { const v = Math.min(troops[k] || 0, fs.troops[k] || 0); fs.troops[k] -= v; ts.troops[k] = (ts.troops[k] || 0) + v; }
-    so.done = true;
     return '수송 완료';
   };
   G.doSearch = (oid) => {
     const so = S.state.officers[oid], cid = so.city, n = so.nation;
-    if (so.done) return { msg: '이미 행동한 장수입니다.' };
-    so.done = true;
+    const ap = G.apCheck(oid, 'search');
+    if (ap) return { msg: ap };
+    G.apSpend(oid, 'search');
     const frees = G.officersIn(cid, 'free');
     const st = S.state;
     if (frees.length) {
@@ -351,7 +393,7 @@
   G.doHire = (oid, fid) => {
     const so = S.state.officers[oid], fo = S.state.officers[fid];
     const chance = 0.45 + so.s[3] / 250 + so.s[2] / 400 - (fo.loyalty > 90 && fo.nation !== so.nation ? 0.4 : 0);
-    if (Math.random() < chance) { fo.status = 'active'; fo.nation = so.nation; fo.city = so.city; fo.loyalty = U.ri(70, 90); fo.done = true; return true; }
+    if (Math.random() < chance) { fo.status = 'active'; fo.nation = so.nation; fo.city = so.city; fo.loyalty = U.ri(70, 90); fo.uses = 1; return true; }
     return false;
   };
   G.gainExp = (oid, v) => {
@@ -367,7 +409,8 @@
     const st = S.state, N = st.nations[n];
     const cap = G.capitalOf(n);
     const envoys = cap ? G.officersIn(cap).filter((id) => !st.officers[id].done) : [];
-    if (!envoys.length) return '수도에 행동 가능한 장수가 없습니다.';
+    if (!envoys.length) return '수도에 사절로 보낼 장수가 없습니다.';
+    if ((N.ap || 0) < G.AP_COST.diplo) return `행동력이 부족합니다. (필요 ${G.AP_COST.diplo})`;
     const eid = envoys.sort((a, b) => st.officers[b].s[2] + st.officers[b].s[3] - st.officers[a].s[2] - st.officers[a].s[3])[0];
     const es = st.officers[eid].s;
     const bonus = ((S.NATIONS[n].bonus || {}).diplomacy || 0) + G.passive(eid, 'diplomacy');
@@ -394,7 +437,7 @@
       G.declareWar(n, target);
       msg = `${S.nationName(target)}에 선전포고!`;
     }
-    st.officers[eid].done = true;
+    G.apSpend(eid, 'diplo');
     G.gainExp(eid, 6);
     G.log(msg, 'diplo');
     return msg;
@@ -421,7 +464,7 @@
   G.expeditionFood = (troops, edgeType, n, cid) => {
     let f = troops * 0.08 * (edgeType === 'sea' ? 1.5 : 1);
     const cs = S.state.cities[cid];
-    if (cs && cs.buildings.includes('station')) f *= 0.8;
+    if (cs && cs.buildings.includes('market')) f *= 0.8;
     if (G.wonderEff(n, 'supplyAll')) f *= 0.7;
     return Math.round(f);
   };
@@ -549,8 +592,8 @@
       const nb = S.NATIONS[n].bonus || {};
       const of = cs.order / 100;
       const sp = S.SPECIALS[c.special];
-      let gold = cs.comm * 0.22 * of * (1 + G.bldEff(cs, 'gold') + (nb.comm || 0)) + cs.pop / 5000;
-      if (sp && cs.specialMode === 'trade') gold += sp.trade * 0.7 * (1 + G.bldEff(cs, 'trade')) * (c.port ? 1.25 : 1) * of;
+      let gold = cs.comm * 0.18 * of * (1 + G.bldEff(cs, 'gold') + (nb.comm || 0)) + cs.pop / 5000;
+      if (sp && cs.specialMode === 'trade') gold += sp.trade * 0.6 * (1 + G.bldEff(cs, 'trade')) * (c.port ? 1.25 : 1) * of;
       let foodMul = 1 + G.bldEff(cs, 'food') + (sp && cs.specialMode === 'tech' && sp.tech === 'food' ? 0.18 : 0);
       let food = cs.agri * (autumn ? 3.6 : 0.5) * of * foodMul;
       let iron = 4 + G.bldEff(cs, 'iron') + cs.tech / 60 + (sp && cs.specialMode === 'tech' && sp.tech === 'iron' ? 60 : 0);
@@ -577,6 +620,9 @@
       rep[n].food += 400;
       if (n === st.player) G.log(`총동원령! 수도에 의용병 ${U.fmt(k * 1.6)}명이 모였다.`, 'warn');
     }
+    /* 지도 밖 세력의 압박(시나리오 설정): 매 계절 병력 감소 */
+    const OFF = (S.scenarioById[st.scenario] || {}).offmap || {};
+    for (const n in OFF) if (st.nations[n] && st.nations[n].alive && OFF[n].drain) for (const c of G.citiesOf(n)) { const t = st.cities[c].troops; for (const k in t) t[k] = Math.round(t[k] * (1 - OFF[n].drain)); }
     /* 수·당: 지도 밖 중원 본토의 보급 (대운하·관중) */
     for (const n of ['sui', 'tang']) if (st.nations[n] && st.nations[n].alive) { rep[n].gold += 450; rep[n].food += 1600; rep[n].iron += 80; rep[n].wood += 100; }
     for (const n in rep) {
@@ -620,7 +666,9 @@
     st.season++;
     if (st.season > 3) { st.season = 0; st.year++; }
     st.turnCount++;
-    for (const id in st.officers) st.officers[id].done = false;
+    for (const id in st.officers) { st.officers[id].done = false; st.officers[id].uses = 0; }
+    /* 행동력 회복: 남은 행동력은 최대 3까지 이월 */
+    for (const n in st.nations) { const N = st.nations[n]; if (!N.alive) continue; N.ap = G.apMax(n) + Math.min(3, Math.max(0, N.ap || 0)); }
   };
 
   /* ───────── AI ───────── */
@@ -629,36 +677,42 @@
     if (!N.alive || n === st.player) return [];
     const myCities = G.citiesOf(n);
     const attacks = [];
-    const aggressive = (n === 'sui' || n === 'tang' ? 1.05 : S.NATIONS[n].major ? 1.3 : 1.8) * G.diff().aggr;
-    for (const cid of myCities) {
+    const offA = (((S.scenarioById[st.scenario] || {}).offmap || {})[n] || {}).aggr || 1;
+    const aggressive = (n === 'sui' || n === 'tang' ? 1.05 : S.NATIONS[n].major ? 1.3 : 1.8) * G.diff().aggr * offA;
+    /* 내정: 행동력 예산 안에서 국경 도시부터 한 가지씩 처리 (출진용 행동력은 남겨 둠) */
+    N.ap = G.apMax(n);
+    const atWarBorder = myCities.some((c) => G.isBorder(c));
+    const reserve = atWarBorder ? G.AP_COST.attack * Math.min(2, (S.NATIONS[n].major ? 2 : 1) + G.diff().aiAtt) : 0;
+    const order = myCities.slice().sort((x, y) => (G.isBorder(y) ? 1 : 0) - (G.isBorder(x) ? 1 : 0) || G.troopsTotal(st.cities[x]) - G.troopsTotal(st.cities[y]));
+    const best = (cid, si) => G.officersIn(cid).filter((id) => !st.officers[id].done).sort((x, y) => (st.officers[x].uses || 0) - (st.officers[y].uses || 0) || st.officers[y].s[si] - st.officers[x].s[si])[0];
+    const cityAction = (cid) => {
       const cs = st.cities[cid];
-      const offs = G.officersIn(cid).filter((id) => !st.officers[id].done);
       const border = G.isBorder(cid);
+      const tt = G.troopsTotal(cs);
       const threat = border ? Math.max(...S.ADJ[cid].map((e) => (G.atWar(n, st.cities[e.to].owner) ? G.troopsTotal(st.cities[e.to]) : 0))) : 0;
-      for (const oid of offs) {
-        const tt = G.troopsTotal(cs);
-        if (border && tt < threat * 0.9 && N.gold > 300) {
-          const opts = S.UNIT_ORDER.filter((u) => !G.unitReqOk(u, cid, n) && u !== 'siege' && u !== 'navy');
-          const pref = opts.filter((u) => S.UNITS[u].nation).concat(opts);
-          for (const u of pref) { const r = G.doRecruit(oid, u); if (st.officers[oid].done) break; if (r) continue; }
-          if (st.officers[oid].done) continue;
-        }
-        if (border && N.gold > 1800 && tt < 30000) {
-          const opts = U.shuffle(S.UNIT_ORDER.filter((u) => !G.unitReqOk(u, cid, n) && u !== 'navy'));
-          for (const u of opts) { G.doRecruit(oid, u); if (st.officers[oid].done) break; }
-          if (st.officers[oid].done) continue;
-        }
-        if (border && cs.wall < G.wallMax(cid) * 0.7 && N.wood > 200) { G.doCommand(oid, 'wall'); continue; }
-        if (N.gold > 700 && cs.buildings.length < S.CITY_TYPES[S.cityById[cid].type].slots) {
-          const pri = ['field', 'market', 'barracks', 'smelter', 'lumber', 'stable', 'bowshop', 'chi', 'workshop', 'temple', 'school', 'reservoir', 'granary', 'tradehouse', 'shipyard'];
-          const bid = pri.find((b) => !S.canBuild(b, S.cityById[cid], cs, n));
-          if (bid && G.doBuild(oid, bid) && st.officers[oid].done) continue;
-        }
-        if (cs.order < 50) { G.doCommand(oid, 'order'); continue; }
-        if (tt < 4000 && N.gold > 200) { G.doRecruit(oid, U.pick(['spear', 'bow', 'cav'].filter((u) => !G.unitReqOk(u, cid, n)) || ['spear'])); if (st.officers[oid].done) continue; }
-        const pick = U.pick(['agri', 'comm', 'comm', 'tech', 'train']);
-        G.doCommand(oid, pick);
+      const tryRecruit = (list) => { const oid = best(cid, 0); if (!oid) return false; for (const u of list) { const before = N.ap; G.doRecruit(oid, u); if (N.ap < before) return true; } return false; };
+      if (border && tt < threat * 0.9 && N.gold > 300 && N.ap - reserve >= 2) {
+        const opts = S.UNIT_ORDER.filter((u) => !G.unitReqOk(u, cid, n) && u !== 'siege' && u !== 'navy');
+        if (tryRecruit(opts.filter((u) => S.UNITS[u].nation).concat(opts))) return true;
       }
+      if (border && N.gold > 1800 && tt < 30000 && N.ap - reserve >= 2 && tryRecruit(U.shuffle(S.UNIT_ORDER.filter((u) => !G.unitReqOk(u, cid, n) && u !== 'navy')))) return true;
+      const doCmd = (cmd, si) => { const oid = best(cid, si); if (!oid) return false; const before = N.ap; G.doCommand(oid, cmd); return N.ap < before; };
+      if (border && cs.wall < G.wallMax(cid) * 0.7 && N.wood > 200 && doCmd('wall', 0)) return true;
+      if (N.gold > 700 && N.ap - reserve >= 2 && cs.buildings.length < S.CITY_TYPES[S.cityById[cid].type].slots) {
+        const pri = ['field', 'market', 'barracks', 'mine', 'stable', 'chi', 'workshop', 'temple', 'shipyard'];
+        const bid = pri.find((x) => !S.canBuild(x, S.cityById[cid], cs, n));
+        const oid = best(cid, 3);
+        if (bid && oid) { const before = N.ap; G.doBuild(oid, bid); if (N.ap < before) return true; }
+      }
+      if (cs.order < 50 && doCmd('order', 3)) return true;
+      if (tt < 4000 && N.gold > 200 && N.ap - reserve >= 2 && tryRecruit(['spear', 'bow', 'cav'].filter((u) => !G.unitReqOk(u, cid, n)))) return true;
+      const pick = U.pick(['agri', 'comm', 'comm', 'tech', 'train']);
+      return doCmd(pick, pick === 'tech' ? 2 : pick === 'train' ? 0 : 3);
+    };
+    for (let pass = 0; pass < 4 && N.ap > reserve; pass++) {
+      let acted = false;
+      for (const cid of order) { if (N.ap <= reserve) break; if (cityAction(cid)) acted = true; }
+      if (!acted) break;
     }
     /* 내지 → 전선 병력 이동 */
     for (const cid of myCities) {
@@ -693,8 +747,10 @@
         const myPow = tt * 0.75 * (1 + (N.morale.v || 0) / 100);
         const food = G.expeditionFood(tt * 0.75, e.type, n, cid);
         if (myPow > defPow * aggressive * (ts.owner === fav ? D.vsPlayer : 1) && N.food > food) {
+          if ((N.ap || 0) < G.AP_COST.attack) continue;
           const army = G.aiArmy(cid, 0.75);
           if (!army.length) continue;
+          N.ap -= G.AP_COST.attack;
           N.food -= food;
           attacks.push({ from: cid, to: e.to, att: army, attNation: n, edgeType: e.type });
           maxAtt--;
@@ -847,7 +903,7 @@
 
   /* ───────── 저장 ───────── */
   G.save = (slot = 1) => { S.store.set(`samgukgi_save_${slot}`, JSON.stringify(S.state)); S.store.set(`samgukgi_meta_${slot}`, JSON.stringify({ t: Date.now(), d: U.dateStr(S.state.year, S.state.season), n: S.nationName(S.state.player), sc: S.scenarioById[S.state.scenario].title })); };
-  G.load = (slot = 1) => { const s = S.store.get(`samgukgi_save_${slot}`); if (!s) return false; try { S.state = JSON.parse(s); } catch (e) { return false; } if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; S.rebuildAdj(S.state.inactive || {}); return true; };
+  G.load = (slot = 1) => { const s = S.store.get(`samgukgi_save_${slot}`); if (!s) return false; try { S.state = JSON.parse(s); } catch (e) { return false; } if (!S.state.scenario || !S.scenarioById[S.state.scenario]) return false; S.rebuildAdj(S.state.inactive || {}); for (const c in S.state.cities) S.state.cities[c].buildings = S.state.cities[c].buildings.filter((b) => S.BUILDINGS[b]); for (const n in S.state.nations) if (S.state.nations[n].ap == null) S.state.nations[n].ap = G.apMax(n); return true; };
   G.saveMeta = (slot) => { try { return JSON.parse(S.store.get(`samgukgi_meta_${slot}`)); } catch (e) { return null; } };
 
   S.G = G;

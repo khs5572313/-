@@ -58,7 +58,7 @@ window.SGK = window.SGK || {};
   U.SEASONS = ['봄', '여름', '가을', '겨울'];
   U.dateStr = (y, s) => `${y}년 ${U.SEASONS[s]}`;
   /* 지도 투영: 경위도 → SVG 좌표 */
-  U.LON0 = 115; U.LAT0 = 45; U.KX = 130; U.KY = 170;
+  U.LON0 = 115; U.LAT0 = 45; U.KX = 175; U.KY = 230;
   U.MAP_W = (132 - 115) * U.KX; U.MAP_H = (45 - 33) * U.KY;
   U.px = (lon) => (lon - U.LON0) * U.KX;
   U.py = (lat) => (U.LAT0 - lat) * U.KY;

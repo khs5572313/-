@@ -1,7 +1,7 @@
 /* 시기별 인물 분포 점검: node tools/era_report.js */
 const fs = require('fs'), path = require('path');
 global.window = {}; global.SGK = window.SGK = {};
-const files = ['core.js', 'data/nations.js', 'data/map.js', 'data/units.js', 'data/buildings.js', 'data/specials.js', 'data/officers.js', 'data/officers2.js', 'data/scenarios.js', 'data/scenarios3k.js'];
+const files = ['core.js', 'data/nations.js', 'data/map.js', 'data/units.js', 'data/buildings.js', 'data/specials.js', 'data/officers.js', 'data/officers2.js', 'data/balance.js', 'data/scenarios.js', 'data/scenarios3k.js'];
 for (const f of files) eval(fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8'));
 const S = window.SGK;
 const N3 = ['goguryeo', 'baekje', 'silla'];

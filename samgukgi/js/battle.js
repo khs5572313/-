@@ -34,7 +34,7 @@
       this.decks = { a: this.buildDeck(this.att, 'a'), d: this.buildDeck(this.def, 'd') };
       this.hands = { a: [], d: [] };
       this.discard = { a: [], d: [] };
-      this.energyMax = { a: this.calcEnergy(this.att), d: this.calcEnergy(this.def) + (this.cs.buildings.includes('beacon') ? 1 : 0) };
+      this.energyMax = { a: this.calcEnergy(this.att), d: this.calcEnergy(this.def) + (this.cs.buildings.includes('chi') ? 1 : 0) };
       this.energy = { a: 0, d: 0 };
       this.log = [];
       this.over = false;
@@ -141,7 +141,7 @@
       const homeCity = src.side === 'a' ? this.info.from : this.info.to;
       const hc = S.state.cities[homeCity], sp = S.SPECIALS[S.cityById[homeCity].special];
       if (hc && hc.specialMode === 'tech' && sp && ((sp.tech === 'cav' && src.cls === 'cav') || (sp.tech === 'bow' && src.cls === 'bow'))) m *= 1.08;
-      if (hc && src.cls === 'bow' && hc.buildings.includes('bowshop')) m *= 1.05;
+      if (hc && src.cls === 'bow' && hc.buildings.includes('workshop')) m *= 1.05;
       /* 지형 */
       const water = this.terrain === 'river' || this.terrain === 'sea';
       if (src.cls === 'navy') m *= water ? 1.4 : 0.8;

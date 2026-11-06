@@ -153,6 +153,7 @@
     tb.appendChild(el('div', { class: 'tb-diff' }, el('div', {}, `난이도 ${G.diff().name}`), st.campaign ? el('div', { class: 'small' }, `캠페인 제${st.campaign.idx + 1}장`) : null));
     const rs = el('div', { class: 'tb-res' });
     RES.forEach(([k, name, ic]) => rs.appendChild(el('div', { class: 'res', title: name }, el('span', { class: 'ic' }, ic), el('span', { class: 'nm' }, name), el('b', {}, U.fmt(N[k])))));
+    rs.appendChild(el('div', { class: 'res ap', title: '행동력: 계절마다 군주 정치·통솔과 영토 크기로 정해짐' }, el('span', { class: 'ic' }, '⚡'), el('span', { class: 'nm' }, '행동력'), el('b', {}, `${N.ap || 0}/${G.apMax(n)}`)));
     rs.appendChild(el('div', { class: 'res', title: '총 병력' }, el('span', { class: 'ic' }, '⚔'), el('span', { class: 'nm' }, '병력'), el('b', {}, U.fmt(G.nationTroopTotal(n)))));
     rs.appendChild(el('div', { class: 'res', title: '도시' }, el('span', { class: 'ic' }, '🏯'), el('span', { class: 'nm' }, '도시'), el('b', {}, G.citiesOf(n).length)));
     tb.appendChild(rs);
@@ -177,6 +178,7 @@
   const NS = 'http://www.w3.org/2000/svg';
   let vb = { x: 0, y: 0, w: U.MAP_W, h: U.MAP_H };
   UI.buildMap = () => {
+    S.layoutCities(S.state.inactive);
     const P = (lon, lat) => `${U.px(lon).toFixed(1)},${U.py(lat).toFixed(1)}`;
     const poly = (pts) => pts.map(([a, b]) => P(a, b)).join(' ');
     const smooth = (pts) => { const p = pts.map(([a, b]) => [U.px(a), U.py(b)]); let d = `M${p[0][0]},${p[0][1]}`; for (let i = 1; i < p.length; i++) { const [x0, y0] = p[i - 1], [x1, y1] = p[i]; d += ` Q${x0},${y0} ${(x0 + x1) / 2},${(y0 + y1) / 2}`; } d += ` T${p[p.length - 1][0]},${p[p.length - 1][1]}`; return d; };
@@ -213,9 +215,9 @@
     for (const [a, b, t] of S.EDGES) {
       if (S.state.inactive && (S.state.inactive[a] || S.state.inactive[b])) continue;
       const A1 = S.cityById[a], B = S.cityById[b];
-      const x1 = U.px(A1.lon), y1 = U.py(A1.lat), x2 = U.px(B.lon), y2 = U.py(B.lat);
-      if (t === 'sea') { const mx = (x1 + x2) / 2 + (y2 - y1) * 0.12, my = (y1 + y2) / 2 - (x2 - x1) * 0.12; s += `<path d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" class="edge sea"/>`; }
-      else s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="edge ${t}"/>`;
+      const x1 = S.POS[a].x, y1 = S.POS[a].y, x2 = S.POS[b].x, y2 = S.POS[b].y;
+      if (t === 'sea') { const mx = (x1 + x2) / 2 + (y2 - y1) * 0.12, my = (y1 + y2) / 2 - (x2 - x1) * 0.12; s += `<path d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" class="edge sea" data-a="${a}" data-b="${b}"/>`; }
+      else s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="edge ${t}" data-a="${a}" data-b="${b}"/>`;
     }
     g.innerHTML = s;
   };
@@ -224,7 +226,7 @@
     if (!$('#cities')) return;
     /* 영역 (보로노이 근사: 도시 주변 원) */
     let terr = '';
-    for (const c of S.CITIES) { if (st.inactive && st.inactive[c.id]) continue; const o = st.cities[c.id].owner; const col = S.NATIONS[o].color; terr += `<circle cx="${U.px(c.lon)}" cy="${U.py(c.lat)}" r="${c.type === 'capital' ? 120 : 85}" fill="${col}" opacity=".13"/>`; }
+    for (const c of S.CITIES) { if (st.inactive && st.inactive[c.id]) continue; const o = st.cities[c.id].owner; const col = S.NATIONS[o].color; terr += `<circle cx="${S.POS[c.id].x}" cy="${S.POS[c.id].y}" r="${c.type === 'capital' ? 150 : 105}" fill="${col}" opacity=".13"/>`; }
     $('#territory').innerHTML = terr;
     /* 천리장성 */
     const gw = $('#greatwall');
@@ -236,11 +238,11 @@
     for (const c of S.CITIES) {
       if (st.inactive && st.inactive[c.id]) continue;
       const cs = st.cities[c.id], N = S.NATIONS[cs.owner];
-      const x = U.px(c.lon), y = U.py(c.lat);
+      const x = S.POS[c.id].x, y = S.POS[c.id].y;
       const tt = G.troopsTotal(cs);
       const sel = selCity === c.id;
       const mine = cs.owner === st.player;
-      const ready = mine && G.officersIn(c.id).some((id) => !st.officers[id].done);
+      const ready = false;
       const sc = c.type === 'capital' ? 1.25 : 1;
       s += `<g class="city ${sel ? 'sel' : ''} ${mine ? 'mine' : ''}" data-id="${c.id}" transform="translate(${x},${y})">
         ${sel ? `<circle r="30" class="selring"/>` : ''}
@@ -254,23 +256,29 @@
     $('#cities').innerHTML = s;
     UI.renderAttackHints();
   };
+  /* 선택한 도시의 연결로를 모두 강조: 빨강=전쟁 중(공격 가능), 금색=아군 도시, 회색=그 밖 */
   UI.renderAttackHints = () => {
     const st = S.state;
     const g = $('#armies');
     if (!g) return;
-    if (!selCity || st.cities[selCity].owner !== st.player) { g.innerHTML = ''; return; }
-    let s = '';
-    for (const e of G.attackTargets(selCity)) {
-      const a = S.cityById[selCity], b = S.cityById[e.to];
-      const x1 = U.px(a.lon), y1 = U.py(a.lat), x2 = U.px(b.lon), y2 = U.py(b.lat);
-      const war = G.atWar(st.player, st.cities[e.to].owner);
-      s += `<line x1="${x1}" y1="${y1}" x2="${x1 + (x2 - x1) * 0.82}" y2="${y1 + (y2 - y1) * 0.82}" class="atkhint ${war ? 'war' : 'peace'}" marker-end=""/>`;
+    if (!selCity) { g.innerHTML = ''; return; }
+    const own = st.cities[selCity].owner;
+    let s2 = '';
+    for (const e of S.ADJ[selCity]) {
+      const x1 = S.POS[selCity].x, y1 = S.POS[selCity].y, x2 = S.POS[e.to].x, y2 = S.POS[e.to].y;
+      const o2 = st.cities[e.to].owner;
+      const cls = o2 === own ? 'own' : G.atWar(own, o2) ? 'war' : 'peace';
+      const dash = e.type === 'land' ? '' : e.type === 'river' ? 'stroke-dasharray="10 6"' : 'stroke-dasharray="3 9"';
+      s2 += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="conn ${cls}" ${dash}/>`;
+      s2 += `<circle cx="${x2}" cy="${y2}" r="27" class="connring ${cls}"/>`;
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      s2 += `<g transform="translate(${mx},${my})"><rect x="-17" y="-10" width="34" height="18" rx="9" class="connlab ${cls}"/><text y="4" class="conntxt">${({ land: '육로', river: '수로', sea: '해로' })[e.type]}</text></g>`;
     }
-    g.innerHTML = s;
+    g.innerHTML = s2;
   };
   UI.applyVB = () => { const svg = $('#mapsvg'); if (svg) svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); };
   UI.zoom = (f, cx, cy) => {
-    const nw = U.clamp(vb.w / f, 500, U.MAP_W * 1.1);
+    const nw = U.clamp(vb.w / f, 450, U.MAP_W * 1.1);
     const k = nw / vb.w;
     cx = cx == null ? vb.x + vb.w / 2 : cx; cy = cy == null ? vb.y + vb.h / 2 : cy;
     vb.x = cx - (cx - vb.x) * k; vb.y = cy - (cy - vb.y) * k; vb.w = nw; vb.h *= k;
@@ -280,8 +288,8 @@
     const c = S.cityById[cid];
     const wrap = $('#mapwrap');
     const ar = wrap ? wrap.clientHeight / Math.max(1, wrap.clientWidth) : 0.6;
-    vb.w = 1100 * (zoomW || 1); vb.h = vb.w * ar;
-    vb.x = U.px(c.lon) - vb.w / 2; vb.y = U.py(c.lat) - vb.h / 2;
+    vb.w = 1250 * (zoomW || 1); vb.h = vb.w * ar;
+    vb.x = S.POS[cid].x - vb.w / 2; vb.y = S.POS[cid].y - vb.h / 2;
     UI.applyVB();
   };
   UI.mapControls = () => {
@@ -290,6 +298,11 @@
     const toMap = (ev) => { const r = svg.getBoundingClientRect(); return { x: vb.x + ((ev.clientX - r.left) / r.width) * vb.w, y: vb.y + ((ev.clientY - r.top) / r.height) * vb.h }; };
     svg.addEventListener('wheel', (e) => { e.preventDefault(); const p = toMap(e); UI.zoom(e.deltaY < 0 ? 1.15 : 0.87, p.x, p.y); }, { passive: false });
     svg.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y }; moved = false; });
+    svg.addEventListener('pointerover', (e) => {
+      const g = e.target.closest && e.target.closest('.city');
+      U.$$('.edge.hov', svg).forEach((x) => x.classList.remove('hov'));
+      if (g) U.$$(`.edge[data-a="${g.dataset.id}"], .edge[data-b="${g.dataset.id}"]`, svg).forEach((x) => x.classList.add('hov'));
+    });
     window.addEventListener('pointermove', (e) => {
       if (!drag) return;
       const r = svg.getBoundingClientRect();
@@ -364,44 +377,42 @@
     const offsAll = G.officersIn(cid);
     const SK = { lead: 0, war: 1, int: 2, pol: 3 };
     let offs = offsAll.slice();
-    if (offReady && mine) offs = offs.filter((id) => !st.officers[id].done);
+    if (offReady && mine) offs = offs.filter((id) => !st.officers[id].done && !(st.officers[id].uses > 0));
     if (offSort !== 'base') offs.sort((a, b) => (offSort === 'sum' ? st.officers[b].s.reduce((x, y) => x + y) - st.officers[a].s.reduce((x, y) => x + y) : st.officers[b].s[SK[offSort]] - st.officers[a].s[SK[offSort]]));
     const ol = el('div', { class: 'cp-offs' });
     if (offsAll.length > 4) ol.appendChild(el('div', { class: 'off-tools' },
       el('select', { onchange: (e) => { offSort = e.target.value; UI.renderSide(); } }, [['base', '기본 순서'], ['sum', '능력 합'], ['lead', '통솔'], ['war', '무력'], ['int', '지력'], ['pol', '정치']].map(([v, l]) => el('option', { value: v, selected: offSort === v }, `정렬: ${l}`))),
-      mine ? el('label', {}, el('input', { type: 'checkbox', checked: offReady, onchange: (e) => { offReady = e.target.checked; UI.renderSide(); } }), ' 행동 가능만') : null));
+      mine ? el('label', {}, el('input', { type: 'checkbox', checked: offReady, onchange: (e) => { offReady = e.target.checked; UI.renderSide(); } }), ' 이번 계절 미사용만') : null));
     offs.forEach((id) => {
       const so = st.officers[id], o = S.officerById[id];
       const isRuler = st.nations[cs.owner].ruler === id;
-      ol.appendChild(el('div', { class: `off ${selOfficer === id ? 'sel' : ''} ${so.done ? 'done' : ''}`, onclick: () => { if (mine) { selOfficer = id; UI.renderSide(); } else UI.officerDetail(id); } },
+      ol.appendChild(el('div', { class: `off ${selOfficer === id ? 'sel' : ''} ${so.done ? 'done' : ''} ${so.uses >= 2 ? 'tired' : ''}`, onclick: () => { if (mine) { selOfficer = id; UI.renderSide(); } else UI.officerDetail(id); } },
         el('div', { class: 'op', html: A.portrait(id, 40) }),
         el('div', { class: 'oinfo' }, el('div', { class: 'on' }, isRuler ? '👑 ' : '', o.name, o.legend ? el('span', { class: 'lg-tag' }, '설화') : null, o.fic ? el('span', { class: 'lg-tag fic' }, '가상') : null),
           el('div', { class: 'os' }, so.s.map((v, i) => el('span', { class: 'st' }, `${STAT_NAMES[i][0]}${v}`))),
           el('div', { class: 'osp' }, S.SPECIALS_AB[o.sp] ? `★${S.SPECIALS_AB[o.sp].name}` : '')),
         el('button', { class: 'btn xs info', onclick: (e) => { e.stopPropagation(); UI.officerDetail(id); } }, 'i'),
-        so.done ? el('span', { class: 'done-tag' }, '완료') : null));
+        so.done ? el('span', { class: 'done-tag' }, '출진') : so.uses ? el('span', { class: 'done-tag use' }, `명령 ${so.uses}회`) : null));
     });
     const frees = G.officersIn(cid, 'free');
     if (mine && frees.length) ol.appendChild(el('div', { class: 'muted' }, `재야 인재의 소문이 있다… (${frees.length}명) — 「탐색」으로 찾기`));
     if (!offs.length) ol.appendChild(el('div', { class: 'muted' }, offsAll.length ? '조건에 맞는 장수 없음' : '배치된 장수 없음'));
-    side.appendChild(sec(`장수 ${offsAll.length}${mine ? ` (행동 가능 ${offsAll.filter((id) => !st.officers[id].done).length})` : ''}`, ol));
+    side.appendChild(sec(`장수 ${offsAll.length}`, ol));
     /* 명령 */
     if (mine) {
-      const cmd = el('div', { class: 'cp-cmd' });
-      const so = selOfficer && st.officers[selOfficer];
-      const can = so && !so.done;
-      const mk = (label, fn, dis, title) => el('button', { class: 'btn cmd', disabled: dis || !can, title: title || '', onclick: fn }, label);
-      for (const k in G.COMMANDS) {
-        const C = G.COMMANDS[k];
-        cmd.appendChild(mk(`${C.icon} ${C.name}`, () => { const r = G.doCommand(selOfficer, k); UI.toast(r); UI.afterAction(); }, !G.canPay(st.player, C.cost), `${C.desc} · 비용 ${resStr(C.cost)}`));
-      }
-      cmd.appendChild(mk('🛡 징병', () => UI.recruitModal()));
-      cmd.appendChild(mk('🏗 건설', () => UI.buildModal()));
-      cmd.appendChild(mk('🚶 이동', () => UI.moveModal()));
-      cmd.appendChild(mk('🐂 수송', () => UI.transportModal()));
-      cmd.appendChild(mk('🔍 탐색', () => UI.search()));
-      cmd.appendChild(mk('⚔ 출진', () => UI.attackModal(), !G.attackTargets(cid).length));
-      side.appendChild(sec(so ? `명령 — ${S.officerById[selOfficer].name}${so.done ? ' (행동 완료)' : ''}` : '명령', cmd));
+      const N = st.nations[st.player];
+      const cmd = el('div', { class: 'cp-cmd six' });
+      const offN = G.officersIn(cid).filter((id) => !st.officers[id].done).length;
+      const mk = (icon, label, key, fn, extraDis, title) => el('button', { class: 'btn cmd cmdb', disabled: !offN || (N.ap || 0) < G.AP_COST[key] || extraDis, title: title || '', onclick: fn },
+        el('span', { class: 'ci' }, icon), el('span', {}, label), el('span', { class: 'apc' }, `⚡${G.AP_COST[key]}`));
+      cmd.appendChild(mk('🌾', '개발', 'agri', () => UI.devModal(), false, '농업·상업·기술·민심'));
+      cmd.appendChild(mk('⚔', '군사', 'train', () => UI.milModal(), false, '징병·훈련·축성'));
+      cmd.appendChild(mk('🏗', '건설', 'build', () => UI.buildModal()));
+      cmd.appendChild(mk('🚶', '이동', 'move', () => UI.moveModal(), !S.ADJ[cid].some((e) => st.cities[e.to].owner === st.player), '장수 이동·병력 수송'));
+      cmd.appendChild(mk('🔍', '탐색', 'search', () => UI.search(), false, '재야 인재·숨은 재물 찾기'));
+      cmd.appendChild(mk('🏯', '출진', 'attack', () => UI.attackModal(), !G.attackTargets(cid).length));
+      side.appendChild(sec(`명령 — 행동력 ⚡${N.ap || 0} / ${G.apMax(st.player)}`, el('div', {}, cmd,
+        el('div', { class: 'muted small' }, '명령은 이 도시에서 가장 알맞은 장수가 자동으로 맡습니다. 같은 장수가 한 계절에 거듭 맡으면 효과가 75% → 50%로 줄어듭니다. 남은 행동력은 최대 3까지 다음 계절로 이월됩니다.'))));
     } else {
       /* 적 도시: 인접 아군 거점에서 출진 */
       const froms = S.ADJ[cid].filter((e) => st.cities[e.to].owner === st.player && G.attackTargets(e.to).some((x) => x.to === cid));
@@ -428,9 +439,45 @@
     UI.refresh();
   };
 
+  /* 명령을 맡을 장수: 이번 계절 덜 쓴 장수 → 해당 능력치 높은 순 */
+  UI.bestOfficer = (cid, si) => G.officersIn(cid).filter((id) => !S.state.officers[id].done)
+    .sort((a, b) => (S.state.officers[a].uses || 0) - (S.state.officers[b].uses || 0) || S.state.officers[b].s[si] - S.state.officers[a].s[si])[0];
+  const SI = { agri: 3, comm: 3, tech: 2, order: 3, train: 0, wall: 0 };
+  const cmdRow = (cid, k, close) => {
+    const st = S.state, C = G.COMMANDS[k], oid = UI.bestOfficer(cid, SI[k]);
+    const N = st.nations[st.player];
+    const gain = oid ? G.calcCommand(oid, k, G.apMultOf(oid)) : 0;
+    const cs = st.cities[cid];
+    const cur = { agri: cs.agri, comm: cs.comm, tech: cs.tech, order: cs.order, train: cs.train, wall: cs.wall }[k];
+    const ok = oid && G.canPay(st.player, C.cost) && (N.ap || 0) >= G.AP_COST[k];
+    return el('button', { class: 'opt-row', disabled: !ok, onclick: () => { UI.toast(G.doCommand(oid, k)); close(); UI.afterAction(); } },
+      el('span', { class: 'oi' }, C.icon), el('b', {}, C.name), el('span', { class: 'og' }, `${Math.round(cur)} → +${gain}`),
+      el('span', { class: 'oo' }, oid ? `${S.officerById[oid].name}${st.officers[oid].uses ? ` (${Math.round(G.apMultOf(oid) * 100)}%)` : ''}` : '-'),
+      el('span', { class: 'oc' }, `⚡${G.AP_COST[k]} · ${resStr(C.cost)}`));
+  };
+  UI.devModal = () => {
+    const cid = selCity;
+    let close;
+    const body = el('div', { class: 'opt-list' }, ['agri', 'comm', 'tech', 'order'].map((k) => cmdRow(cid, k, () => close())));
+    const pm = UI.modal({ title: `개발 — ${S.cityById[cid].name}`, body, buttons: [{ label: '닫기' }] });
+    close = () => { const m = document.querySelector('.modal-bg:last-child'); if (m) m.remove(); };
+    return pm;
+  };
+  UI.milModal = () => {
+    const cid = selCity, st = S.state;
+    let close = () => { const m = document.querySelector('.modal-bg:last-child'); if (m) m.remove(); };
+    const N = st.nations[st.player];
+    const rec = el('button', { class: 'opt-row', disabled: (N.ap || 0) < G.AP_COST.recruit, onclick: () => { close(); selOfficer = UI.bestOfficer(cid, 0); UI.recruitModal(); } },
+      el('span', { class: 'oi' }, '🛡'), el('b', {}, '징병'), el('span', { class: 'og' }, `모집 가능 약 ${U.fmt(UI.bestOfficer(cid, 0) ? G.recruitAmount(UI.bestOfficer(cid, 0)) : 0)}명`), el('span', { class: 'oo' }, '병종 선택 ▸'), el('span', { class: 'oc' }, `⚡${G.AP_COST.recruit}`));
+    const body = el('div', { class: 'opt-list' }, rec, cmdRow(cid, 'train', close), cmdRow(cid, 'wall', close));
+    return UI.modal({ title: `군사 — ${S.cityById[cid].name}`, body, buttons: [{ label: '닫기' }] });
+  };
+
   /* ── 징병 ── */
   UI.recruitModal = async () => {
-    const st = S.state, oid = selOfficer, cid = selCity, n = st.player;
+    const st = S.state, cid = selCity, n = st.player;
+    const oid = selOfficer && st.officers[selOfficer] && st.officers[selOfficer].city === cid ? selOfficer : UI.bestOfficer(cid, 0);
+    if (!oid) return UI.toast('징병을 맡을 장수가 없습니다.');
     const amt = G.recruitAmount(oid);
     const box = el('div', { class: 'rec-list' });
     S.UNIT_ORDER.filter((u) => S.unitAvailable(u, n)).forEach((uid) => {
@@ -438,7 +485,7 @@
       const bad = G.unitReqOk(uid, cid, n);
       const cost = G.recruitCost(n, uid, amt, cid);
       const afford = G.canPay(n, cost);
-      box.appendChild(el('button', { class: `rec ${u.nation ? 'special' : ''}`, disabled: !!bad || !afford || amt < 100, onclick: () => { const r = G.doRecruit(oid, uid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
+      box.appendChild(el('button', { class: `rec ${u.nation ? 'special' : ''}`, disabled: !!bad || !afford || amt < 100 || (st.nations[n].ap || 0) < G.AP_COST.recruit, onclick: () => { const r = G.doRecruit(oid, uid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
         el('div', { class: 'ra', html: A.unitArt(uid, n, 96, 80) }),
         el('div', { class: 'ri' }, el('div', { class: 'rn' }, `${u.name} `, el('span', { class: 'hj' }, u.hanja), u.nation ? el('span', { class: 'sp-tag' }, '특수') : null),
           el('div', { class: 'rd' }, u.desc),
@@ -462,7 +509,7 @@
         const mul = bid === 'w_mireuk' && st.flags.mireukDiscount ? 0.6 : 1;
         const cost = {}; for (const k in b.cost) cost[k] = Math.round(b.cost[k] * mul);
         const afford = G.canPay(n, cost);
-        grid.appendChild(el('button', { class: `bopt ${b.wonder ? 'wonder' : ''}`, disabled: !!why || !afford || !selOfficer || st.officers[selOfficer].done, onclick: () => { const r = G.doBuild(selOfficer, bid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
+        grid.appendChild(el('button', { class: `bopt ${b.wonder ? 'wonder' : ''}`, disabled: !!why || !afford || !UI.bestOfficer(cid, 3) || (st.nations[n].ap || 0) < G.AP_COST.build, onclick: () => { const r = G.doBuild(UI.bestOfficer(cid, 3), bid); UI.toast(r); $('.modal-bg').remove(); UI.afterAction(); } },
           el('div', { html: A.building(bid, n, 58) }),
           el('div', { class: 'bi' }, el('div', { class: 'bname' }, S.buildingName(bid, n), el('span', { class: 'hj' }, b.hanja)), el('div', { class: 'bdesc' }, b.desc), el('div', { class: `bcost ${afford ? '' : 'red'}` }, resStr(cost)), why ? el('div', { class: 'red small' }, why) : null)));
       });
@@ -482,8 +529,18 @@
     const st = S.state, cid = selCity;
     const opts = S.ADJ[cid].filter((e) => st.cities[e.to].owner === st.player);
     if (!opts.length) return UI.toast('인접한 아군 도시가 없습니다.');
-    const body = el('div', { class: 'opts' }, opts.map((e) => el('button', { class: 'btn', onclick: () => { UI.toast(G.doMove(selOfficer, e.to)); $('.modal-bg').remove(); UI.afterAction(); } }, `${S.cityById[e.to].name} (${({ land: '육로', river: '수로', sea: '바닷길' })[e.type]})`)));
-    await UI.modal({ title: `${S.officerById[selOfficer].name} 이동`, body });
+    const offs = G.officersIn(cid).filter((id) => !st.officers[id].done);
+    let who = selOfficer && offs.includes(selOfficer) ? selOfficer : offs[0];
+    const body = el('div', {});
+    const render = () => {
+      body.innerHTML = '';
+      body.appendChild(el('div', { class: 'hint' }, `장수 이동 ⚡${G.AP_COST.move} · 병력 수송 ⚡${G.AP_COST.transport}`));
+      body.appendChild(el('div', {}, '이동할 장수: ', el('select', { onchange: (e) => { who = e.target.value; } }, offs.map((id) => el('option', { value: id, selected: id === who }, `${S.officerById[id].name} (${st.officers[id].s.join('/')})`)))));
+      body.appendChild(el('div', { class: 'opts' }, opts.map((e) => el('button', { class: 'btn', onclick: () => { UI.toast(G.doMove(who, e.to)); document.querySelector('.modal-bg:last-child').remove(); UI.afterAction(); } }, `🚶 ${S.cityById[e.to].name}로 이동 (${({ land: '육로', river: '수로', sea: '바닷길' })[e.type]})`))));
+      body.appendChild(el('button', { class: 'btn gold', style: { marginTop: '10px' }, onclick: () => { document.querySelector('.modal-bg:last-child').remove(); UI.transportModal(); } }, '🐂 병력 수송하기 ▸'));
+    };
+    render();
+    await UI.modal({ title: `이동 — ${S.cityById[cid].name}`, body });
   };
   UI.transportModal = async () => {
     const st = S.state, cid = selCity, cs = st.cities[cid];
@@ -497,9 +554,11 @@
       const lab = el('b', {}, '0');
       return el('div', { class: 'tp-row' }, el('span', {}, S.UNITS[uid].name), el('input', { type: 'range', min: 0, max: v, step: 100, value: 0, oninput: (e) => { vals[uid] = +e.target.value; lab.textContent = U.fmt(vals[uid]); } }), lab, el('span', { class: 'muted' }, `/ ${U.fmt(v)}`));
     }));
-    await UI.modal({ title: '병력 수송', body: el('div', {}, el('div', {}, '목적지: ', sel), rows), buttons: [{ label: '수송', cls: 'gold', fn: () => { UI.toast(G.doTransport(selOfficer, to, vals)); UI.afterAction(); } }, { label: '취소' }] });
+    await UI.modal({ title: '병력 수송', body: el('div', {}, el('div', {}, '목적지: ', sel), rows), buttons: [{ label: '수송', cls: 'gold', fn: () => { UI.toast(G.doTransport(UI.bestOfficer(cid, 0), to, vals)); UI.afterAction(); } }, { label: '취소' }] });
   };
   UI.search = async () => {
+    selOfficer = UI.bestOfficer(selCity, 2);
+    if (!selOfficer) return UI.toast('탐색을 맡을 장수가 없습니다.');
     const r = G.doSearch(selOfficer);
     if (r.found) {
       const fid = r.found;
@@ -563,13 +622,15 @@
       const tot = army.reduce((a, u) => a + u.troops, 0);
       const food = G.expeditionFood(tot, tgt.type, n, cid);
       if (food > st.nations[n].food) { UI.toast('군량이 부족합니다.'); return false; }
+      if ((st.nations[n].ap || 0) < G.AP_COST.attack) { UI.toast(`행동력이 부족합니다. (출진 ⚡${G.AP_COST.attack})`); return false; }
+      st.nations[n].ap -= G.AP_COST.attack;
       const ts = st.cities[tgt.to];
       if (!G.atWar(n, ts.owner)) G.declareWar(n, ts.owner);
       st.nations[n].food -= food;
       army.forEach((u) => (cs.troops[u.uid] -= u.troops));
       setTimeout(() => UI.launchBattle({ from: cid, to: tgt.to, att: army, attNation: n, edgeType: tgt.type }, auto));
     };
-    await UI.modal({ title: `출진 — ${S.cityById[cid].name}`, body, wide: true, buttons: [{ label: '⚔ 직접 지휘 (카드 전투)', cls: 'gold', fn: () => go(false) }, { label: '자동 전투', fn: () => go(true) }, { label: '취소' }] });
+    await UI.modal({ title: `출진 — ${S.cityById[cid].name}`, body, wide: true, buttons: [{ label: `⚔ 직접 지휘 (카드 전투) ⚡${G.AP_COST.attack}`, cls: 'gold', fn: () => go(false) }, { label: '자동 전투', fn: () => go(true) }, { label: '취소' }] });
   };
   UI.launchBattle = async (info, auto) => {
     const res = await S.BattleUI.run(info, { auto, playerSide: info.attNation === S.state.player ? 'a' : 'd' });
@@ -608,8 +669,8 @@
       el('div', { class: 'od-right' },
         el('h2', {}, o.name, el('span', { class: 'hj' }, o.hanja), o.legend ? el('span', { class: 'lg-tag' }, '설화·야사') : null, o.fic ? el('span', { class: 'lg-tag fic' }, '가상 인물') : null),
         el('div', { class: 'muted' }, `${S.nationName(nat)} · ${({ king: '군주·왕족', queen: '여왕·왕후', general: '장수', scholar: '문관·책사', monk: '승려', lady: '여인', hwarang: '화랑', legend: '설화 인물' })[o.role]} · ${age}세(추정, ${o.b}~${o.d || '?'}) · 충성 ${so.loyalty} · ${({ active: '현역', free: '재야', prisoner: '포로', dead: '사망', future: '미등장', none: '미등장' })[so.status]}`),
-        el('div', { class: 'od-stats' }, so.s.map((v, i) => el('div', { class: 'srow' }, el('span', { class: 'sl' }, STAT_NAMES[i]), bar(v, 100, ['#a3242a', '#c4562a', '#2b6ca3', '#3a8a4a'][i]), el('b', { class: 'sv' }, v)))),
-        el('div', { class: 'od-legend muted small' }, '통솔: 병력·지휘력·방어막 / 무력: 공격·방어 / 지력: 책략·외교 / 정치: 내정·회복'),
+        el('div', { class: 'od-stats' }, so.s.map((v, i) => el('div', { class: 'srow' }, el('span', { class: 'sl' }, STAT_NAMES[i]), bar(v, 100, ['#a3242a', '#c4562a', '#2b6ca3', '#3a8a4a'][i]), el('b', { class: 'sv' }, v), o.s0 && o.s0[i] !== v ? el('span', { class: 'muted small s0' }, '원래 ' + o.s0[i]) : null))),
+        el('div', { class: 'od-legend muted small' }, '통솔: 병력·지휘력·방어막 / 무력: 공격·방어 / 지력: 책략·외교 / 정치: 내정·회복', o.s0 ? ' · 「원래」는 나라 간 보정 전 값' : ''),
         sp ? el('div', { class: 'od-sp' }, el('div', { class: 'spt' }, `★ 특수능력 — ${sp.name}`), el('div', {}, passiveText(sp.passive)), sp.card ? cardEl(Object.assign({ owner: '' }, sp.card), true) : null) : null,
         o.note ? el('p', { class: 'od-note' }, o.note) : null,
         el('div', { class: 'muted small' }, `출전: ${o.src}`),

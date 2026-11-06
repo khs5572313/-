@@ -329,3 +329,29 @@ table.sum th { background: #efe3c6; } table.sum td { border-bottom: 1px solid va
 .camp-list { columns: 2; font-size: 14px; }
 .camp-pick { display: flex; gap: 8px; }
 .camp-pick .btn { display: flex; align-items: center; gap: 4px; }
+
+.cp-cmd.six { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.btn.cmd.cmdb { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; font-size: 14px; position: relative; }
+.btn.cmd.cmdb .ci { font-size: 20px; }
+.btn.cmd.cmdb .apc { font-size: 11px; color: #7a5c12; }
+.res.ap { border-color: #ffd34d; } .res.ap b { color: #ffe68a; }
+.done-tag.use { background: #8a6d1d; }
+.off.tired { opacity: .75; }
+.opt-list { display: flex; flex-direction: column; gap: 6px; }
+.opt-row { display: grid; grid-template-columns: 30px 80px 1fr 1fr auto; gap: 8px; align-items: center; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; font-family: inherit; font-size: 14px; }
+.opt-row:hover:not(:disabled) { border-color: var(--red); background: #fffaf0; }
+.opt-row:disabled { opacity: .45; cursor: not-allowed; }
+.opt-row .oi { font-size: 20px; } .opt-row .og { color: #2a6a3a; font-weight: 700; } .opt-row .oo { color: #5a4a32; font-size: 13px; } .opt-row .oc { color: #7a5c12; font-size: 12px; }
+
+.conn { stroke-width: 9; stroke-linecap: round; opacity: .85; }
+.conn.war { stroke: #e0322f; } .conn.own { stroke: #f2c94c; } .conn.peace { stroke: #cfcfcf; }
+.connring { fill: none; stroke-width: 4; } .connring.war { stroke: #e0322f; } .connring.own { stroke: #f2c94c; } .connring.peace { stroke: #cfcfcf; }
+.connlab { fill: #1b1410; opacity: .85; } .connlab.war { stroke: #e0322f; } .connlab.own { stroke: #f2c94c; } .connlab.peace { stroke: #999; }
+.conntxt { fill: #fff; font-size: 11px; text-anchor: middle; font-weight: 700; pointer-events: none; }
+#armies { pointer-events: none; }
+.edge.hov { stroke: #fff6c0 !important; stroke-width: 7 !important; opacity: 1 !important; }
+.od-stats .s0 { width: 52px; }
+.tb-res .res .nm { display: none; }
+.tb-res .res.ap .nm { display: inline; }
+#topbar { flex-wrap: nowrap; }
+.tb-btns .btn.sm { padding: 5px 8px; }
