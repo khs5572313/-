@@ -12,20 +12,21 @@
   <section id="screen-title" class="screen">
     <header class="title-head">
       <h1><span class="hanja">三國記</span>삼국기</h1>
-      <p class="sub">6~7세기 동북아시아 · 장수 카드 전투 <em>프로토타입 v0.1</em></p>
+      <p class="sub">삼국시대 동북아시아 · 장수 카드 전투 <em>프로토타입 v0.2</em> · 7개 진영 280인</p>
     </header>
 
     <div class="rules">
       <div class="rule-tri">
         <span class="ubadge u-cav">騎</span><b>기병</b> ▶ <span class="ubadge u-arc">弓</span><b>궁병</b> ▶
         <span class="ubadge u-spr">槍</span><b>창병</b> ▶ <span class="ubadge u-cav">騎</span><b>기병</b>
-        <small>유리 ×1.5 · 불리 ×0.7</small>
+        <small>유리 ×1.4 · 불리 ×0.75</small>
       </div>
       <ul>
-        <li><b>군령</b>을 써서 손패의 장수를 세 갈래 길에 배치합니다. 맞은편이 비어 있으면 적 <b>본진</b>을 칩니다.</li>
-        <li>적 본진 내구를 0으로 만들거나 적 장수를 모두 쓰러뜨리면 승리.</li>
-        <li>궁병은 먼저 쏘고, 기병은 배치 즉시 돌격하며, 창병은 기병의 돌격을 되받아칩니다.</li>
-        <li>전장의 장수를 눌러 <b>계략</b>(준비되면 금빛 테두리)을 씁니다.</li>
+        <li><b>주사위</b>로 선제 공격권을 정합니다. 선공 측은 같은 병종끼리 맞붙을 때 먼저 칩니다. 배치 순서는 턴마다 번갈아 맡습니다.</li>
+        <li><b>군령</b> 2로 장수를 세 갈래 길에 배치합니다. 맞은편이 비면 적 <b>본진</b>을 칩니다. 장수가 쓰러지면 그 진영 본진도 깎입니다.</li>
+        <li>전장의 장수를 누르면 <b>병종 전법</b>(군령 1 — 기병 돌격·창병 방진·궁병 화공)과 <b>고유 계략</b>(금빛 테두리)을 쓸 수 있습니다.</li>
+        <li><b>지력</b>이 높은 장수는 지력이 낮은 적의 공격을 <b>간파</b>해 피해를 덜 받고, 계략은 통솔 방어를 무시합니다.</li>
+        <li>모든 장수의 능력치는 S 1개 · A 2개 · B 1개입니다. <b>자동</b> 버튼을 켜면 배치와 계략까지 알아서 싸웁니다.</li>
       </ul>
     </div>
 
@@ -37,32 +38,53 @@
       <label>아군 <select id="free-a"></select></label>
       <span>vs</span>
       <label>적군 <select id="free-b"></select></label>
-      <button id="free-start" class="btn">출진</button>
+      <button id="free-start" class="btn">덱 편성으로</button>
     </div>
 
-    <h2>장수 도감</h2>
+    <h2>인물 도감 <small id="gallery-count"></small></h2>
     <div id="gallery-tabs" class="tabs"></div>
+    <div id="gallery-filter" class="tabs"></div>
     <div id="gallery" class="gallery"></div>
+  </section>
+
+  <section id="screen-deck" class="screen" hidden>
+    <div class="topbar">
+      <button id="deck-back" class="btn ghost">← 뒤로</button>
+      <div id="deck-title" class="turn-label"></div>
+      <span></span>
+    </div>
+    <p class="deck-help">출전할 장수 <b>10명</b>을 고르세요. 카드를 누르면 선택/해제, 길게 보려면 <b>ⓘ</b>를 누릅니다.</p>
+    <div class="deck-bar">
+      <div id="deck-count" class="deck-count"></div>
+      <button id="deck-auto" class="btn">자동 편성</button>
+      <button id="deck-clear" class="btn ghost">비우기</button>
+      <button id="deck-go" class="btn primary">출진 ⚔</button>
+    </div>
+    <div id="deck-filter" class="tabs"></div>
+    <div id="deck-grid" class="gallery"></div>
   </section>
 
   <section id="screen-battle" class="screen" hidden>
     <div class="topbar">
       <button id="btn-exit" class="btn ghost">← 나가기</button>
       <div id="turn-label" class="turn-label"></div>
-      <button id="btn-speed" class="btn ghost">속도 ×1</button>
+      <div class="topbtns">
+        <button id="btn-auto" class="btn ghost">자동 OFF</button>
+        <button id="btn-speed" class="btn ghost">속도 ×1</button>
+      </div>
     </div>
 
     <div class="sidebar enemy" id="bar-1"></div>
-    <div class="board">
+    <div class="board" id="board">
       <div class="row" id="row-1"></div>
-      <div class="midline"><span id="phase-label">배치 단계</span></div>
+      <div class="midline"><span id="phase-label"></span></div>
       <div class="row" id="row-0"></div>
     </div>
     <div class="sidebar player" id="bar-0"></div>
 
     <div class="controls">
       <div class="cmd" id="cmd-box"></div>
-      <button id="btn-fight" class="btn primary">전투 개시 ⚔</button>
+      <button id="btn-fight" class="btn primary">배치 완료 ⚔</button>
     </div>
     <div class="hand" id="hand"></div>
     <div class="log" id="log"></div>
@@ -72,10 +94,18 @@
 
 <div id="fx-layer"></div>
 <div id="cutin" hidden></div>
+<div id="dice" hidden></div>
 <div id="detail" hidden></div>
 <div id="result" hidden></div>
 
 <script src="js/data.js"></script>
+<script src="js/roster/goguryeo.js"></script>
+<script src="js/roster/baekje.js"></script>
+<script src="js/roster/silla.js"></script>
+<script src="js/roster/sui.js"></script>
+<script src="js/roster/tang.js"></script>
+<script src="js/roster/turk.js"></script>
+<script src="js/roster/wa.js"></script>
 <script src="js/engine.js"></script>
 <script src="assets/portraits/manifest.js"></script>
 <script src="js/portrait.js"></script>
