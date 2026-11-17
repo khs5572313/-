@@ -62,18 +62,18 @@
   // ── 타이틀 ──────────────────────────────────────────────────
   function initTitle() {
     $('#scenario-list').innerHTML = D.SCENARIOS.map((s, i) => `
-      <div class="scn"><div class="scn-head"><span class="scn-year">${s.year}년</span><span class="scn-name">${s.name}</span></div>
+      <div class="scn"><div class="scn-head"><span class="scn-year">${s.year}년</span><span class="scn-name">${s.name}</span><span class="scn-size${s.lanes === 5 ? ' big' : ''}">${s.lanes === 5 ? '대회전 5대5' : '3대3'}</span></div>
       <div class="scn-desc">${s.desc}</div>
       <div class="scn-sides"><span>진영 선택 ▸</span>${s.sides.map((n, k) =>
         `<button class="btn nbtn" style="${natStyle(n)}" data-scn="${i}" data-pick="${k}">${D.NATIONS[n].name}</button>`).join('<span>vs</span>')}</div></div>`).join('');
     $('#scenario-list').addEventListener('click', (e) => {
       const b = e.target.closest('[data-scn]'); if (!b) return;
       const s = D.SCENARIOS[+b.dataset.scn], k = +b.dataset.pick;
-      openDeck({ title: `${s.year}년 ${s.name}`, sides: [{ nation: s.sides[k] }, { nation: s.sides[1 - k] }] });
+      openDeck({ title: `${s.year}년 ${s.name}`, lanes: s.lanes || 3, sides: [{ nation: s.sides[k] }, { nation: s.sides[1 - k] }] });
     });
     const opts = Object.keys(D.NATIONS).map((n) => `<option value="${n}">${D.NATIONS[n].name}</option>`).join('');
     $('#free-a').innerHTML = opts; $('#free-b').innerHTML = opts; $('#free-b').value = 'tang';
-    $('#free-start').onclick = () => openDeck({ title: '자유 대전', sides: [{ nation: $('#free-a').value }, { nation: $('#free-b').value }] });
+    $('#free-start').onclick = () => openDeck({ title: '자유 대전', lanes: +$('#free-size').value, sides: [{ nation: $('#free-a').value }, { nation: $('#free-b').value }] });
 
     let gNat = 'goguryeo', gF = 'all';
     const draw = () => {
@@ -95,10 +95,11 @@
   }
 
   // ── 덱 편성 ─────────────────────────────────────────────────
-  let deckCfg = null, deckSel = [], deckF = 'all';
+  let deckCfg = null, deckSel = [], deckF = 'all', deckSize = 10;
   function openDeck(cfg) {
-    deckCfg = cfg; deckF = 'all';
-    deckSel = E.randomDeck(cfg.sides[0].nation, Math.random, 'mix');
+    deckCfg = cfg; deckF = 'all'; deckSize = E.sizeRules(cfg.lanes).deckSize;
+    deckSel = E.randomDeck(cfg.sides[0].nation, Math.random, 'mix', deckSize);
+    $('#deck-help').innerHTML = `출전할 장수 <b>${deckSize}명</b>을 고르세요(${cfg.lanes}대${cfg.lanes} 전투). 카드를 누르면 선택/해제, <b>ⓘ</b>를 누르면 사료 근거가 나옵니다.` + (cfg.lanes === 5 ? ' 대회전은 카드가 작아지므로 휴대폰에서는 가로 화면을 권합니다.' : '');
     $('#deck-title').textContent = `${cfg.title} — ${D.NATIONS[cfg.sides[0].nation].name} 덱 편성`;
     filterTabs($('#deck-filter'), (f) => { deckF = f; drawDeck(); });
     drawDeck(); show('deck');
@@ -106,10 +107,10 @@
   function drawDeck() {
     const n = deckCfg.sides[0].nation, sel = deckSel.map((id) => D.GENERALS[id]);
     const cnt = (f) => sel.filter(f).length;
-    $('#deck-count').innerHTML = `선택 ${sel.length} / ${E.CFG.deckSize}<small>무인 ${cnt((g) => g.cls === 'm')} · 문인 ${cnt((g) => g.cls === 'c')} ｜ 기병 ${cnt((g) => g.unit === 'cav')} · 창병 ${cnt((g) => g.unit === 'spr')} · 궁병 ${cnt((g) => g.unit === 'arc')}</small>`;
-    $('#deck-go').disabled = sel.length !== E.CFG.deckSize;
+    $('#deck-count').innerHTML = `선택 ${sel.length} / ${deckSize}<small>무인 ${cnt((g) => g.cls === 'm')} · 문인 ${cnt((g) => g.cls === 'c')} ｜ 기병 ${cnt((g) => g.unit === 'cav')} · 창병 ${cnt((g) => g.unit === 'spr')} · 궁병 ${cnt((g) => g.unit === 'arc')}</small>`;
+    $('#deck-go').disabled = sel.length !== deckSize;
     $('#deck-grid').innerHTML = D.ROSTER[n].map((id) => D.GENERALS[id]).filter((g) => passes(g, deckF))
-      .map((g) => cardHTML(g, null, 'pick', deckSel.indexOf(g.id) >= 0 ? 'picked' : (sel.length >= E.CFG.deckSize ? 'dim' : ''))).join('');
+      .map((g) => cardHTML(g, null, 'pick', deckSel.indexOf(g.id) >= 0 ? 'picked' : (sel.length >= deckSize ? 'dim' : ''))).join('');
   }
   function bindDeck() {
     $('#deck-grid').addEventListener('click', (e) => {
@@ -117,13 +118,13 @@
       const id = c.dataset.gid;
       if (e.target.closest('[data-info]')) return showDetail(D.GENERALS[id]);
       const i = deckSel.indexOf(id);
-      if (i >= 0) deckSel.splice(i, 1); else if (deckSel.length < E.CFG.deckSize) deckSel.push(id);
+      if (i >= 0) deckSel.splice(i, 1); else if (deckSel.length < deckSize) deckSel.push(id);
       drawDeck();
     });
-    $('#deck-auto').onclick = () => { deckSel = E.randomDeck(deckCfg.sides[0].nation, Math.random, 'mix'); drawDeck(); };
+    $('#deck-auto').onclick = () => { deckSel = E.randomDeck(deckCfg.sides[0].nation, Math.random, 'mix', deckSize); drawDeck(); };
     $('#deck-clear').onclick = () => { deckSel = []; drawDeck(); };
     $('#deck-back').onclick = () => show('title');
-    $('#deck-go').onclick = () => startBattle({ title: deckCfg.title, sides: [{ nation: deckCfg.sides[0].nation, deck: deckSel.slice() }, { nation: deckCfg.sides[1].nation }] });
+    $('#deck-go').onclick = () => startBattle({ title: deckCfg.title, lanes: deckCfg.lanes, sides: [{ nation: deckCfg.sides[0].nation, deck: deckSel.slice() }, { nation: deckCfg.sides[1].nation }] });
   }
 
   // ── 전투 화면 그리기 ────────────────────────────────────────
@@ -393,11 +394,12 @@
   // ── 턴 진행 ─────────────────────────────────────────────────
   function startBattle(cfg) {
     setup = cfg; token++;
-    B = E.createBattle({ sides: cfg.sides });
+    B = E.createBattle({ sides: cfg.sides, lanes: cfg.lanes });
+    $('#screen-battle').className = 'screen lanes-' + B.rules.lanes;
     selected = -1; busy = true; waiting = null;
     $('#log').innerHTML = ''; $('#result').hidden = true; $('#detail').hidden = true;
     show('battle'); render();
-    log(`<span class="t">【${cfg.title}】</span> ${D.NATIONS[B.sides[ME].nation].name} vs ${D.NATIONS[B.sides[FOE].nation].name}`);
+    log(`<span class="t">【${cfg.title}】</span> ${D.NATIONS[B.sides[ME].nation].name} vs ${D.NATIONS[B.sides[FOE].nation].name} · ${B.rules.lanes}대${B.rules.lanes}`);
     loop(token);
   }
 

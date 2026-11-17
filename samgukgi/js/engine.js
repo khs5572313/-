@@ -6,11 +6,21 @@
 })(typeof self !== 'undefined' ? self : this, function (D) {
   'use strict';
 
-  // 전장의 길 수(= 한 번에 맞붙는 장수 수). 실험할 때만 환경변수 SG_LANES 로 바꾼다.
-  const LANES = (typeof process !== 'undefined' && process.env && +process.env.SG_LANES) || 3;
+  const LANES = 3;   // 기본 전투 규모(3대3). 대회전은 5대5 — createBattle({lanes: 5})
+
+  /** 전장 규모(길 수)에 따라 정해지는 값들. 3대3에서 맞춘 균형을 다른 규모로 옮기는 보정을 여기 모은다. */
+  function sizeRules(L) {
+    return {
+      lanes: L, deckSize: L * 3 + 1, startHand: L + 1, handMax: L + 3,
+      cmdStart: L + 1, cmdMax: 2 * L + 2, hqBase: Math.round(CFG_HQ3 * L / 3),
+      // 아군/적군 '전체' 대상 효과는 인원이 늘수록 이득이 커지므로 규모에 맞춰 낮춘다(3대3 = 1.0)
+      aoeMul: L <= 3 ? 1 : Math.pow(3 / L, CFG.aoeExp),
+    };
+  }
+  const CFG_HQ3 = 1400;
   const CFG = {
-    hqBase: 1400, deckSize: 10, startHand: 4, handMax: 6, turnLimit: 20,
-    cmdStart: 4, cmdMax: 8, cardCost: 2, tacticCost: 1, tacticCd: 2,
+    turnLimit: 20, cardCost: 2, tacticCost: 1, tacticCd: 2,
+    aoeExp: 0.85,          // 대회전에서 전체 대상 효과를 얼마나 깎을지((3/길 수)^aoeExp)
     atkScale: 6,          // 무력 수치 → 기본 피해
     defK: 0.6,            // 통솔 → 일반 공격 피해 감소
     resK: 0.4,            // 지력 → 계략 피해 감소
@@ -56,28 +66,30 @@
   }
 
   /** 무작위 덱. kind: 'mix'(무5·문5) | 'm'(무인만) | 'c'(문인만) | 병종 키(해당 병종 위주) */
-  function randomDeck(nation, rnd, kind) {
+  function randomDeck(nation, rnd, kind, size) {
+    size = size || sizeRules(LANES).deckSize;
     const pool = D.ROSTER[nation].map((id) => D.GENERALS[id]);
     const pick = (arr, n) => { const a = arr.slice(); const out = []; while (out.length < n && a.length) out.push(a.splice(Math.floor(rnd() * a.length), 1)[0].id); return out; };
-    if (kind === 'm' || kind === 'c') return pick(pool.filter((g) => g.cls === kind), CFG.deckSize);
-    if (D.UNITS[kind]) { const a = pick(pool.filter((g) => g.unit === kind), CFG.deckSize); return a.concat(pick(pool.filter((g) => a.indexOf(g.id) < 0), CFG.deckSize - a.length)); }
-    const h = CFG.deckSize / 2;
+    if (kind === 'm' || kind === 'c') return pick(pool.filter((g) => g.cls === kind), size);
+    if (D.UNITS[kind]) { const a = pick(pool.filter((g) => g.unit === kind), size); return a.concat(pick(pool.filter((g) => a.indexOf(g.id) < 0), size - a.length)); }
+    const h = size / 2;
     return pick(pool.filter((g) => g.cls === 'm'), h).concat(pick(pool.filter((g) => g.cls === 'c'), h));
   }
 
-  function draw(side, n) {
-    for (let i = 0; i < n; i++) { if (!side.deck.length || side.hand.length >= CFG.handMax) return; side.hand.push(side.deck.shift()); }
+  function draw(side, n, handMax) {
+    for (let i = 0; i < n; i++) { if (!side.deck.length || side.hand.length >= handMax) return; side.hand.push(side.deck.shift()); }
   }
 
   /** opts: { sides:[{nation, deck?, kind?, hqMul?}, …], seed?, init? } — sides[0]이 플레이어 */
   function createBattle(opts) {
     const state = { seed: (opts.seed || Date.now()) >>> 0, uidSeq: 0, turn: 0, phase: 'deploy', winner: null, reason: '', sides: [], dice: null, init: 0, dumb: opts.dumb == null ? -1 : opts.dumb };
+    const R = state.rules = sizeRules(opts.lanes || LANES);
     opts.sides.forEach((o, i) => {
-      const ids = o.deck || randomDeck(o.nation, () => rand(state), o.kind);
-      const hqMax = Math.round(CFG.hqBase * (o.hqMul || 1));
+      const ids = o.deck || randomDeck(o.nation, () => rand(state), o.kind, R.deckSize);
+      const hqMax = Math.round(R.hqBase * (o.hqMul || 1));
       const side = { idx: i, nation: o.nation, deck: shuffle(state, ids.map((id) => makeCard(state, id))),
-        hand: [], field: new Array(LANES).fill(null), grave: [], hq: hqMax, hqMax, morale: CFG.moraleStart, cmd: 0, cmdMax: 0 };
-      draw(side, CFG.startHand);
+        hand: [], field: new Array(R.lanes).fill(null), grave: [], hq: hqMax, hqMax, morale: CFG.moraleStart, cmd: 0, cmdMax: 0 };
+      draw(side, R.startHand, R.handMax);
       state.sides.push(side);
     });
     // 선제 공격권: 주사위 두 개(1~6)를 굴려 큰 쪽. 같으면 다시 굴린다.
@@ -95,16 +107,16 @@
     state.turn++;
     state.phase = 'deploy';
     state.sides.forEach((s) => {
-      s.cmdMax = Math.min(CFG.cmdStart + state.turn - 1, CFG.cmdMax);
+      s.cmdMax = Math.min(state.rules.cmdStart + state.turn - 1, state.rules.cmdMax);
       s.cmd = s.cmdMax;
-      if (state.turn > 1) draw(s, 1);
+      if (state.turn > 1) draw(s, 1, state.rules.handMax);
       s.field.forEach((c) => { if (c) { c.ready = true; c.fresh = false; if (c.cd > 0) c.cd--; if (c.tcd > 0) c.tcd--; } });
     });
   }
 
   function canDeploy(state, si, handIdx, lane) {
     const s = state.sides[si], c = s.hand[handIdx];
-    return state.phase === 'deploy' && !!c && lane >= 0 && lane < LANES && !s.field[lane] && c.cost <= s.cmd;
+    return state.phase === 'deploy' && !!c && lane >= 0 && lane < state.rules.lanes && !s.field[lane] && c.cost <= s.cmd;
   }
   function deploy(state, si, handIdx, lane) {
     if (!canDeploy(state, si, handIdx, lane)) return null;
@@ -195,6 +207,7 @@
     const A = D.ARCH[c.skill.arch];
     const sf = gv(c.stats[A.scale]) / 85;                       // A등급 = 1.0
     const phys = A.scale === 'war';
+    const aoe = state.rules.aoeMul;
     const fx = [];
     const allies = () => s.field.filter(Boolean);
     const skillDmg = (t, power) => {
@@ -204,7 +217,7 @@
     };
     A.fx.forEach((f) => {
       if (f.type === 'nuke_all') {
-        for (let l = 0; l < LANES; l++) { const t = o.field[l]; if (!t) continue; const dmg = skillDmg(t, f.power); const killed = hurt(state, ei, l, dmg); fx.push({ t: 'dmg', side: ei, lane: l, uid: t.uid, dmg, after: t.troops, killed }); }
+        for (let l = 0; l < state.rules.lanes; l++) { const t = o.field[l]; if (!t) continue; const dmg = skillDmg(t, f.power * aoe); const killed = hurt(state, ei, l, dmg); fx.push({ t: 'dmg', side: ei, lane: l, uid: t.uid, dmg, after: t.troops, killed }); }
       } else if (f.type === 'nuke_one') {
         const t = o.field[lane];
         if (t) { const dmg = skillDmg(t, f.power); const killed = hurt(state, ei, lane, dmg); fx.push({ t: 'dmg', side: ei, lane, uid: t.uid, dmg, after: t.troops, killed }); }
@@ -212,19 +225,19 @@
       } else if (f.type === 'hq_dmg') {
         const dmg = Math.round(f.power * sf); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq });
       } else if (f.type === 'burn_all') {
-        o.field.forEach((t) => { if (t) { t.burn = { dmg: burnDmg(c, t, f.power), turns: f.turns }; fx.push({ t: 'burnset', side: ei, uid: t.uid }); } });
+        o.field.forEach((t) => { if (t) { t.burn = { dmg: burnDmg(c, t, f.power * aoe), turns: f.turns }; fx.push({ t: 'burnset', side: ei, uid: t.uid }); } });
       } else if (f.type === 'buff_atk' || f.type === 'buff_def') {
         const k = f.type === 'buff_atk' ? 'atk' : 'def';
-        allies().forEach((a) => a.buffs.push({ k, v: f.power / 100 * sf, turns: f.turns }));
+        allies().forEach((a) => a.buffs.push({ k, v: f.power / 100 * sf * aoe, turns: f.turns }));
         fx.push({ t: 'buff', side: si, k, uids: allies().map((a) => a.uid) });
       } else if (f.type === 'self_atk') {
         c.buffs.push({ k: 'atk', v: f.power / 100 * sf, turns: f.turns }); fx.push({ t: 'buff', side: si, k: 'atk', uids: [c.uid] });
       } else if (f.type === 'debuff_atk') {
         const ts = o.field.filter(Boolean);
-        ts.forEach((t) => { const res = 100 / (100 + gv(t.stats.int) * CFG.resK) * 1.36; t.buffs.push({ k: 'atk', v: -f.power / 100 * sf * res, turns: f.turns }); });
+        ts.forEach((t) => { const res = 100 / (100 + gv(t.stats.int) * CFG.resK) * 1.36; t.buffs.push({ k: 'atk', v: -f.power / 100 * sf * res * aoe, turns: f.turns }); });
         fx.push({ t: 'debuff', side: ei, uids: ts.map((t) => t.uid) });
       } else if (f.type === 'heal' || f.type === 'self_heal') {
-        (f.type === 'heal' ? allies() : [c]).forEach((a) => { const amt = Math.min(a.maxTroops - a.troops, Math.round(f.power * sf)); a.troops += amt; fx.push({ t: 'heal', side: si, uid: a.uid, amount: amt, after: a.troops }); });
+        (f.type === 'heal' ? allies() : [c]).forEach((a) => { const amt = Math.min(a.maxTroops - a.troops, Math.round(f.power * sf * (f.type === 'heal' ? aoe : 1))); a.troops += amt; fx.push({ t: 'heal', side: si, uid: a.uid, amount: amt, after: a.troops }); });
       } else if (f.type === 'self_cost') {
         const amt = Math.min(c.troops - 1, Math.round(c.maxTroops * f.power / 100)); c.troops -= amt; fx.push({ t: 'cost', side: si, uid: c.uid, amount: amt, after: c.troops });
       } else if (f.type === 'stun') {
@@ -345,13 +358,13 @@
   function* aiSteps(state, si) {
     const s = state.sides[si], o = state.sides[1 - si];
     // 1) 군령을 늘려 주는 개혁부터
-    for (let l = 0; l < LANES; l++) if (canUseSkill(state, si, l) && s.field[l].skill.arch === 'reform') { const e = useSkill(state, si, l); if (e) yield e; }
+    for (let l = 0; l < state.rules.lanes; l++) if (canUseSkill(state, si, l) && s.field[l].skill.arch === 'reform') { const e = useSkill(state, si, l); if (e) yield e; }
     // 2) 배치: 상성 유리한 맞대응 우선, 빈 길엔 기병
     for (;;) {
       let best = null;
       s.hand.forEach((c, hi) => {
         if (c.cost > s.cmd) return;
-        for (let l = 0; l < LANES; l++) {
+        for (let l = 0; l < state.rules.lanes; l++) {
           if (s.field[l]) continue;
           const opp = o.field[l];
           let sc = rand(state) * 8;
@@ -367,9 +380,9 @@
       yield e;
     }
     // 3) 계략
-    for (let l = 0; l < LANES && state.winner === null; l++) if (canUseSkill(state, si, l) && wantSkill(state, si, l)) { const e = useSkill(state, si, l); if (e) yield e; }
+    for (let l = 0; l < state.rules.lanes && state.winner === null; l++) if (canUseSkill(state, si, l) && wantSkill(state, si, l)) { const e = useSkill(state, si, l); if (e) yield e; }
     // 4) 남은 군령으로 병종 전법
-    for (let l = 0; l < LANES && state.winner === null; l++) {
+    for (let l = 0; l < state.rules.lanes && state.winner === null; l++) {
       if (!canUseTactic(state, si, l)) continue;
       const c = s.field[l], opp = o.field[l];
       const want = c.unit === 'cav' ? c.ready && (!opp || relation(c, opp) >= 0 || opp.troops < opp.maxTroops * 0.5)
@@ -401,5 +414,5 @@
     return st;
   }
 
-  return { CFG, LANES, createBattle, beginTurn, canDeploy, deploy, canUseSkill, useSkill, canUseTactic, useTactic, resolve, aiAct, aiSteps, autoPlay, firstDeployer, randomDeck, relation, gv };
+  return { CFG, LANES, sizeRules, createBattle, beginTurn, canDeploy, deploy, canUseSkill, useSkill, canUseTactic, useTactic, resolve, aiAct, aiSteps, autoPlay, firstDeployer, randomDeck, relation, gv };
 });

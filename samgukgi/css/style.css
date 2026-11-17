@@ -177,3 +177,12 @@ h2 small { color: var(--dim); letter-spacing: 0; font-weight: 400; margin-left: 
 .board.quake { animation: quake .28s; } @keyframes quake { 25% { transform: translate(-5px, 3px); } 50% { transform: translate(5px, -3px); } 75% { transform: translate(-3px, -2px); } }
 .arrow.fire { background: linear-gradient(90deg, #0000, #ff8a2a, #fff3a8); box-shadow: 0 0 8px #ff7a1a; } .arrow.fire::after { border-left-color: #fff3a8; }
 .sheet td:first-child { white-space: nowrap; }
+
+/* ══ v0.3: 대회전(5대5) ══ */
+.scn-size { margin-left: auto; font-size: 11px; font-family: sans-serif; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--dim); }
+.scn-size.big { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+.lanes-5 .board { --card-w: clamp(58px, 17.4vw, 128px); padding: 6px; }
+.lanes-5 .row { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.lanes-5 .board { background: repeating-linear-gradient(90deg, #0000 0 19.8%, #ffffff0d 19.8% 20%), linear-gradient(#2c3a2a, #3b4a33 50%, #2c3a2a); }
+.lanes-5 .hand { --card-w: clamp(84px, 22vw, 128px); }
+@media (max-width: 480px) { .lanes-5 .card .sk, .lanes-5 .lane .card .info { display: none; } }

@@ -12,7 +12,7 @@
   <section id="screen-title" class="screen">
     <header class="title-head">
       <h1><span class="hanja">三國記</span>삼국기</h1>
-      <p class="sub">삼국시대 동북아시아 · 장수 카드 전투 <em>프로토타입 v0.2</em> · 7개 진영 280인</p>
+      <p class="sub">삼국시대 동북아시아 · 장수 카드 전투 <em>프로토타입 v0.3</em> · 7개 진영 280인</p>
     </header>
 
     <div class="rules">
@@ -23,7 +23,8 @@
       </div>
       <ul>
         <li><b>주사위</b>로 선제 공격권을 정합니다. 선공 측은 같은 병종끼리 맞붙을 때 먼저 칩니다. 배치 순서는 턴마다 번갈아 맡습니다.</li>
-        <li><b>군령</b> 2로 장수를 세 갈래 길에 배치합니다. 맞은편이 비면 적 <b>본진</b>을 칩니다. 장수가 쓰러지면 그 진영 본진도 깎입니다.</li>
+        <li>기본 전투는 <b>3대3</b>(덱 10명), 대회전은 <b>5대5</b>(덱 16명)입니다. 대회전에서는 전체 대상 계략의 위력이 약 65%로 줄어듭니다.</li>
+        <li><b>군령</b> 2로 장수를 각 길에 배치합니다. 맞은편이 비면 적 <b>본진</b>을 칩니다. 장수가 쓰러지면 그 진영 본진도 깎입니다.</li>
         <li>전장의 장수를 누르면 <b>병종 전법</b>(군령 1 — 기병 돌격·창병 방진·궁병 화공)과 <b>고유 계략</b>(금빛 테두리)을 쓸 수 있습니다.</li>
         <li><b>지력</b>이 높은 장수는 지력이 낮은 적의 공격을 <b>간파</b>해 피해를 덜 받고, 계략은 통솔 방어를 무시합니다.</li>
         <li>모든 장수의 능력치는 S 1개 · A 2개 · B 1개입니다. <b>자동</b> 버튼을 켜면 배치와 계략까지 알아서 싸웁니다.</li>
@@ -38,6 +39,7 @@
       <label>아군 <select id="free-a"></select></label>
       <span>vs</span>
       <label>적군 <select id="free-b"></select></label>
+      <label>규모 <select id="free-size"><option value="3">3대3 (기본)</option><option value="5">5대5 (대회전)</option></select></label>
       <button id="free-start" class="btn">덱 편성으로</button>
     </div>
 
@@ -53,7 +55,7 @@
       <div id="deck-title" class="turn-label"></div>
       <span></span>
     </div>
-    <p class="deck-help">출전할 장수 <b>10명</b>을 고르세요. 카드를 누르면 선택/해제, 길게 보려면 <b>ⓘ</b>를 누릅니다.</p>
+    <p class="deck-help" id="deck-help"></p>
     <div class="deck-bar">
       <div id="deck-count" class="deck-count"></div>
       <button id="deck-auto" class="btn">자동 편성</button>

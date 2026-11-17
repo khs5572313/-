@@ -94,11 +94,11 @@
 
   const SCENARIOS = [
     { id: 'gwansan', year: 554, name: '관산성 전투', sides: ['baekje', 'silla'], desc: '한강 유역을 빼앗긴 백제 성왕이 신라를 친다.' },
-    { id: 'salsu', year: 612, name: '살수대첩', sides: ['goguryeo', 'sui'], desc: '수의 별동대 30만이 평양으로 향한다.' },
+    { id: 'salsu', year: 612, name: '살수대첩', sides: ['goguryeo', 'sui'], lanes: 5, desc: '수의 별동대 30만이 평양으로 향한다.' },
     { id: 'anmun', year: 615, name: '안문의 포위', sides: ['turk', 'sui'], desc: '시필 카간의 기병이 순행 중인 수 양제를 에워싼다.' },
-    { id: 'ansi', year: 645, name: '안시성 전투', sides: ['goguryeo', 'tang'], desc: '당 태종의 친정군을 안시성이 막아선다.' },
+    { id: 'ansi', year: 645, name: '안시성 전투', sides: ['goguryeo', 'tang'], lanes: 5, desc: '당 태종의 친정군을 안시성이 막아선다.' },
     { id: 'hwangsan', year: 660, name: '황산벌 전투', sides: ['baekje', 'silla'], desc: '계백의 5천 결사대와 김유신의 5만 대군.' },
-    { id: 'baekgang', year: 663, name: '백강 전투', sides: ['wa', 'tang'], desc: '백제 부흥을 도우러 온 왜 수군과 당 수군의 결전.' },
+    { id: 'baekgang', year: 663, name: '백강 전투', sides: ['wa', 'tang'], lanes: 5, desc: '백제 부흥을 도우러 온 왜 수군과 당 수군의 결전.' },
     { id: 'maeso', year: 675, name: '매소성 전투', sides: ['silla', 'tang'], desc: '나당전쟁의 분수령.' },
   ];
 
