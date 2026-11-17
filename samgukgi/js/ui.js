@@ -273,7 +273,7 @@
   }
   async function cutin(e) {
     const g = D.GENERALS[e.gid], el = $('#cutin'), A = D.ARCH[e.arch];
-    el.innerHTML = `<div class="cutin-band" style="${natStyle(g.nation)}">${P.html(g)}<div><h3>${e.name}</h3><p>${g.name} · ${A.label} — ${A.desc}</p></div></div>`;
+    el.innerHTML = `<div class="cutin-band" style="${natStyle(g.nation)}">${P.html(g)}<div><h3>${e.name}<span class="tgt">${A.tgt}</span></h3><p>${g.name} · ${A.label} — ${A.desc}</p></div></div>`;
     el.hidden = false;
     await sleep(950);
     el.hidden = true;
@@ -308,37 +308,158 @@
     await sleep(110);
   }
 
+  // ── 계략 연출 ───────────────────────────────────────────────
+  // 여러 카드를 감싸는 사각형
+  function rectOf(els) {
+    const rs = els.filter(Boolean).map((x) => x.getBoundingClientRect());
+    if (!rs.length) return null;
+    const l = Math.min(...rs.map((r) => r.left)), t = Math.min(...rs.map((r) => r.top)), rt = Math.max(...rs.map((r) => r.right)), b = Math.max(...rs.map((r) => r.bottom));
+    return { left: l, top: t, width: rt - l, height: b - t };
+  }
+  function overlayRect(r, cls, dur, visible) {
+    if (!r) return;
+    const box = document.createElement('div');
+    box.className = 'fx'; box.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;overflow:${visible ? 'visible' : 'hidden'}`;
+    const d = document.createElement('div'); d.className = 'fx ' + cls; d.style.animationDuration = (dur / speed) + 'ms';
+    box.appendChild(d); layer().appendChild(box);
+    setTimeout(() => box.remove(), (dur + 60) / speed);
+  }
+  function screenFx(cls, color, o, dur) {
+    const d = document.createElement('div'); d.className = cls; if (color) d.style.background = color; if (o) d.style.setProperty('--o', o);
+    d.style.animationDuration = ((dur || 350) / speed) + 'ms'; layer().appendChild(d); setTimeout(() => d.remove(), ((dur || 350) + 60) / speed);
+  }
+  // 시전 자세: 카드가 떠오르며 빛난다
+  function castPose(el, dur) {
+    if (!el) return;
+    el.classList.add('casting');
+    el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12) translateY(-4px)', offset: .25 }, { transform: 'scale(1.12) translateY(-4px)', offset: .8 }, { transform: 'scale(1)' }], { duration: dur / speed, easing: 'ease-out' })
+      .onfinish = () => el.classList.remove('casting');
+  }
+  // 시전자가 여러 대상 사이를 차례로 가로지른다(휩쓸기). onPass(i)는 i번째 대상을 지날 때 불린다.
+  async function dashThrough(el, targets, onPass) {
+    const a = center(el), pts = targets.map((t) => { const b = center(t); return { x: (b.x - a.x) * .78, y: (b.y - a.y) * .78 }; });
+    const n = pts.length, kf = [{ transform: 'translate(0,0) scale(1)', offset: 0 }];
+    pts.forEach((p, i) => kf.push({ transform: `translate(${p.x}px,${p.y}px) scale(1.15)`, offset: .25 + .5 * (n === 1 ? .5 : i / (n - 1)) }));
+    kf.push({ transform: 'translate(0,0) scale(1)', offset: 1 });
+    const dur = 520 + n * 170;
+    el.style.zIndex = 20;
+    const an = el.animate(kf, { duration: dur / speed, easing: 'ease-in-out' });
+    for (let i = 0; i < n; i++) { await sleep(dur * (i === 0 ? kf[1].offset : kf[i + 1].offset - kf[i].offset)); onPass(i); }
+    await an.finished; el.style.zIndex = '';
+  }
+  function streak(el, target, cls) {
+    const a = center(el), b = center(target), ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+    const ar = document.createElement('div'); ar.className = 'arrow ' + cls; ar.style.left = (a.x - 35) + 'px'; ar.style.top = a.y + 'px'; layer().appendChild(ar);
+    const an = ar.animate([{ transform: `translate(0,0) rotate(${ang}deg)` }, { transform: `translate(${b.x - a.x}px,${b.y - a.y}px) rotate(${ang}deg)` }], { duration: 240 / speed, easing: 'ease-in' });
+    an.onfinish = () => ar.remove(); return an.finished;
+  }
+
   async function playSkill(e) {
-    const c = inst(e.uid), self = cardEl(e.uid), N = D.NATIONS[c.nation];
-    log(`${nm(e.side, c.name)}의 계략 <span class="t">「${e.name}」</span> <small>(${D.ARCH[e.arch].label})</small>`);
+    const c = inst(e.uid), self = cardEl(e.uid), N = D.NATIONS[c.nation], A = D.ARCH[e.arch];
+    log(`${nm(e.side, c.name)}의 계략 <span class="t">「${e.name}」</span> <small>(${A.label} · ${A.tgt})</small>`);
     await cutin(e);
-    const foeRow = $('#row-' + (1 - e.side));
-    // 계략 유형별 큰 연출
-    if (e.vis === 'water') { overlay(foeRow, 'fx-wave', 800); await sleep(380); }
-    else if (e.vis === 'fog') { overlay(foeRow, 'fx-fog', 1100); await sleep(300); }
-    else if (e.vis === 'charge') { FX.dust(self); const t = cardEl((e.fx.find((f) => f.t === 'dmg') || {}).uid) || $('#bar-' + (1 - e.side)); if (self) { const p = lunge(self, t, true); await sleep(350); quake(); await p; } }
-    else if (e.vis === 'rage') { FX.aura(self, '#ff5a4d'); FX.flag(self, '#d9534f'); }
-    else if (e.vis === 'banner') { FX.flag(self, N.color2); }
-    else if (e.vis === 'scroll') { FX.scroll($('#cmd-box')); FX.scroll(self); }
-    else if (e.vis === 'ambush') { const t = cardEl((e.fx.find((f) => f.t === 'dmg' || f.t === 'stun') || {}).uid); FX.bang(t); await sleep(250); }
-    const deaths = [];
-    const hitFx = { slash: FX.slash, charge: FX.slash, arrows: FX.rain, water: FX.drop, thunder: FX.bolt, fire: FX.flame, ambush: FX.slash, swirl: FX.swirl };
+    const foeRow = $('#row-' + (1 - e.side)), myRow = $('#row-' + e.side), foeBar = $('#bar-' + (1 - e.side)), myBar = $('#bar-' + e.side);
+    const allies = $$('.card', myRow);
+    const byX = (x, y) => x.el.getBoundingClientRect().left - y.el.getBoundingClientRect().left;
+    const dmgs = e.fx.filter((f) => f.t === 'dmg').map((f) => ({ f, el: cardEl(f.uid) })).filter((x) => x.el).sort(byX);
+    const done = new Set(), deaths = [];
+    // 피해 한 건을 화면에 반영(임팩트 종류는 연출마다 다르다)
+    const hit = (x, impact) => {
+      if (!x || done.has(x.f)) return; done.add(x.f);
+      if (impact) impact(x.el); shake(x.el); setTroops(x.el, x.f.after); floatText(x.el, '-' + x.f.dmg);
+      if (x.f.killed) deaths.push(die(x.el));
+    };
+    const stagger = async (impact, gap) => { for (const x of dmgs) { hit(x, impact); await sleep(gap); } };
+    const tEls = dmgs.map((x) => x.el);
+
+    switch (e.vis) {
+      case 'water':       // 수공: 물결이 적진을 왼쪽에서 오른쪽으로 덮친다
+        castPose(self, 1000); overlayRect(foeRow.getBoundingClientRect(), 'fx-wave', 850); await sleep(260);
+        await stagger((el) => { FX.drop(el); el.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(7deg) translateX(8px)' }, { transform: 'rotate(0)' }], { duration: 420 / speed }); }, 170); break;
+      case 'storm':       // 풍랑: 바람 → 파도 → 벼락
+        castPose(self, 1300); overlayRect(foeRow.getBoundingClientRect(), 'fx-wind', 900); await sleep(300);
+        overlayRect(foeRow.getBoundingClientRect(), 'fx-wave', 800); await sleep(300);
+        await stagger((el) => { screenFx('fx-screen', '#dfe8ff', .35); overlay(el, 'fx-bolt', 450); FX.drop(el); }, 190); break;
+      case 'navy':        // 수군: 물보라 뒤에 화살 세례
+        castPose(self, 1100); overlayRect(foeRow.getBoundingClientRect(), 'fx-wave', 700); await sleep(350);
+        particles(foeRow, 'fx-rain', 26, { stagger: 22, dur: 420, spread: 1 }); await sleep(300);
+        await stagger((el) => { FX.rain(el); FX.drop(el); }, 110); break;
+      case 'arrows':      // 난사: 하늘이 어두워지고 화살비가 적진 전체에 쏟아진다
+        castPose(self, 1100); if (self) self.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${e.side === ME ? 10 : -10}px)` }, { transform: 'translateY(0)' }], { duration: 260 / speed });
+        overlayRect(foeRow.getBoundingClientRect(), 'fx-sky', 1100); await sleep(180);
+        particles(foeRow, 'fx-rain', 34, { stagger: 20, dur: 420, spread: 1 }); await sleep(330);
+        await stagger((el) => FX.rain(el), 100); break;
+      case 'fire':        // 화계: 불화살이 날아가 꽂히고 불길이 번진다
+        castPose(self, 1200);
+        if (self) await Promise.all(tEls.map((t) => volley(self, t, true)));
+        overlayRect(foeRow.getBoundingClientRect(), 'fx-firewall', 1000); await sleep(200);
+        await stagger((el) => FX.flame(el), 130); break;
+      case 'grassfire':   // 맞불: 불길이 들판을 쓸고 지나간다
+        castPose(self, 1100); overlayRect(foeRow.getBoundingClientRect(), 'fx-firesweep', 900); await sleep(260);
+        await stagger((el) => FX.flame(el), 170); break;
+      case 'thunder':     // 기책: 번쩍이는 섬광과 함께 한 명씩 벼락
+        castPose(self, 1200); await sleep(200);
+        await stagger((el) => { screenFx('fx-screen', '#fff', .45); overlay(el, 'fx-bolt', 450); }, 210); break;
+      case 'fog':         // 허실: 안개가 적진을 덮는다
+        castPose(self, 1000); overlayRect(foeRow.getBoundingClientRect(), 'fx-fog', 1100); await sleep(420); break;
+      case 'sweep': {     // 휩쓸기: 시전자가 적 셋을 차례로 베며 가로지른다(궁병은 부채꼴 사격)
+        if (!self || !dmgs.length) break;
+        if (c.unit === 'arc') { await Promise.all(tEls.map((t) => volley(self, t))); dmgs.forEach((x) => hit(x, FX.rain)); break; }
+        if (c.unit === 'cav') overlayRect(rectOf(tEls), 'fx-dustband', 900);
+        await dashThrough(self, tEls, (i) => { overlay(tEls[i], 'fx-crescent', 380); hit(dmgs[i], c.unit === 'cav' ? FX.dust : FX.slash); if (i === 0) quake(); });
+        break; }
+      case 'hunt':        // 사냥: 표적을 찍고 한꺼번에 덮친다
+        castPose(self, 1000); tEls.forEach((t) => particles(t, 'fx-mark', 1, { spread: 0, dur: 700 })); await sleep(520);
+        if (self) await Promise.all(tEls.map((t) => streak(self, t, 'streak')));
+        quake(); dmgs.forEach((x) => hit(x, FX.slash)); break;
+      case 'encircle':    // 포위: 포위망이 좁혀 들어온다
+        castPose(self, 1200); overlayRect(rectOf(tEls), 'fx-encircle', 950, true);
+        tEls.forEach((t) => particles(t, 'fx-runflag', 2, { spread: 1.1, dur: 800, c: N.color2 })); await sleep(700);
+        dmgs.forEach((x) => hit(x, (el) => overlay(el, 'fx-ring', 600))); break;
+      case 'slash':       // 맹공: 크게 달려들어 두 번 벤다
+        if (self) { const t = tEls[0] || foeBar; const p = lunge(self, t, true); await sleep(350); quake(); if (dmgs[0]) hit(dmgs[0], (el) => { FX.slash(el); overlay(el, 'fx-crescent', 380); }); else FX.spark(foeBar); await p; } break;
+      case 'charge':      // 돌파: 적을 뚫고 본진까지
+        if (self) { FX.dust(self); const t = tEls[0] || foeBar; const p = lunge(self, t, true); await sleep(350); quake(); hit(dmgs[0], FX.dust); await p; if (tEls[0]) await streak(tEls[0], foeBar, 'streak'); } break;
+      case 'ambush': {    // 매복: 느낌표 → 양옆에서 덮친다
+        const t = tEls[0] || cardEl((e.fx.find((f) => f.t === 'stun') || {}).uid);
+        FX.bang(t); await sleep(300); if (t) { particles(t, 'fx-slash', 2, { w: 1.5, stagger: 80, dur: 320, r: 35 }); } hit(dmgs[0], FX.slash); break; }
+      case 'swirl': {     // 이간: 의심의 소용돌이
+        const t = tEls[0] || cardEl((e.fx.find((f) => f.t === 'stun') || {}).uid);
+        FX.swirl(t); particles(t, 'fx-q', 4, { text: '?', dur: 900, stagger: 90 }); await sleep(350); hit(dmgs[0], null); break; }
+      case 'rage':        // 분전·결사: 붉은 기운
+        screenFx('fx-vignette', null, null, 900); FX.aura(self, '#ff5a4d'); FX.flag(self, '#d9534f'); await sleep(350); break;
+      case 'banner':      // 호령: 깃발을 세우고 진영 전체로 함성이 퍼진다
+        castPose(self, 1000); FX.flag(self, N.color2); overlayRect(myRow.getBoundingClientRect(), 'fx-shock', 800, true); await sleep(380); break;
+      case 'sun':         // 고무: 햇살과 풍악
+        castPose(self, 1000); overlayRect(myRow.getBoundingClientRect(), 'fx-ray', 1000); allies.forEach((a) => particles(a, 'fx-note', 3, { text: '♪', dur: 1000, stagger: 110, oy: .1 })); await sleep(400); break;
+      case 'shield':      // 철벽: 방패가 차례로 올라온다
+        castPose(self, 1000); for (const a of allies) { particles(a, 'fx-shield', 1, { spread: 0, dur: 850 }); await sleep(110); } await sleep(200); break;
+      case 'heal':        // 구휼: 푸른 잎이 내린다
+        castPose(self, 1000); allies.forEach((a) => particles(a, 'fx-leaf', 8, { dur: 900, stagger: 50 })); await sleep(380); break;
+      case 'reinf':       // 원군: 깃발 든 원군이 옆에서 달려온다
+        castPose(self, 1000); allies.forEach((a, i) => { const d = (i % 2 ? 1 : -1) * 160; particles(a, 'fx-runflag', 3, { dur: 800, stagger: 90, c: N.color2 }); $$('.fx-runflag', layer()).slice(-3).forEach((x) => x.style.setProperty('--from', d + 'px')); }); await sleep(450); break;
+      case 'hammer':      // 축성: 본진에 성벽이 솟는다
+        castPose(self, 1000); overlayRect(myBar.getBoundingClientRect(), 'fx-stone', 900); FX.spark(myBar); await sleep(420); break;
+      case 'scroll':      // 개혁: 교서를 펼친다
+        castPose(self, 1000); FX.scroll($('#cmd-box')); FX.scroll(self); await sleep(350); break;
+    }
+    dmgs.forEach((x) => hit(x, FX.slash));       // 연출에서 빠진 피해가 있으면 마저 반영
+
     for (const f of e.fx) {
       const el = f.uid ? cardEl(f.uid) : null;
-      if (f.t === 'dmg') { (hitFx[e.vis] || FX.slash)(el); shake(el); setTroops(el, f.after); floatText(el, '-' + f.dmg); if (f.killed) deaths.push(die(el)); }
-      else if (f.t === 'burnset') { FX.flame(el); floatText(el, '화상', 'info'); }
+      if (f.t === 'burnset') { FX.flame(el); floatText(el, '화상', 'info'); }
       else if (f.t === 'heal') { setTroops(el, f.after); if (f.amount) { FX.plus(el); floatText(el, '+' + f.amount, 'heal'); } }
       else if (f.t === 'cost') { setTroops(el, f.after); floatText(el, '-' + f.amount); }
       else if (f.t === 'buff') f.uids.forEach((u) => { const x = cardEl(u); if (f.k === 'atk') FX.aura(x, e.vis === 'rage' ? '#ff5a4d' : '#ffd257'); else FX.ring(x); floatText(x, f.k === 'atk' ? '공격 ↑' : '방어 ↑', 'info'); });
       else if (f.t === 'debuff') f.uids.forEach((u) => floatText(cardEl(u), '공격 ↓', 'info'));
       else if (f.t === 'stun') { FX.swirl(el); floatText(el, f.ok ? '혼란!' : '간파 — 실패', 'info'); }
-      else if (f.t === 'hq') { const bar = $('#bar-' + f.side); if (f.delta > 0) FX.plus(bar); else FX.spark(bar); floatText(bar, (f.delta > 0 ? '+' : '') + f.delta, f.delta > 0 ? 'heal' : ''); }
+      else if (f.t === 'hq') { const bar = $('#bar-' + f.side); if (f.delta > 0) FX.plus(bar); else { FX.spark(bar); bar.classList.remove('hit'); void bar.offsetWidth; bar.classList.add('hit'); } floatText(bar, (f.delta > 0 ? '+' : '') + f.delta, f.delta > 0 ? 'heal' : ''); }
       else if (f.t === 'cmd') floatText($('#cmd-box'), '군령 +' + f.amount, 'info');
       else if (f.t === 'morale') floatText($('#bar-' + f.side), f.side === e.side ? '사기 ↑' : '사기 ↓', 'info');
     }
     sync(e);
     await Promise.all(deaths);
-    await sleep(700);
+    await sleep(650);
   }
 
   async function playTactic(e) {
@@ -465,7 +586,7 @@
     el.innerHTML = `<div class="sheet"><div class="sheet-top">${cardHTML(g, c, c && lane !== undefined ? 'field' : 'view')}
       <div><h3>${g.name}<small>${g.hanja}</small></h3>
       <p>${D.NATIONS[g.nation].name} · ${g.cls === 'm' ? '무인' : '문인'} · <b>${U.name}</b></p>
-      <p><b>계략 「${g.skill.name}」</b><br>${A.label}(${D.STATS[A.scale].name} 비례, ${A.cd}턴) — ${A.desc}</p></div></div>
+      <p><b>계략 「${g.skill.name}」</b><br>${A.label} · <b>${A.tgt}</b> (${D.STATS[A.scale].name} 비례, ${A.cd}턴) — ${A.desc}</p></div></div>
       <div class="src"><b>출전</b> ${g.src}<br><b>근거</b> ${g.why}</div>
       <table>${rows}</table>
       <p><b>${U.name} 특성</b> ${U.trait}<br><b>전법 「${U.tactic.name}」</b> (군령 ${E.CFG.tacticCost}) — ${U.tactic.desc}</p>
@@ -509,5 +630,14 @@
   }
 
   initTitle(); bindDeck(); bind();
-  window.SGDebug = { get state() { return B; }, get waiting() { return !!waiting; } };
+  window.SGDebug = {
+    get state() { return B; }, get waiting() { return !!waiting; },
+    // 개발용: 아군 가운데 길의 장수를 지정한 인물로 바꿔 그 계략을 바로 써 본다(연출 점검)
+    cast(gid) {
+      const g = D.GENERALS[gid], lane = Math.floor(B.rules.lanes / 2), c = B.sides[ME].field[lane];
+      if (!g || !c || busy) return false;
+      Object.assign(c, { gid, name: g.name, nation: g.nation, unit: g.unit, cls: g.cls, stats: Object.assign({}, g.stats), skill: { name: g.skill.name, arch: g.skill.arch, cd: D.ARCH[g.skill.arch].cd }, cd: 0, stunned: 0, ready: true });
+      render(); playerAct(() => E.useSkill(B, ME, lane)); return true;
+    },
+  };
 })();

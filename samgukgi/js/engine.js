@@ -215,7 +215,7 @@
     const s = state.sides[si], o = state.sides[1 - si], ei = 1 - si, c = s.field[lane];
     const A = D.ARCH[c.skill.arch];
     const sf = gv(c.stats[A.scale]) / 85;                       // A등급 = 1.0
-    const phys = A.scale === 'war';
+    const phys = A.scale !== 'int' && A.scale !== 'pol';   // 무력·통솔 계략은 통솔로, 지력 계략은 지력으로 막는다
     const aoe = state.rules.aoeMul, solo = state.rules.soloMul;
     const fx = [];
     const allies = () => s.field.filter(Boolean);
@@ -231,6 +231,25 @@
         const t = o.field[lane];
         if (t) { const dmg = skillDmg(t, f.power * solo); const killed = hurt(state, ei, lane, dmg); fx.push({ t: 'dmg', side: ei, lane, uid: t.uid, dmg, after: t.troops, killed }); }
         else { const dmg = Math.round(f.power * sf * 0.6 * solo); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq }); }
+      } else if (f.type === 'nuke_adj') {                       // 맞은편 + 양옆
+        for (const l of [lane - 1, lane, lane + 1]) {
+          const t = l >= 0 && l < state.rules.lanes ? o.field[l] : null; if (!t) continue;
+          const dmg = skillDmg(t, f.power * (l === lane ? 1 : f.side)); const killed = hurt(state, ei, l, dmg);
+          fx.push({ t: 'dmg', side: ei, lane: l, uid: t.uid, dmg, after: t.troops, killed });
+        }
+      } else if (f.type === 'nuke_unit') {                      // 내가 상성상 유리한 병종 전체
+        const prey = D.UNITS[c.unit].beats; let hit = 0;
+        for (let l = 0; l < state.rules.lanes; l++) {
+          const t = o.field[l]; if (!t || t.unit !== prey) continue; hit++;
+          const dmg = skillDmg(t, f.power); const killed = hurt(state, ei, l, dmg);
+          fx.push({ t: 'dmg', side: ei, lane: l, uid: t.uid, dmg, after: t.troops, killed });
+        }
+        const t = o.field[lane];
+        if (!hit && t) { const dmg = skillDmg(t, f.power * 0.8); const killed = hurt(state, ei, lane, dmg); fx.push({ t: 'dmg', side: ei, lane, uid: t.uid, dmg, after: t.troops, killed }); }
+      } else if (f.type === 'debuff_adj') {
+        const ts = [lane - 1, lane, lane + 1].map((l) => (l >= 0 && l < state.rules.lanes ? o.field[l] : null)).filter(Boolean);
+        ts.forEach((t) => t.buffs.push({ k: 'atk', v: -f.power / 100 * sf, turns: f.turns }));
+        if (ts.length) fx.push({ t: 'debuff', side: ei, uids: ts.map((t) => t.uid) });
       } else if (f.type === 'hq_dmg') {
         const dmg = Math.round(f.power * sf * solo); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq });
       } else if (f.type === 'burn_all') {
@@ -264,7 +283,7 @@
     });
     c.cd = c.skill.cd;
     checkWin(state, false);
-    return { t: 'skill', side: si, lane, uid: c.uid, gid: c.gid, name: c.skill.name, arch: c.skill.arch, vis: A.vis, fx, morale: morales(state), hq: hqs(state) };
+    return { t: 'skill', side: si, lane, uid: c.uid, gid: c.gid, name: c.skill.name, arch: c.skill.arch, vis: D.GENERALS[c.gid].skill.vis || A.vis, fx, morale: morales(state), hq: hqs(state) };
   }
 
   function outOfCards(s) { return !s.deck.length && !s.hand.length && !s.field.some(Boolean); }
@@ -348,7 +367,10 @@
     const s = state.sides[si], o = state.sides[1 - si], c = s.field[l];
     const allies = s.field.filter(Boolean), foes = o.field.filter(Boolean), opp = o.field[l];
     const missing = allies.reduce((a, x) => a + (x.maxTroops - x.troops), 0), total = allies.reduce((a, x) => a + x.maxTroops, 0);
+    const adj = [l - 1, l, l + 1].filter((x) => x >= 0 && x < state.rules.lanes && o.field[x]).length;
     switch (c.skill.arch) {
+      case 'sweep': case 'encircle': return adj >= 2 || (adj === 1 && !!opp && state.turn > 5);
+      case 'hunt': return foes.some((x) => x.unit === D.UNITS[c.unit].beats) || (!!opp && state.turn > 6);
       case 'strike': case 'pierce': return true;
       case 'fury': return c.ready;
       case 'laststand': case 'rally': case 'inspire': return allies.filter((x) => x.ready).length >= 2;

@@ -48,27 +48,30 @@
   // scale = 위력을 정하는 능력치, vis = 연출 종류
   const ARCH = {
     // 무력 계열
-    strike:    { label: '맹공', scale: 'war',  cd: 3, vis: 'slash',  desc: '맞은편 적에게 큰 피해(비어 있으면 본진).', fx: [{ type: 'nuke_one', power: 285 }] },
-    pierce:    { label: '돌파', scale: 'war',  cd: 3, vis: 'charge', desc: '맞은편 적에게 피해를 주고 본진까지 꿰뚫는다.', fx: [{ type: 'nuke_one', power: 170 }, { type: 'hq_dmg', power: 100 }] },
-    fury:      { label: '분전', scale: 'war',  cd: 3, vis: 'rage',   desc: '자신의 공격 +66%(2턴), 병력 일부 회복.', fx: [{ type: 'self_atk', power: 66, turns: 2 }, { type: 'self_heal', power: 150 }] },
-    laststand: { label: '결사', scale: 'war',  cd: 3, vis: 'rage',   desc: '아군 전체 공격 +50%(2턴), 사기 +10. 자신은 병력 5%를 잃는다.', fx: [{ type: 'buff_atk', power: 50, turns: 2 }, { type: 'morale', power: 10 }, { type: 'self_cost', power: 5 }] },
-    volley:    { label: '난사', scale: 'war',  cd: 3, vis: 'arrows', desc: '적 전체에 화살 세례.', fx: [{ type: 'nuke_all', power: 150 }] },
+    strike:    { label: '맹공', tgt: '적 1명', scale: 'war',  cd: 3, vis: 'slash',  desc: '맞은편 적에게 큰 피해(비어 있으면 본진).', fx: [{ type: 'nuke_one', power: 285 }] },
+    pierce:    { label: '돌파', tgt: '적 1명 + 본진', scale: 'war',  cd: 3, vis: 'charge', desc: '맞은편 적에게 피해를 주고 본진까지 꿰뚫는다.', fx: [{ type: 'nuke_one', power: 170 }, { type: 'hq_dmg', power: 100 }] },
+    fury:      { label: '분전', tgt: '자신', scale: 'war',  cd: 3, vis: 'rage',   desc: '자신의 공격 +66%(2턴), 병력 일부 회복.', fx: [{ type: 'self_atk', power: 66, turns: 2 }, { type: 'self_heal', power: 150 }] },
+    laststand: { label: '결사', tgt: '아군 전체', scale: 'war',  cd: 3, vis: 'rage',   desc: '아군 전체 공격 +50%(2턴), 사기 +10. 자신은 병력 5%를 잃는다.', fx: [{ type: 'buff_atk', power: 50, turns: 2 }, { type: 'morale', power: 10 }, { type: 'self_cost', power: 5 }] },
+    volley:    { label: '난사', tgt: '적 전체', scale: 'war',  cd: 3, vis: 'arrows', desc: '적 전체에 화살 세례.', fx: [{ type: 'nuke_all', power: 150 }] },
+    sweep:     { label: '휩쓸기', tgt: '적 인접 3명', scale: 'war', cd: 3, vis: 'sweep', desc: '맞은편 적에게 큰 피해, 양옆의 적에게도 60% 피해.', fx: [{ type: 'nuke_adj', power: 200, side: 0.6 }] },
+    hunt:      { label: '사냥', tgt: '적 상성 병종 전체', scale: 'war',  cd: 3, vis: 'hunt',   desc: '자신이 상성상 유리한 병종의 적 전체에 큰 피해(없으면 맞은편에 80%).', fx: [{ type: 'nuke_unit', power: 310 }] },
     // 통솔 계열
-    rally:     { label: '호령', scale: 'lead', cd: 3, vis: 'banner', desc: '아군 전체 공격 +45%(2턴).', fx: [{ type: 'buff_atk', power: 45, turns: 2 }] },
-    wall:      { label: '철벽', scale: 'lead', cd: 3, vis: 'shield', desc: '아군 전체 받는 피해 -42%(2턴).', fx: [{ type: 'buff_def', power: 42, turns: 2 }] },
+    encircle:  { label: '포위', tgt: '적 인접 3명', scale: 'lead', cd: 3, vis: 'encircle', desc: '맞은편과 양옆의 적에게 피해를 주고 공격 -35%(2턴).', fx: [{ type: 'nuke_adj', power: 120, side: 1 }, { type: 'debuff_adj', power: 35, turns: 2 }] },
+    rally:     { label: '호령', tgt: '아군 전체', scale: 'lead', cd: 3, vis: 'banner', desc: '아군 전체 공격 +45%(2턴).', fx: [{ type: 'buff_atk', power: 45, turns: 2 }] },
+    wall:      { label: '철벽', tgt: '아군 전체', scale: 'lead', cd: 3, vis: 'shield', desc: '아군 전체 받는 피해 -42%(2턴).', fx: [{ type: 'buff_def', power: 42, turns: 2 }] },
     // 지력 계열
-    flood:     { label: '수공', scale: 'int',  cd: 3, vis: 'water',  desc: '적 전체에 계략 피해(통솔 방어 무시).', fx: [{ type: 'nuke_all', power: 215 }] },
-    scheme:    { label: '기책', scale: 'int',  cd: 3, vis: 'thunder', desc: '적 전체에 계략 피해(통솔 방어 무시).', fx: [{ type: 'nuke_all', power: 215 }] },
-    fire:      { label: '화계', scale: 'int',  cd: 3, vis: 'fire',   desc: '적 전체에 피해를 주고 2턴 동안 화상.', fx: [{ type: 'nuke_all', power: 85 }, { type: 'burn_all', power: 80, turns: 2 }] },
-    ambush:    { label: '매복', scale: 'int',  cd: 3, vis: 'ambush', desc: '맞은편 적에게 계략 피해 + 혼란 1턴.', fx: [{ type: 'nuke_one', power: 310 }, { type: 'stun', bonus: 0 }] },
-    discord:   { label: '이간', scale: 'int',  cd: 3, vis: 'swirl',  desc: '맞은편 적을 혼란에 빠뜨리고(성공률 높음) 계략 피해, 적 사기 -15.', fx: [{ type: 'stun', bonus: 0.2 }, { type: 'nuke_one', power: 255 }, { type: 'foe_morale', power: 15 }] },
-    feint:     { label: '허실', scale: 'int',  cd: 3, vis: 'fog',    desc: '적 전체 공격 -52%(2턴).', fx: [{ type: 'debuff_atk', power: 52, turns: 2 }] },
+    flood:     { label: '수공', tgt: '적 전체', scale: 'int',  cd: 3, vis: 'water',  desc: '적 전체에 계략 피해(통솔 방어 무시).', fx: [{ type: 'nuke_all', power: 215 }] },
+    scheme:    { label: '기책', tgt: '적 전체', scale: 'int',  cd: 3, vis: 'thunder', desc: '적 전체에 계략 피해(통솔 방어 무시).', fx: [{ type: 'nuke_all', power: 215 }] },
+    fire:      { label: '화계', tgt: '적 전체', scale: 'int',  cd: 3, vis: 'fire',   desc: '적 전체에 피해를 주고 2턴 동안 화상.', fx: [{ type: 'nuke_all', power: 85 }, { type: 'burn_all', power: 80, turns: 2 }] },
+    ambush:    { label: '매복', tgt: '적 1명', scale: 'int',  cd: 3, vis: 'ambush', desc: '맞은편 적에게 계략 피해 + 혼란 1턴.', fx: [{ type: 'nuke_one', power: 310 }, { type: 'stun', bonus: 0 }] },
+    discord:   { label: '이간', tgt: '적 1명', scale: 'int',  cd: 3, vis: 'swirl',  desc: '맞은편 적을 혼란에 빠뜨리고(성공률 높음) 계략 피해, 적 사기 -15.', fx: [{ type: 'stun', bonus: 0.2 }, { type: 'nuke_one', power: 255 }, { type: 'foe_morale', power: 15 }] },
+    feint:     { label: '허실', tgt: '적 전체', scale: 'int',  cd: 3, vis: 'fog',    desc: '적 전체 공격 -52%(2턴).', fx: [{ type: 'debuff_atk', power: 52, turns: 2 }] },
     // 정치 계열
-    relief:    { label: '구휼', scale: 'pol',  cd: 3, vis: 'heal',   desc: '아군 전체 병력 회복.', fx: [{ type: 'heal', power: 215 }] },
-    inspire:   { label: '고무', scale: 'pol',  cd: 3, vis: 'banner', desc: '사기 +35, 아군 전체 공격 +52%(2턴).', fx: [{ type: 'morale', power: 35 }, { type: 'buff_atk', power: 52, turns: 2 }] },
-    reinforce: { label: '원군', scale: 'pol',  cd: 3, vis: 'heal',   desc: '아군 전체 병력 회복 + 본진 수리.', fx: [{ type: 'heal', power: 150 }, { type: 'hq_repair', power: 190 }] },
-    build:     { label: '축성', scale: 'pol',  cd: 3, vis: 'hammer', desc: '본진 대폭 수리, 아군 받는 피해 -36%(2턴).', fx: [{ type: 'hq_repair', power: 330 }, { type: 'buff_def', power: 36, turns: 2 }] },
-    reform:    { label: '개혁', scale: 'pol',  cd: 3, vis: 'scroll', desc: '군령 +2, 사기 +20, 아군 전체 병력 소폭 회복.', fx: [{ type: 'cmd', power: 2 }, { type: 'morale', power: 20 }, { type: 'heal', power: 200 }] },
+    relief:    { label: '구휼', tgt: '아군 전체', scale: 'pol',  cd: 3, vis: 'heal',   desc: '아군 전체 병력 회복.', fx: [{ type: 'heal', power: 215 }] },
+    inspire:   { label: '고무', tgt: '아군 전체', scale: 'pol',  cd: 3, vis: 'sun', desc: '사기 +35, 아군 전체 공격 +52%(2턴).', fx: [{ type: 'morale', power: 35 }, { type: 'buff_atk', power: 52, turns: 2 }] },
+    reinforce: { label: '원군', tgt: '아군 전체 + 본진', scale: 'pol',  cd: 3, vis: 'reinf',   desc: '아군 전체 병력 회복 + 본진 수리.', fx: [{ type: 'heal', power: 150 }, { type: 'hq_repair', power: 190 }] },
+    build:     { label: '축성', tgt: '본진 + 아군 전체', scale: 'pol',  cd: 3, vis: 'hammer', desc: '본진 대폭 수리, 아군 받는 피해 -36%(2턴).', fx: [{ type: 'hq_repair', power: 330 }, { type: 'buff_def', power: 36, turns: 2 }] },
+    reform:    { label: '개혁', tgt: '아군 전체', scale: 'pol',  cd: 3, vis: 'scroll', desc: '군령 +2, 사기 +20, 아군 전체 병력 소폭 회복.', fx: [{ type: 'cmd', power: 2 }, { type: 'morale', power: 20 }, { type: 'heal', power: 200 }] },
   };
 
   const GENERALS = {};
@@ -78,7 +81,7 @@
   function addRoster(nation, rows) {
     ROSTER[nation] = [];
     rows.forEach((r) => {
-      const [id, name, hanja, cls, unit, st, role, skillName, arch, src, why] = r;
+      const [id, name, hanja, cls, unit, st, role, skillName, arch, src, why, vis] = r;
       if (GENERALS[id]) throw new Error('중복 id: ' + id);
       if (st.split('').sort().join('') !== 'AABS') throw new Error(name + ': 능력치는 S1·A2·B1 이어야 함 → ' + st);
       if (!ARCH[arch]) throw new Error(name + ': 알 수 없는 계략 유형 ' + arch);
@@ -86,7 +89,7 @@
       GENERALS[id] = {
         id, nation, name, hanja, cls, unit, role: ROLE[role] || 'general',
         stats: { lead: st[0], war: st[1], int: st[2], pol: st[3] },
-        skill: { name: skillName, arch }, src, why,
+        skill: { name: skillName, arch, vis: vis || null }, src, why,
       };
       ROSTER[nation].push(id);
     });
