@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>삼국기 三國記 — 전투 프로토타입</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="app">
+
+  <section id="screen-title" class="screen">
+    <header class="title-head">
+      <h1><span class="hanja">三國記</span>삼국기</h1>
+      <p class="sub">6~7세기 동북아시아 · 장수 카드 전투 <em>프로토타입 v0.1</em></p>
+    </header>
+
+    <div class="rules">
+      <div class="rule-tri">
+        <span class="ubadge u-cav">騎</span><b>기병</b> ▶ <span class="ubadge u-arc">弓</span><b>궁병</b> ▶
+        <span class="ubadge u-spr">槍</span><b>창병</b> ▶ <span class="ubadge u-cav">騎</span><b>기병</b>
+        <small>유리 ×1.5 · 불리 ×0.7</small>
+      </div>
+      <ul>
+        <li><b>군령</b>을 써서 손패의 장수를 세 갈래 길에 배치합니다. 맞은편이 비어 있으면 적 <b>본진</b>을 칩니다.</li>
+        <li>적 본진 내구를 0으로 만들거나 적 장수를 모두 쓰러뜨리면 승리.</li>
+        <li>궁병은 먼저 쏘고, 기병은 배치 즉시 돌격하며, 창병은 기병의 돌격을 되받아칩니다.</li>
+        <li>전장의 장수를 눌러 <b>계략</b>(준비되면 금빛 테두리)을 씁니다.</li>
+      </ul>
+    </div>
+
+    <h2>전투 선택</h2>
+    <div id="scenario-list" class="scenario-list"></div>
+
+    <h2>자유 대전</h2>
+    <div class="free-battle">
+      <label>아군 <select id="free-a"></select></label>
+      <span>vs</span>
+      <label>적군 <select id="free-b"></select></label>
+      <button id="free-start" class="btn">출진</button>
+    </div>
+
+    <h2>장수 도감</h2>
+    <div id="gallery-tabs" class="tabs"></div>
+    <div id="gallery" class="gallery"></div>
+  </section>
+
+  <section id="screen-battle" class="screen" hidden>
+    <div class="topbar">
+      <button id="btn-exit" class="btn ghost">← 나가기</button>
+      <div id="turn-label" class="turn-label"></div>
+      <button id="btn-speed" class="btn ghost">속도 ×1</button>
+    </div>
+
+    <div class="sidebar enemy" id="bar-1"></div>
+    <div class="board">
+      <div class="row" id="row-1"></div>
+      <div class="midline"><span id="phase-label">배치 단계</span></div>
+      <div class="row" id="row-0"></div>
+    </div>
+    <div class="sidebar player" id="bar-0"></div>
+
+    <div class="controls">
+      <div class="cmd" id="cmd-box"></div>
+      <button id="btn-fight" class="btn primary">전투 개시 ⚔</button>
+    </div>
+    <div class="hand" id="hand"></div>
+    <div class="log" id="log"></div>
+  </section>
+
+</main>
+
+<div id="fx-layer"></div>
+<div id="cutin" hidden></div>
+<div id="detail" hidden></div>
+<div id="result" hidden></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="assets/portraits/manifest.js"></script>
+<script src="js/portrait.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
