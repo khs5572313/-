@@ -6,7 +6,8 @@
 })(typeof self !== 'undefined' ? self : this, function (D) {
   'use strict';
 
-  const LANES = 3;
+  // 전장의 길 수(= 한 번에 맞붙는 장수 수). 실험할 때만 환경변수 SG_LANES 로 바꾼다.
+  const LANES = (typeof process !== 'undefined' && process.env && +process.env.SG_LANES) || 3;
   const CFG = {
     hqBase: 1400, deckSize: 10, startHand: 4, handMax: 6, turnLimit: 20,
     cmdStart: 4, cmdMax: 8, cardCost: 2, tacticCost: 1, tacticCd: 2,
@@ -70,7 +71,7 @@
 
   /** opts: { sides:[{nation, deck?, kind?, hqMul?}, …], seed?, init? } — sides[0]이 플레이어 */
   function createBattle(opts) {
-    const state = { seed: (opts.seed || Date.now()) >>> 0, uidSeq: 0, turn: 0, phase: 'deploy', winner: null, reason: '', sides: [], dice: null, init: 0 };
+    const state = { seed: (opts.seed || Date.now()) >>> 0, uidSeq: 0, turn: 0, phase: 'deploy', winner: null, reason: '', sides: [], dice: null, init: 0, dumb: opts.dumb == null ? -1 : opts.dumb };
     opts.sides.forEach((o, i) => {
       const ids = o.deck || randomDeck(o.nation, () => rand(state), o.kind);
       const hqMax = Math.round(CFG.hqBase * (o.hqMul || 1));
@@ -354,7 +355,8 @@
           if (s.field[l]) continue;
           const opp = o.field[l];
           let sc = rand(state) * 8;
-          if (opp) { sc += 15 + relation(c, opp) * 35 + (gv(c.stats.int) - gv(opp.stats.int)) * 0.4; if (opp.troops < opp.maxTroops * 0.4) sc += 10; }
+          if (state.dumb === si) { /* 실험용: 상성을 읽지 않고 아무 데나 배치 */ }
+          else if (opp) { sc += 15 + relation(c, opp) * 35 + (gv(c.stats.int) - gv(opp.stats.int)) * 0.4; if (opp.troops < opp.maxTroops * 0.4) sc += 10; }
           else if (c.unit === 'cav') sc += 12;
           if (!best || sc > best.sc) best = { sc, hi, l };
         }
