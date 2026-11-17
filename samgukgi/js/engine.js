@@ -15,23 +15,26 @@
       cmdStart: L + 1, cmdMax: 2 * L + 2, hqBase: Math.round(CFG_HQ3 * L / 3),
       // 아군/적군 '전체' 대상 효과는 인원이 늘수록 이득이 커지므로 규모에 맞춰 낮춘다(3대3 = 1.0)
       aoeMul: L <= 3 ? 1 : Math.pow(3 / L, CFG.aoeExp),
+      // 반대로 한 명만 노리는 효과는 큰 전장에서 영향이 묻히므로 올려 준다
+      soloMul: L <= 3 ? 1 : Math.pow(L / 3, CFG.soloExp),
     };
   }
   const CFG_HQ3 = 1400;
   const CFG = {
     turnLimit: 20, cardCost: 2, tacticCost: 1, tacticCd: 2,
-    aoeExp: 0.85,          // 대회전에서 전체 대상 효과를 얼마나 깎을지((3/길 수)^aoeExp)
+    aoeExp: 0.8, soloExp: 0.3,          // 대회전에서 전체 대상 효과를 얼마나 깎을지((3/길 수)^aoeExp)
     atkScale: 6,          // 무력 수치 → 기본 피해
     defK: 0.6,            // 통솔 → 일반 공격 피해 감소
-    resK: 0.4,            // 지력 → 계략 피해 감소
-    advMul: 1.4, disMul: 0.75,
-    spearCounter: 0.45, spearGuard: 0.9, cavHqMul: 1.25, hqDefMul: 0.8,
-    cavRushMul: 0.75,     // 기병이 배치한 턴에 바로 치는 공격의 위력
+    resK: 0.3,            // 지력 → 계략 피해 감소
+    advMul: 1.3, disMul: 0.8,
+    spearCounter: 0.45, spearGuard: 0.8, cavHqMul: 1.25, hqDefMul: 0.8,
+    cavRushMul: 0.7,      // 기병이 배치한 턴에 바로 치는 공격의 위력
     chargeMul: 1.5, guardMul: 0.5, guardCounter: 0.3,
     burnBase: 90, burnTurns: 2, burnWeak: 0.15,
-    insightK: 0.022,      // 간파: 지력 차 1당 받는 일반 공격 피해 감소율
-    stunBase: 0.75,
-    moraleStart: 60, killMorale: 8, lossMorale: 12, hqHitMorale: 3, polMorale: 3,
+    insightK: 0.01,       // 간파: 지력 차 1당 받는 일반 공격 피해 감소율
+    stunBase: 0.75, stunK: 0.006, aiIntW: 0,
+    supply: 0.015,         // 보급: 정치 등급 pt(A=1, S=2) × 이 비율만큼 매 턴 병력 회복
+    moraleStart: 60, killMorale: 8, lossMorale: 12, hqHitMorale: 3, polMorale: 4,
     routHq: 130,          // 패주: 장수가 격파되면 그 진영 본진 내구도 깎인다
     deployMode: 'alternate', // 배치 순서: alternate(턴마다 교대) | initFirst | initLast
     // 실험용 스위치(시뮬레이션에서 끄고 켜며 효과를 잰다)
@@ -110,7 +113,13 @@
       s.cmdMax = Math.min(state.rules.cmdStart + state.turn - 1, state.rules.cmdMax);
       s.cmd = s.cmdMax;
       if (state.turn > 1) draw(s, 1, state.rules.handMax);
-      s.field.forEach((c) => { if (c) { c.ready = true; c.fresh = false; if (c.cd > 0) c.cd--; if (c.tcd > 0) c.tcd--; } });
+      s.field.forEach((c) => {
+        if (!c) return;
+        c.ready = true; c.fresh = false; if (c.cd > 0) c.cd--; if (c.tcd > 0) c.tcd--;
+        // 보급: 정치가 높을수록 매 턴 병력이 조금씩 보충된다(정치 B는 0)
+        const sup = Math.round(c.maxTroops * CFG.supply * Math.max(0, D.GRADES[c.stats.pol].pt - 2));
+        if (sup > 0 && state.turn > 1) c.troops = Math.min(c.maxTroops, c.troops + sup);
+      });
     });
   }
 
@@ -207,7 +216,7 @@
     const A = D.ARCH[c.skill.arch];
     const sf = gv(c.stats[A.scale]) / 85;                       // A등급 = 1.0
     const phys = A.scale === 'war';
-    const aoe = state.rules.aoeMul;
+    const aoe = state.rules.aoeMul, solo = state.rules.soloMul;
     const fx = [];
     const allies = () => s.field.filter(Boolean);
     const skillDmg = (t, power) => {
@@ -220,10 +229,10 @@
         for (let l = 0; l < state.rules.lanes; l++) { const t = o.field[l]; if (!t) continue; const dmg = skillDmg(t, f.power * aoe); const killed = hurt(state, ei, l, dmg); fx.push({ t: 'dmg', side: ei, lane: l, uid: t.uid, dmg, after: t.troops, killed }); }
       } else if (f.type === 'nuke_one') {
         const t = o.field[lane];
-        if (t) { const dmg = skillDmg(t, f.power); const killed = hurt(state, ei, lane, dmg); fx.push({ t: 'dmg', side: ei, lane, uid: t.uid, dmg, after: t.troops, killed }); }
-        else { const dmg = Math.round(f.power * sf * 0.6); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq }); }
+        if (t) { const dmg = skillDmg(t, f.power * solo); const killed = hurt(state, ei, lane, dmg); fx.push({ t: 'dmg', side: ei, lane, uid: t.uid, dmg, after: t.troops, killed }); }
+        else { const dmg = Math.round(f.power * sf * 0.6 * solo); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq }); }
       } else if (f.type === 'hq_dmg') {
-        const dmg = Math.round(f.power * sf); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq });
+        const dmg = Math.round(f.power * sf * solo); hurtHq(state, ei, dmg); fx.push({ t: 'hq', side: ei, delta: -dmg, after: o.hq });
       } else if (f.type === 'burn_all') {
         o.field.forEach((t) => { if (t) { t.burn = { dmg: burnDmg(c, t, f.power * aoe), turns: f.turns }; fx.push({ t: 'burnset', side: ei, uid: t.uid }); } });
       } else if (f.type === 'buff_atk' || f.type === 'buff_def') {
@@ -231,18 +240,18 @@
         allies().forEach((a) => a.buffs.push({ k, v: f.power / 100 * sf * aoe, turns: f.turns }));
         fx.push({ t: 'buff', side: si, k, uids: allies().map((a) => a.uid) });
       } else if (f.type === 'self_atk') {
-        c.buffs.push({ k: 'atk', v: f.power / 100 * sf, turns: f.turns }); fx.push({ t: 'buff', side: si, k: 'atk', uids: [c.uid] });
+        c.buffs.push({ k: 'atk', v: f.power / 100 * sf * solo, turns: f.turns }); fx.push({ t: 'buff', side: si, k: 'atk', uids: [c.uid] });
       } else if (f.type === 'debuff_atk') {
         const ts = o.field.filter(Boolean);
         ts.forEach((t) => { const res = 100 / (100 + gv(t.stats.int) * CFG.resK) * 1.36; t.buffs.push({ k: 'atk', v: -f.power / 100 * sf * res * aoe, turns: f.turns }); });
         fx.push({ t: 'debuff', side: ei, uids: ts.map((t) => t.uid) });
       } else if (f.type === 'heal' || f.type === 'self_heal') {
-        (f.type === 'heal' ? allies() : [c]).forEach((a) => { const amt = Math.min(a.maxTroops - a.troops, Math.round(f.power * sf * (f.type === 'heal' ? aoe : 1))); a.troops += amt; fx.push({ t: 'heal', side: si, uid: a.uid, amount: amt, after: a.troops }); });
+        (f.type === 'heal' ? allies() : [c]).forEach((a) => { const amt = Math.min(a.maxTroops - a.troops, Math.round(f.power * sf * (f.type === 'heal' ? aoe : solo))); a.troops += amt; fx.push({ t: 'heal', side: si, uid: a.uid, amount: amt, after: a.troops }); });
       } else if (f.type === 'self_cost') {
         const amt = Math.min(c.troops - 1, Math.round(c.maxTroops * f.power / 100)); c.troops -= amt; fx.push({ t: 'cost', side: si, uid: c.uid, amount: amt, after: c.troops });
       } else if (f.type === 'stun') {
         const t = o.field[lane];
-        if (t) { const p = clamp(CFG.stunBase + f.bonus + (gv(c.stats.int) - gv(t.stats.int)) / 100, 0.2, 0.97); const ok = rand(state) < p; if (ok) t.stunned = 1; fx.push({ t: 'stun', side: ei, uid: t.uid, ok }); }
+        if (t) { const p = clamp(CFG.stunBase + f.bonus + (gv(c.stats.int) - gv(t.stats.int)) * CFG.stunK, 0.2, 0.97); const ok = rand(state) < p; if (ok) t.stunned = 1; fx.push({ t: 'stun', side: ei, uid: t.uid, ok }); }
       } else if (f.type === 'morale') {
         s.morale = clamp(s.morale + Math.round(f.power * sf), 0, 100); fx.push({ t: 'morale', side: si });
       } else if (f.type === 'foe_morale') {
@@ -369,7 +378,7 @@
           const opp = o.field[l];
           let sc = rand(state) * 8;
           if (state.dumb === si) { /* 실험용: 상성을 읽지 않고 아무 데나 배치 */ }
-          else if (opp) { sc += 15 + relation(c, opp) * 35 + (gv(c.stats.int) - gv(opp.stats.int)) * 0.4; if (opp.troops < opp.maxTroops * 0.4) sc += 10; }
+          else if (opp) { sc += 15 + relation(c, opp) * 35 + (gv(c.stats.int) - gv(opp.stats.int)) * CFG.aiIntW; if (opp.troops < opp.maxTroops * 0.4) sc += 10; }
           else if (c.unit === 'cav') sc += 12;
           if (!best || sc > best.sc) best = { sc, hi, l };
         }
