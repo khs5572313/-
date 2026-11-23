@@ -334,10 +334,13 @@
     else if (act === 'skip') skipBattle();
     else if (act === 'endbattle') { battle = null; closeOverlay(); render(); }
     else if (act === 'reset') {
-      if (window.confirm('모든 진행 상황을 지우고 처음부터 다시 시작할까요?')) {
-        try { localStorage.removeItem(KEY); } catch (e) { /* 무시 */ }
-        save = null; ui.tab = 'stage'; render();
-      }
+      sheet('처음부터 다시 시작', '<p class="note">보유 무장, 금화, 전장 진행 상황이 모두 지워집니다. 되돌릴 수 없습니다.</p>' +
+        '<div style="display:flex;gap:10px;margin-top:12px"><button class="btn" style="flex:1" data-act="close">취소</button>' +
+        '<button class="btn primary" style="flex:1" data-act="reset-yes">모두 지우고 시작</button></div>');
+    }
+    else if (act === 'reset-yes') {
+      try { localStorage.removeItem(KEY); } catch (e) { /* 무시 */ }
+      save = null; ui.tab = 'stage'; closeOverlay(); render();
     }
   });
   document.addEventListener('change', function (ev) {
