@@ -1,12 +1,14 @@
-/* 삼국기 - 자동 전투 엔진
- * 화면과 분리된 순수 로직이다. 같은 시드(seed)를 넣으면 항상 같은 결과가 나온다. */
+/* 삼국기 - 자동 전투 엔진 (부대 대 부대)
+ * 한 부대는 장수 4명이 지휘·전투·책략·병참을 하나씩 맡는다.
+ *   지휘(통솔) → 방어   전투(무력) → 공격   책략(지력) → 전법   병참(정치) → 사기
+ * 화면과 분리된 순수 로직이며, 같은 시드(seed)를 넣으면 항상 같은 결과가 나온다. */
 (function (root) {
   'use strict';
   var SGK = root.SGK;
-  var MAX_ROUNDS = 8;
-  var DMG_K = 0.135;
+  var MAX_TURNS = 10;
+  var DMG_K = 0.095;
+  var HOLDER_W = 0.7; /* 자리를 맡은 장수의 능력치 70% + 네 장수 평균 30% */
 
-  /* 시드 기반 난수 (mulberry32) */
   function makeRng(seed) {
     var a = seed >>> 0;
     return function () {
@@ -16,16 +18,15 @@
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
-  /* 같은 국가 무장 수에 따른 진영 효과. 3명이면 100%, 2명이면 50%. */
+  /* 같은 나라 장수 수에 따른 진영 효과. 4명이면 100%, 3명이면 50%. */
   function teamMods(ids) {
     var cnt = {};
     ids.forEach(function (id) { if (id) { var n = SGK.GENERALS[id].nation; cnt[n] = (cnt[n] || 0) + 1; } });
     var best = null, c = 0;
     Object.keys(cnt).forEach(function (n) { if (cnt[n] > c) { c = cnt[n]; best = n; } });
-    var f = c >= 3 ? 1 : c === 2 ? 0.5 : 0;
+    var f = c >= 4 ? 1 : c === 3 ? 0.5 : 0;
     var m = { dmgOut: 1, dmgIn: 1, rate: 0, nation: f > 0 ? best : null, count: c, factor: f };
     if (f > 0) {
       if (best === 'gogu') m.dmgOut = 1 + 0.12 * f;
@@ -35,16 +36,46 @@
     return m;
   }
 
-  function buildUnit(spec, side, slot) {
-    var g = SGK.GENERALS[spec.id];
-    var st = SGK.calcStats(spec.id, spec.lv || 1, spec.adv || 0);
-    var tactics = [SGK.TACTICS[g.tactic]];
-    if (spec.equip && SGK.TACTICS[spec.equip]) tactics.push(SGK.TACTICS[spec.equip]);
+  /* 부대 능력 계산. roles: {cmd, atk, tac, sup} 각 {id, lv, adv} 또는 null.
+   * 반환: {cmd 지휘력, atk 전투력, tac 책략력, sup 병참력, avgLv, capacity, troop, morale(시작 사기)} */
+  function unitStats(roles) {
+    var gens = SGK.ROLES.map(function (r) {
+      var s = roles[r.key];
+      return s && s.id ? { spec: s, st: SGK.calcStats(s.id, s.lv, s.adv) } : null;
+    });
+    var filled = gens.filter(Boolean);
+    var out = {}, lvSum = 0;
+    filled.forEach(function (g) { lvSum += g.spec.lv || 1; });
+    SGK.ROLES.forEach(function (r, i) {
+      var sum = 0;
+      gens.forEach(function (g) { sum += g ? g.st[r.stat] : SGK.EMPTY_STAT; });
+      var holder = gens[i] ? gens[i].st[r.stat] : SGK.EMPTY_STAT;
+      out[r.key] = Math.round(holder * HOLDER_W + (sum / 4) * (1 - HOLDER_W));
+    });
+    out.avgLv = filled.length ? lvSum / filled.length : 1;
+    out.capacity = SGK.armyCapacity(out.avgLv);
+    out.troop = gens[0] ? SGK.GENERALS[gens[0].spec.id].troop : 'spr';
+    out.morale = Math.round(clamp(55 + out.sup * 0.4, 40, 100));
+    return out;
+  }
+
+  function buildArmy(spec, side) {
+    var U = unitStats(spec.roles);
+    var ids = SGK.ROLE_KEYS.map(function (k) { return spec.roles[k] ? spec.roles[k].id : null; });
+    var max = Math.round(U.capacity * (1 + (spec.aid || 0)));
+    var tactics = [];
+    SGK.ROLE_KEYS.forEach(function (k) {
+      var s = spec.roles[k]; if (!s || !s.id) return;
+      var g = SGK.GENERALS[s.id];
+      tactics.push({ t: SGK.TACTICS[g.tactic], gen: g.name, role: k });
+    });
+    var troops = Math.min(max, spec.troops ? spec.troops : max);
     return {
-      uid: side + slot, side: side, slot: slot, id: g.id, name: g.name, nation: g.nation, troop: g.troop,
-      lv: spec.lv || 1, stats: st, maxTroops: st.maxTroops, troops: st.maxTroops, alive: true,
-      tactics: tactics, buffs: [], status: {}, burn: 0,
-      lastStand: tactics.some(function (t) { return t.special === 'lastStand'; })
+      side: side, U: U, ids: ids, troop: U.troop, maxTroops: max, startTroops: troops, troops: troops,
+      morale: U.morale, mods: teamMods(ids), tactics: tactics, buffs: [], status: {}, burn: 0, alive: true,
+      atkBonus: spec.atkBonus || 0, defBonus: spec.defBonus || 0,
+      lastStand: tactics.some(function (x) { return x.t.special === 'lastStand'; }),
+      label: side === 'A' ? '아군' : '적군'
     };
   }
 
@@ -53,7 +84,6 @@
     for (var i = 0; i < u.buffs.length; i++) if (u.buffs[i].stat === stat) s += u.buffs[i].val;
     return s;
   }
-
   function counterMult(a, d) {
     if (SGK.TROOPS[a.troop].beats === d.troop) return SGK.COUNTER_ADV;
     if (SGK.TROOPS[d.troop].beats === a.troop) return SGK.COUNTER_DIS;
@@ -61,94 +91,68 @@
   }
 
   /* 전투 한 판을 끝까지 계산한다.
-   * teamA, teamB: [{id, lv, adv, equip}] 3명. 순서는 [선봉, 중군, 본영].
-   * 반환: {result:'win'|'lose'|'draw', rounds, events, units} (A 기준) */
-  function simulate(teamA, teamB, seed) {
+   * specA, specB: {roles:{cmd,atk,tac,sup}, troops?, aid?, atkBonus?, defBonus?}
+   * 반환: {result:'win'|'lose'|'draw', reason, turns, events, A, B} (A 기준) */
+  function simulate(specA, specB, seed) {
     var rng = makeRng(seed || 1);
-    var B = { units: [], events: [], over: false, winner: null, round: 0 };
-    teamA.forEach(function (s, i) { B.units.push(buildUnit(s, 'A', i)); });
-    teamB.forEach(function (s, i) { B.units.push(buildUnit(s, 'B', i)); });
-    B.mods = {
-      A: teamMods(teamA.map(function (s) { return s.id; })),
-      B: teamMods(teamB.map(function (s) { return s.id; }))
-    };
+    var A = buildArmy(specA, 'A'), Bm = buildArmy(specB, 'B');
+    var S = { turn: 0, events: [], over: false, winner: null, reason: '' };
 
-    function snap() {
-      var o = {};
-      B.units.forEach(function (u) {
-        var st = [];
-        if (u.status.stun) st.push('기절');
-        if (u.status.silence) st.push('침묵');
-        if (u.status.burn) st.push('화상');
-        o[u.uid] = { t: u.troops, s: st };
-      });
-      return o;
+    function snapOne(u) {
+      var st = [];
+      if (u.status.confuse) st.push('혼란');
+      if (u.status.silence) st.push('봉쇄');
+      if (u.status.burn) st.push('화상');
+      return { t: u.troops, m: Math.round(u.morale), s: st };
     }
     function log(type, text, extra) {
-      var e = { type: type, round: B.round, text: text, state: snap() };
+      var e = { type: type, turn: S.turn, text: text, state: { A: snapOne(A), B: snapOne(Bm) } };
       if (extra) for (var k in extra) e[k] = extra[k];
-      B.events.push(e);
+      S.events.push(e);
     }
-    function foes(u) { return B.units.filter(function (x) { return x.side !== u.side && x.alive; }); }
-    function allies(u) { return B.units.filter(function (x) { return x.side === u.side && x.alive; }); }
+    function foe(u) { return u === A ? Bm : A; }
 
-    function pick(actor, target, lastHit) {
-      var f = foes(actor), a = allies(actor);
-      switch (target) {
-        case 'front': return f.slice(0, 1);
-        case 'leader': {
-          var l = f.filter(function (x) { return x.slot === 2; });
-          return l.length ? l : f.slice(0, 1);
-        }
-        case 'random': return f.length ? [f[Math.floor(rng() * f.length)]] : [];
-        case 'random2': {
-          var pool = f.slice(), out = [];
-          while (pool.length && out.length < 2) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
-          return out;
-        }
-        case 'all': return f;
-        case 'same': return (lastHit || []).filter(function (x) { return x.alive; });
-        case 'self': return actor.alive ? [actor] : [];
-        case 'allies': return a;
-        case 'lowest': {
-          if (!a.length) return [];
-          return [a.slice().sort(function (x, y) { return x.troops / x.maxTroops - y.troops / y.maxTroops; })[0]];
-        }
-      }
-      return [];
+    function checkEnd(u) {
+      if (S.over) return;
+      if (u.troops <= 0) { u.alive = false; S.over = true; S.winner = foe(u).side; S.reason = 'wipe'; log('dead', u.label + ' 부대가 전멸했다.', { side: u.side }); }
+      else if (u.morale <= 0) { u.alive = false; S.over = true; S.winner = foe(u).side; S.reason = 'rout'; log('dead', u.label + ' 부대의 사기가 무너져 패주했다.', { side: u.side, rout: true }); }
     }
 
-    function checkEnd() {
-      if (B.over) return;
-      var aLead = B.units[2], bLead = B.units[5];
-      if (!bLead.alive) { B.over = true; B.winner = 'A'; }
-      else if (!aLead.alive) { B.over = true; B.winner = 'B'; }
+    function changeMorale(u, val, quiet) {
+      if (val < 0 && u.lastStand && u.troops / u.maxTroops <= 0.5) val *= 0.5;
+      var before = u.morale;
+      u.morale = clamp(u.morale + val, 0, 100);
+      var diff = Math.round(u.morale - before);
+      if (!quiet && diff !== 0) log('morale', u.label + ' 사기 ' + (diff > 0 ? '+' : '') + diff, { side: u.side, value: diff });
+      checkEnd(u);
     }
 
     function hurt(target, amount, text, extra) {
-      amount = Math.max(1, Math.round(amount));
-      target.troops = Math.max(0, target.troops - amount);
-      var ex = { target: target.uid, value: amount };
+      amount = Math.min(target.troops, Math.max(1, Math.round(amount)));
+      target.troops -= amount;
+      /* 피해를 입으면 사기가 깎인다. 병참력이 높을수록 덜 깎인다. */
+      var resist = clamp(1.25 - target.U.sup / 200, 0.6, 1.1);
+      var mLoss = (amount / target.maxTroops) * 110 * resist;
+      if (target.lastStand && target.troops / target.maxTroops <= 0.5) mLoss *= 0.5;
+      target.morale = clamp(target.morale - mLoss, 0, 100);
+      var ex = { side: foe(target).side, target: target.side, value: amount };
       if (extra) for (var k in extra) ex[k] = extra[k];
       log('dmg', text.replace('{v}', amount), ex);
-      if (target.troops <= 0 && target.alive) {
-        target.alive = false; target.buffs = []; target.status = {};
-        log('dead', target.name + ' 부대가 무너졌다.', { target: target.uid });
-        checkEnd();
-      }
+      checkEnd(target);
     }
 
     function calcDamage(a, d, stat, coef) {
-      var atk = a.stats[stat];
-      var def = stat === 'str' ? d.stats.lead : d.stats.int * 0.6 + d.stats.lead * 0.4;
-      var ratio = clamp(Math.pow(atk / def, 0.9), 0.4, 2.5);
-      var troopF = a.maxTroops * (0.45 + 0.55 * a.troops / a.maxTroops);
+      var ratio = stat === 'str'
+        ? a.U.atk / d.U.cmd
+        : a.U.tac / (d.U.tac * 0.6 + d.U.cmd * 0.4);
+      ratio = clamp(Math.pow(ratio, 0.9), 0.4, 2.5);
+      var troopF = a.maxTroops * (0.4 + 0.6 * a.troops / a.maxTroops);
       var dmg = coef * DMG_K * troopF * ratio * counterMult(a, d);
+      dmg *= 0.6 + 0.4 * a.morale / 100;
       dmg *= clamp(1 + buffSum(a, 'atk'), 0.3, 3);
       dmg *= clamp(1 - buffSum(d, 'def'), 0.3, 2);
-      dmg *= B.mods[a.side].dmgOut * B.mods[d.side].dmgIn;
-      if (a.lastStand && a.troops / a.maxTroops <= 0.5) dmg *= 1.4;
-      if (d.lastStand && d.troops / d.maxTroops <= 0.5) dmg *= 0.8;
+      dmg *= a.mods.dmgOut * d.mods.dmgIn * (1 + a.atkBonus) * (1 - d.defBonus);
+      if (a.lastStand && a.troops / a.maxTroops <= 0.5) dmg *= 1.35;
       return dmg * (0.94 + rng() * 0.12);
     }
 
@@ -158,59 +162,33 @@
       }
       u.buffs.push({ stat: stat, val: val, dur: dur, src: src });
     }
-
-    var STAT_LABEL = { atk: '공격', def: '받는 피해', spd: '속도', rate: '전법 발동률' };
-    var STATUS_LABEL = { stun: '기절', silence: '침묵', burn: '화상' };
-
     function buffText(e) {
       if (e.stat === 'def') return '받는 피해 ' + (e.val > 0 ? '-' : '+') + Math.round(Math.abs(e.val) * 100) + '%';
-      if (e.stat === 'spd') return '속도 ' + (e.val > 0 ? '+' : '') + e.val;
       if (e.stat === 'rate') return '전법 발동률 ' + (e.val > 0 ? '+' : '') + Math.round(e.val * 100) + '%p';
-      return STAT_LABEL[e.stat] + ' ' + (e.val > 0 ? '+' : '') + Math.round(e.val * 100) + '%';
+      return '공격 ' + (e.val > 0 ? '+' : '') + Math.round(e.val * 100) + '%';
     }
+    var STATUS_LABEL = { confuse: '혼란', silence: '책략 봉쇄', burn: '화상' };
 
-    function applyEffects(actor, tactic) {
-      var lastHit = [];
-      for (var i = 0; i < tactic.effects.length && !B.over; i++) {
-        var e = tactic.effects[i];
+    function applyEffects(u, tac) {
+      var e2 = foe(u);
+      for (var i = 0; i < tac.t.effects.length && !S.over; i++) {
+        var e = tac.t.effects[i];
         if (e.k === 'dmg') {
-          var hits = e.hits || 1, hitSet = [];
-          for (var h = 0; h < hits && !B.over; h++) {
-            var ts = pick(actor, e.target, lastHit);
-            for (var j = 0; j < ts.length && !B.over; j++) {
-              var d = ts[j];
-              if (!d.alive) continue;
-              hurt(d, calcDamage(actor, d, e.stat, e.coef), d.name + '에게 ' + '{v}' + ' 피해', { actor: actor.uid, tactic: tactic.name });
-              if (hitSet.indexOf(d) < 0) hitSet.push(d);
-            }
-          }
-          lastHit = hitSet;
-        } else if (e.k === 'status') {
-          pick(actor, e.target, lastHit).forEach(function (d) {
-            if (rng() >= e.chance) return;
-            if (e.s === 'burn') {
-              d.status.burn = e.dur;
-              d.burn = e.coef * DMG_K * actor.maxTroops * (0.45 + 0.55 * actor.troops / actor.maxTroops);
-            } else {
-              d.status[e.s] = Math.max(d.status[e.s] || 0, e.dur);
-            }
-            log('status', d.name + ' ' + STATUS_LABEL[e.s] + ' (' + e.dur + '턴)', { target: d.uid });
-          });
+          hurt(e2, calcDamage(u, e2, e.stat, e.coef), e2.label + '에게 ' + (e.stat === 'int' ? '책략' : '무력') + ' 피해 {v}', { tactic: tac.t.name, stat: e.stat });
+        } else if (e.k === 'morale') {
+          changeMorale(e.to === 'self' ? u : e2, e.val);
         } else if (e.k === 'buff') {
-          var bt = pick(actor, e.target, lastHit);
-          bt.forEach(function (d) { addBuff(d, e.stat, e.val, e.dur, tactic.id); });
-          if (bt.length) {
-            var who = bt.length > 1 ? (bt[0].side === actor.side ? '아군 전체' : '적 전체') : bt[0].name;
-            log('buff', who + ' ' + buffText(e) + (e.dur < 90 ? ' (' + e.dur + '턴)' : ''), { targets: bt.map(function (x) { return x.uid; }) });
-          }
+          var bt = e.to === 'self' ? u : e2;
+          addBuff(bt, e.stat, e.val, e.dur, tac.t.id);
+          log('buff', bt.label + ' ' + buffText(e) + (e.dur < 90 ? ' (' + e.dur + '턴)' : ''), { side: u.side, target: bt.side, good: bt === u });
         } else if (e.k === 'heal') {
-          pick(actor, e.target, lastHit).forEach(function (d) {
-            var amt = Math.round(e.coef * 0.1 * actor.maxTroops * (0.45 + 0.55 * actor.troops / actor.maxTroops) * (actor.stats.int / (actor.stats.int + 60)) * 1.6);
-            amt = Math.min(amt, d.maxTroops - d.troops);
-            if (amt <= 0) return;
-            d.troops += amt;
-            log('heal', d.name + ' 병력 ' + amt + ' 회복', { target: d.uid, value: amt });
-          });
+          var amt = Math.round(e.coef * 0.065 * u.maxTroops * (u.U.tac / (u.U.tac + 60)) * 1.6);
+          amt = Math.min(amt, u.maxTroops - u.troops);
+          if (amt > 0) { u.troops += amt; log('heal', u.label + ' 병력 ' + amt + ' 회복', { side: u.side, target: u.side, value: amt }); }
+        } else if (e.k === 'status') {
+          if (rng() >= e.chance) continue;
+          e2.status[e.s] = Math.max(e2.status[e.s] || 0, e.dur);
+          log('status', e2.label + ' ' + STATUS_LABEL[e.s] + ' (' + e.dur + '턴)', { side: u.side, target: e2.side });
         }
       }
     }
@@ -219,73 +197,67 @@
       u.buffs = u.buffs.filter(function (b) { if (b.dur >= 90) return true; b.dur -= 1; return b.dur > 0; });
     }
 
-    /* ---- 전투 시작: 지휘 전법 적용 ---- */
+    function act(u) {
+      var e2 = foe(u);
+      var silenced = !!u.status.silence;
+      for (var i = 0; i < u.tactics.length && !S.over; i++) {
+        var tac = u.tactics[i];
+        if (tac.t.type !== 'active' || silenced) continue;
+        /* 책략력이 적보다 높을수록, 그리고 책략 자리를 맡은 장수의 전법일수록 잘 터진다 */
+        var rate = tac.t.rate + clamp((u.U.tac - e2.U.tac) * 0.002, -0.1, 0.1) + (tac.role === 'tac' ? 0.08 : 0) + u.mods.rate + buffSum(u, 'rate');
+        if (rng() < rate) {
+          log('tactic', tac.gen + '의 전법 [' + tac.t.name + '] 발동!', { side: u.side, tactic: tac.t.name, gen: tac.gen });
+          applyEffects(u, tac);
+        }
+      }
+      if (!S.over) {
+        if (u.status.confuse) {
+          u.status.confuse -= 1;
+          log('skip', u.label + ' 부대가 혼란에 빠져 공격하지 못했다.', { side: u.side });
+        } else {
+          hurt(e2, calcDamage(u, e2, 'str', 1), u.label + ' 일반 공격 {v}', { normal: true });
+        }
+      }
+      if (u.status.silence) u.status.silence -= 1;
+      tickBuffs(u);
+    }
+
+    /* ---- 전투 시작 ---- */
     log('start', '전투 시작');
-    B.units.forEach(function (u) {
-      u.tactics.forEach(function (t) {
-        if (t.type !== 'command') return;
-        log('tactic', u.name + '의 지휘 전법 [' + t.name + ']', { actor: u.uid, tactic: t.name });
-        applyEffects(u, t);
+    [A, Bm].forEach(function (u) {
+      u.tactics.forEach(function (tac) {
+        if (tac.t.type !== 'command' || S.over) return;
+        log('tactic', tac.gen + '의 지휘 전법 [' + tac.t.name + ']', { side: u.side, tactic: tac.t.name, gen: tac.gen });
+        applyEffects(u, tac);
       });
     });
 
-    /* ---- 라운드 진행 ---- */
-    for (B.round = 1; B.round <= MAX_ROUNDS && !B.over; B.round++) {
-      log('round', B.round + '턴');
-      var order = B.units.filter(function (u) { return u.alive; }).map(function (u) {
-        return { u: u, s: u.stats.spd + buffSum(u, 'spd') + rng() * 0.5 };
-      }).sort(function (x, y) { return y.s - x.s; });
-
-      for (var oi = 0; oi < order.length && !B.over; oi++) {
-        var u = order[oi].u;
-        if (!u.alive) continue;
-
-        if (u.status.burn) {
-          u.status.burn -= 1;
-          hurt(u, u.burn, u.name + ' 화상으로 {v} 피해', { dot: true });
-          if (!u.alive || B.over) continue;
-        }
-        if (u.status.stun) {
-          u.status.stun -= 1;
-          log('skip', u.name + '은(는) 기절해 움직이지 못했다.', { actor: u.uid });
-          tickBuffs(u);
-          continue;
-        }
-
-        var silenced = !!u.status.silence;
-        for (var ti = 0; ti < u.tactics.length && !B.over && u.alive; ti++) {
-          var t = u.tactics[ti];
-          if (t.type !== 'active' || silenced) continue;
-          var rate = t.rate + B.mods[u.side].rate + buffSum(u, 'rate');
-          if (rng() < rate) {
-            log('tactic', u.name + '의 전법 [' + t.name + '] 발동!', { actor: u.uid, tactic: t.name });
-            applyEffects(u, t);
-          }
-        }
-        if (!B.over && u.alive) {
-          var tg = pick(u, 'front')[0];
-          if (tg) hurt(tg, calcDamage(u, tg, 'str', 1), u.name + ' → ' + tg.name + ' 일반 공격 {v}', { actor: u.uid });
-        }
-        if (u.status.silence) u.status.silence -= 1;
-        tickBuffs(u);
-      }
+    /* ---- 턴 진행: 사기가 높은 쪽이 먼저 움직인다 ---- */
+    for (S.turn = 1; S.turn <= MAX_TURNS && !S.over; S.turn++) {
+      log('round', S.turn + '턴');
+      var order = A.morale >= Bm.morale ? [A, Bm] : [Bm, A];
+      for (var oi = 0; oi < 2 && !S.over; oi++) act(order[oi]);
+      if (S.over) break;
+      /* 병참: 턴이 끝나면 병참력만큼 사기를 회복한다 */
+      var ra = 2 + A.U.sup * 0.05, rb = 2 + Bm.U.sup * 0.05;
+      A.morale = clamp(A.morale + ra, 0, 100); Bm.morale = clamp(Bm.morale + rb, 0, 100);
+      log('supply', '병참 보급: 아군 사기 +' + Math.round(ra) + ' / 적군 사기 +' + Math.round(rb));
     }
+    S.turn = Math.min(S.turn, MAX_TURNS);
 
-    /* ---- 판정 ---- */
     var result;
-    if (B.winner) result = B.winner === 'A' ? 'win' : 'lose';
+    if (S.winner) result = S.winner === 'A' ? 'win' : 'lose';
     else {
-      var ra = 0, rb = 0;
-      B.units.forEach(function (x) { if (x.side === 'A') ra += x.troops / x.maxTroops; else rb += x.troops / x.maxTroops; });
-      result = Math.abs(ra - rb) < 0.05 ? 'draw' : ra > rb ? 'win' : 'lose';
+      var sa = A.troops / A.maxTroops * 0.7 + A.morale / 100 * 0.3;
+      var sb = Bm.troops / Bm.maxTroops * 0.7 + Bm.morale / 100 * 0.3;
+      result = Math.abs(sa - sb) < 0.03 ? 'draw' : sa > sb ? 'win' : 'lose';
+      S.reason = 'time';
     }
-    B.round = Math.min(B.round, MAX_ROUNDS);
     log('end', result === 'win' ? '승리!' : result === 'lose' ? '패배…' : '무승부 (결판을 내지 못했다)', { result: result });
-
-    return { result: result, rounds: B.round, events: B.events, units: B.units, mods: B.mods, byLeaderKill: !!B.winner };
+    return { result: result, reason: S.reason, turns: S.turn, events: S.events, A: A, B: Bm };
   }
 
-  SGK.Battle = { simulate: simulate, teamMods: teamMods, makeRng: makeRng, MAX_ROUNDS: MAX_ROUNDS };
+  SGK.Battle = { simulate: simulate, unitStats: unitStats, teamMods: teamMods, makeRng: makeRng, MAX_TURNS: MAX_TURNS };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 if (typeof module !== 'undefined' && module.exports) { module.exports = globalThis.SGK.Battle; }
