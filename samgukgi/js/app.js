@@ -160,6 +160,7 @@
     var g = gen(id), o = save.owned[id] || { lv: 1, adv: 0 }, st = SGK.calcStats(id, o.lv, o.adv);
     sheet(troopIcon(id) + ' ' + g.name + ' <span style="color:var(--gold);font-size:13px">' + stars(g.star) + '</span>',
       '<div class="note">' + SGK.NATIONS[g.nation].name + ' · ' + SGK.TROOPS[g.troop].name + (save.owned[id] ? ' · Lv.' + o.lv + ' · 돌파 ' + o.adv : ' · 미보유 (1레벨 기준 수치)') + '</div>' +
+      '<div class="spr-demo">' + SGK.sprite(g.troop, SGK.NATIONS[g.nation].color) + '</div>' +
       '<div class="stats"><div><small>무력</small>' + st.str + '</div><div><small>지력</small>' + st.int + '</div><div><small>통솔</small>' + st.lead + '</div><div><small>속도</small>' + st.spd + '</div><div><small>병력</small>' + st.maxTroops + '</div></div>' +
       '<div class="sec-title">고유 전법</div>' + tacticHtml(g.tactic) + '<div class="sec-title">인물</div><div class="bio">' + g.bio + '</div>');
   }
@@ -199,11 +200,17 @@
   }
 
   /* ---------- 전투 ---------- */
+  /* 전장 위 부대 위치 [가로%, 세로%]. 선봉이 가운데에 가장 가깝고 본영이 가장 뒤에 선다. */
+  var POS = [[28, 36], [14, 6], [2, 62]];
+  var STATUS_ICON = { '기절': '💫', '침묵': '🔇', '화상': '🔥' };
+
   function unitHtml(u) {
-    return '<div class="unit n-' + u.nation + '" id="u-' + u.uid + '"><div class="fl"></div>' +
-      '<div class="u1"><span>' + SGK.SLOT_NAMES[u.slot] + '</span><span>' + SGK.TROOPS[u.troop].icon + ' Lv.' + u.lv + '</span></div>' +
-      '<div class="u2">' + u.name + '</div><div class="bar"><i></i></div>' +
-      '<div class="u3"><span class="tr">' + u.maxTroops + '</span><span class="sts"></span></div></div>';
+    var p = POS[u.slot], color = SGK.NATIONS[u.nation].color;
+    var style = (u.side === 'A' ? 'left:' : 'right:') + p[0] + '%;top:' + p[1] + '%';
+    return '<div class="unit side-' + u.side + ' t-' + u.troop + '" id="u-' + u.uid + '" data-troop="' + u.troop + '" style="' + style + '">' +
+      '<div class="fl"></div><div class="tn"></div><div class="spr">' + SGK.sprite(u.troop, color) + '</div>' +
+      '<div class="plate"><div class="u2">' + (u.slot === 2 ? '<span class="ld">대장</span>' : '') + u.name + '</div>' +
+      '<div class="bar"><i></i></div><div class="u3"><span class="tr">' + u.maxTroops + '</span><span class="sts"></span></div></div></div>';
   }
 
   function startBattle(index) {
@@ -212,40 +219,105 @@
     var foe = stg.team.map(function (id) { return { id: id, lv: stg.lv, adv: 0, equip: stg.equip[id] }; });
     var seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0;
     var r = SGK.Battle.simulate(mine, foe, seed);
-    var A = r.units.filter(function (u) { return u.side === 'A'; }), Bs = r.units.filter(function (u) { return u.side === 'B'; });
-    battle = { r: r, i: 0, speed: 1, timer: null, index: index, max: {}, done: false };
+    battle = { r: r, i: 0, speed: 1, timer: null, pending: [], index: index, max: {}, done: false };
     r.units.forEach(function (u) { battle.max[u.uid] = u.maxTroops; });
 
-    $ov.innerHTML = '<div class="battle"><div class="b-head"><span class="rd" id="b-rd">개전</span><span class="st-name">' + (index + 1) + '. ' + stg.name + '</span>' +
+    $ov.innerHTML = '<div class="battle" id="b-root"><div class="b-head"><span class="rd" id="b-rd">개전</span><span class="st-name">' + (index + 1) + '. ' + stg.name + '</span>' +
       '<button class="btn small" data-act="speed" id="b-speed">1배속</button><button class="btn small" data-act="skip">건너뛰기</button></div>' +
-      '<div class="b-side"><div class="lbl">적군' + modLabel(r.mods.B) + '</div><div class="b-row">' + Bs.slice().reverse().map(unitHtml).join('') + '</div></div>' +
-      '<div class="b-log" id="b-log"></div>' +
-      '<div class="b-side"><div class="lbl">아군' + modLabel(r.mods.A) + '</div><div class="b-row">' + A.map(unitHtml).join('') + '</div></div>' +
-      '<div class="b-result hidden" id="b-res"></div></div>';
+      '<div class="b-stage" id="b-stage"><div class="b-lbl l">아군' + modLabel(r.mods.A) + '</div><div class="b-lbl r">적군' + modLabel(r.mods.B) + '</div>' +
+      r.units.map(unitHtml).join('') + '</div>' +
+      '<div class="b-log" id="b-log"></div><div class="b-result hidden" id="b-res"></div></div>';
     step();
   }
   function modLabel(m) {
-    return m.nation ? ' · ' + SGK.NATIONS[m.nation].name + ' 진영 효과' + (m.factor < 1 ? ' (절반)' : '') : '';
+    return m.nation ? ' · ' + SGK.NATIONS[m.nation].name + ' 진영' + (m.factor < 1 ? '(절반)' : '') : '';
   }
+
+  function $u(uid) { return document.getElementById('u-' + uid); }
 
   function applyState(state) {
     Object.keys(state).forEach(function (uid) {
-      var el = document.getElementById('u-' + uid); if (!el) return;
+      var el = $u(uid); if (!el) return;
       var t = state[uid].t, pct = t / battle.max[uid] * 100;
       var bar = el.querySelector('.bar i');
       bar.style.width = pct + '%';
       bar.className = pct <= 25 ? 'low' : pct <= 55 ? 'mid' : '';
       el.querySelector('.tr').textContent = t;
-      el.querySelector('.sts').textContent = state[uid].s.join(' ');
+      el.querySelector('.sts').textContent = state[uid].s.map(function (s) { return STATUS_ICON[s] || s; }).join('');
       el.classList.toggle('dead', t <= 0);
     });
   }
 
+  /* 조금 뒤에 실행할 연출. 건너뛰기를 누르면 모두 취소된다. */
+  function later(fn, ms) {
+    var b = battle;
+    var id = setTimeout(function () { if (battle === b && !b.done) fn(); }, ms / battle.speed);
+    battle.pending.push(id);
+  }
+
+  function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
   function flash(uid, cls, text) {
-    var el = document.getElementById('u-' + uid); if (!el) return;
-    if (cls === 'dmg') { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+    var el = $u(uid); if (!el) return;
+    if (cls === 'dmg') restart(el, 'hit');
+    if (cls === 'heal') restart(el, 'healed');
     var fl = el.querySelector('.fl');
     fl.className = 'fl ' + cls; fl.textContent = text; void fl.offsetWidth; fl.classList.add('go');
+  }
+
+  function centerOf(el) {
+    var r = el.querySelector('.spr').getBoundingClientRect();
+    var s = document.getElementById('b-stage').getBoundingClientRect();
+    return { x: r.left + r.width / 2 - s.left, y: r.top + r.height / 2 - s.top };
+  }
+
+  /* 화살을 쏘아 보낸다 */
+  function shoot(from, to, ms, fire) {
+    var stage = document.getElementById('b-stage');
+    var p = document.createElement('div');
+    p.className = 'proj' + (fire ? ' fire' : '');
+    stage.appendChild(p);
+    var ang = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
+    var rot = ' rotate(' + ang + 'deg)';
+    var mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 14 };
+    var an = p.animate([
+      { transform: 'translate(' + from.x + 'px,' + from.y + 'px)' + rot },
+      { transform: 'translate(' + mid.x + 'px,' + mid.y + 'px)' + rot },
+      { transform: 'translate(' + to.x + 'px,' + to.y + 'px)' + rot }
+    ], { duration: ms, easing: 'linear' });
+    an.onfinish = function () { if (p.parentNode) p.parentNode.removeChild(p); };
+  }
+
+  /* 맞은 자리에 번쩍이는 충격 효과 */
+  function spark(uid, fire) {
+    var el = $u(uid), stage = document.getElementById('b-stage'); if (!el || !stage) return;
+    var c = centerOf(el), s = document.createElement('div');
+    s.className = 'spark' + (fire ? ' fire' : '');
+    s.style.left = c.x + 'px'; s.style.top = c.y + 'px';
+    stage.appendChild(s);
+    setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 420);
+  }
+
+  /* 병종별 공격 동작. 창병은 앞으로 내지르고, 기병은 적 앞까지 돌격하고, 궁병은 제자리에서 화살을 쏜다. */
+  function attackAnim(e) {
+    var a = $u(e.actor), t = $u(e.target);
+    if (!a || !t || a === t || !a.animate) return;
+    var ca = centerOf(a), ct = centerOf(t), dx = ct.x - ca.x, dy = ct.y - ca.y;
+    var ms = 440 / battle.speed, troop = a.getAttribute('data-troop'), dir = e.actor.charAt(0) === 'A' ? 1 : -1;
+    restart(a, 'atk');
+    if (troop === 'arc') {
+      a.querySelector('.spr').animate(
+        [{ transform: 'translateX(0)' }, { transform: 'translateX(' + (-6 * dir) + 'px)', offset: 0.3 }, { transform: 'translateX(0)' }],
+        { duration: ms });
+      shoot(ca, ct, ms * 0.4, !!e.tactic);
+    } else {
+      var f = troop === 'cav' ? 0.74 : 0.36;
+      a.style.zIndex = 5;
+      var an = a.animate(
+        [{ transform: 'translate(0,0)' }, { transform: 'translate(' + (dx * f) + 'px,' + (dy * f) + 'px)', offset: 0.4 }, { transform: 'translate(0,0)' }],
+        { duration: ms, easing: 'ease-in-out' });
+      an.onfinish = function () { a.style.zIndex = ''; };
+    }
   }
 
   function showEvent(e, quiet) {
@@ -256,15 +328,29 @@
     div.textContent = e.type === 'round' ? '── ' + e.text + ' ──' : e.text;
     log.appendChild(div);
     if (e.type === 'round') document.getElementById('b-rd').textContent = e.text;
-    applyState(e.state);
-    if (!quiet) {
-      var acts = document.querySelectorAll('.unit.act');
-      for (var k = 0; k < acts.length; k++) acts[k].classList.remove('act');
-      if (e.actor) { var a = document.getElementById('u-' + e.actor); if (a) a.classList.add('act'); }
-      if (e.type === 'dmg') flash(e.target, 'dmg', '-' + e.value);
-      if (e.type === 'heal') flash(e.target, 'heal', '+' + e.value);
-      log.scrollTop = log.scrollHeight;
+    if (quiet) { applyState(e.state); return; }
+    log.scrollTop = log.scrollHeight;
+
+    var acts = document.querySelectorAll('.unit.act');
+    for (var k = 0; k < acts.length; k++) acts[k].classList.remove('act');
+    var actor = e.actor && $u(e.actor);
+    if (actor) actor.classList.add('act');
+
+    if (e.type === 'dmg' && e.actor) {
+      /* 공격 동작이 적에게 닿는 순간에 피해를 표시한다 */
+      attackAnim(e);
+      later(function () { applyState(e.state); flash(e.target, 'dmg', '-' + e.value); spark(e.target, !!e.tactic); }, 176);
+      return;
     }
+    applyState(e.state);
+    if (e.type === 'dmg') { flash(e.target, 'dmg', '-' + e.value); spark(e.target, true); }
+    else if (e.type === 'heal') flash(e.target, 'heal', '+' + e.value);
+    else if (e.type === 'tactic' && actor) {
+      actor.querySelector('.tn').textContent = e.tactic;
+      restart(actor, 'cast');
+    }
+    else if (e.type === 'buff' && e.targets) e.targets.forEach(function (uid) { var el = $u(uid); if (el) restart(el, 'buffed'); });
+    else if (e.type === 'status') { var st = $u(e.target); if (st) restart(st, 'cursed'); }
   }
 
   function step() {
@@ -273,13 +359,14 @@
     if (battle.i >= ev.length) { finishBattle(); return; }
     var e = ev[battle.i++];
     showEvent(e);
-    var d = e.type === 'round' ? 520 : e.type === 'tactic' ? 620 : e.type === 'buff' || e.type === 'status' ? 380 : 460;
+    var d = e.type === 'round' ? 520 : e.type === 'tactic' ? 760 : e.type === 'dmg' ? 560 : e.type === 'dead' ? 620 : 400;
     battle.timer = setTimeout(step, d / battle.speed);
   }
 
   function skipBattle() {
     if (!battle || battle.done) return;
     clearTimeout(battle.timer);
+    battle.pending.forEach(clearTimeout);
     var ev = battle.r.events;
     while (battle.i < ev.length) showEvent(ev[battle.i++], true);
     var log = document.getElementById('b-log'); log.scrollTop = log.scrollHeight;
@@ -330,7 +417,10 @@
     else if (act.indexOf('assign:') === 0) assign(+act.split(':')[1], id);
     else if (act === 'pull') pull(+id);
     else if (act === 'fight') startBattle(+id);
-    else if (act === 'speed') { battle.speed = battle.speed === 1 ? 2 : battle.speed === 2 ? 4 : 1; el.textContent = battle.speed + '배속'; }
+    else if (act === 'speed') {
+      battle.speed = battle.speed === 1 ? 2 : battle.speed === 2 ? 4 : 1; el.textContent = battle.speed + '배속';
+      document.getElementById('b-root').style.setProperty('--sp', battle.speed);
+    }
     else if (act === 'skip') skipBattle();
     else if (act === 'endbattle') { battle = null; closeOverlay(); render(); }
     else if (act === 'reset') {

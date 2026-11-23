@@ -117,26 +117,95 @@ table.rates td.r { text-align: right; white-space: nowrap; }
 .b-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .b-head .rd { font-weight: 700; font-size: 16px; min-width: 64px; }
 .b-head .st-name { color: var(--sub); font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.b-side { padding: 8px 10px; }
-.b-side .lbl { font-size: 11px; color: var(--sub); margin-bottom: 5px; }
-.b-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.unit { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--nc); border-radius: 10px; padding: 6px 7px 8px; position: relative; transition: transform .12s, border-color .12s, opacity .3s; }
-.unit .u1 { display: flex; justify-content: space-between; font-size: 10px; color: var(--sub); }
-.unit .u2 { font-weight: 700; font-size: 14px; margin: 2px 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.unit .bar { height: 7px; background: #100d0b; border-radius: 4px; overflow: hidden; }
+/* 전장: 아군은 왼쪽, 적군은 오른쪽에서 마주 본다 */
+.b-stage { position: relative; height: 352px; flex: none; overflow: hidden; border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse 60% 26% at 50% 104%, rgba(0,0,0,.35), transparent 70%),
+    linear-gradient(180deg, #1c2430 0%, #2a2f33 30%, #4a4233 31%, #3d3628 62%, #2c271e 100%); }
+.b-stage::before { content: ''; position: absolute; left: 0; right: 0; top: 17%; height: 15%;
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,.25));
+  clip-path: polygon(0 100%, 0 55%, 12% 20%, 24% 60%, 38% 10%, 52% 55%, 66% 25%, 80% 62%, 91% 30%, 100% 58%, 100% 100%); background-color: #232b33; }
+.b-lbl { position: absolute; bottom: 6px; font-size: 10px; color: rgba(241,233,221,.55); z-index: 1; }
+.b-lbl.l { left: 26%; } .b-lbl.r { right: 26%; }
+
+.unit { position: absolute; width: 86px; z-index: 2; }
+.unit .spr { position: relative; }
+.unit .spr svg { display: block; width: 100%; height: auto; }
+.unit.side-B .spr svg { transform: scaleX(-1); }
+.unit .spr::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -1px; height: 9px; border-radius: 50%; border: 2px solid transparent; }
+.unit.act .spr::after { border-color: var(--gold); box-shadow: 0 0 8px rgba(227,179,65,.7); }
+.unit .plate { background: rgba(16,13,11,.78); border-radius: 6px; padding: 2px 4px 3px; margin-top: 1px; border-bottom: 2px solid var(--ok); }
+.unit.side-B .plate { border-bottom-color: var(--bad); }
+.unit .u2 { font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; line-height: 1.5; }
+.unit .ld { background: var(--gold); color: #1a1408; border-radius: 4px; font-size: 9px; padding: 0 3px; margin-right: 3px; }
+.unit .bar { height: 5px; background: #000; border-radius: 3px; overflow: hidden; }
 .unit .bar i { display: block; height: 100%; width: 100%; background: var(--ok); transition: width .3s; }
 .unit .bar i.mid { background: var(--gold); } .unit .bar i.low { background: var(--bad); }
-.unit .u3 { font-size: 11px; margin-top: 3px; display: flex; justify-content: space-between; }
-.unit .sts { color: var(--bad); font-size: 10px; }
-.unit.act { border-color: var(--gold); transform: translateY(-3px); }
-.unit.hit { animation: shake .28s; }
-.unit.dead { opacity: .3; }
-.unit .fl { position: absolute; left: 0; right: 0; top: -4px; text-align: center; font-weight: 800; font-size: 15px; pointer-events: none; opacity: 0; }
-.unit .fl.go { animation: floatup .7s ease-out; }
-.unit .fl.dmg { color: #ff8a7a; } .unit .fl.heal { color: var(--ok); }
+.unit .u3 { font-size: 10px; display: flex; justify-content: space-between; line-height: 1.4; }
+.unit .sts { font-size: 10px; }
+
+/* 대기 동작: 병사가 번갈아 들썩인다 */
+.unit .sol { animation: idle calc(1.5s / var(--sp, 1)) ease-in-out infinite; }
+.unit .sol1 { animation-delay: -.45s; } .unit .sol2 { animation-delay: -.9s; }
+@keyframes idle { 50% { transform: translateY(-1.3px); } }
+
+/* 공격 동작: 무기 내지르기, 말 다리 질주, 활시위 */
+.unit.atk .wpn { animation: thrust calc(.44s / var(--sp, 1)) ease-out; }
+.unit.atk.t-cav .legs { animation: gallop calc(.11s / var(--sp, 1)) linear 4; }
+.unit.atk.t-arc .wpn { animation: loose calc(.44s / var(--sp, 1)) ease-out; }
+.unit.atk.t-arc .str { animation: twang calc(.44s / var(--sp, 1)) ease-out; }
+@keyframes thrust { 0% { transform: translate(-3px, 1px); } 40% { transform: translate(8px, -3px); } 100% { transform: translate(0, 0); } }
+@keyframes gallop { 0% { transform: skewX(0); } 25% { transform: skewX(-16deg); } 75% { transform: skewX(16deg); } 100% { transform: skewX(0); } }
+@keyframes loose { 0% { transform: translateX(-5px); opacity: 1; } 28% { transform: translateX(-5px); opacity: 1; } 34% { opacity: 0; } 80% { opacity: 0; transform: translateX(0); } 100% { opacity: 1; } }
+@keyframes twang { 0%, 28% { transform: translateX(-4px); } 40% { transform: translateX(1.5px); } 55% { transform: translateX(-1px); } 100% { transform: translateX(0); } }
+.unit .legs { transform-box: fill-box; transform-origin: 50% 0; }
+
+/* 맞았을 때, 전법, 회복, 강화·약화, 상태 이상 */
+.unit.hit { animation: shake calc(.3s / var(--sp, 1)); }
+.unit.hit .spr { animation: hitflash calc(.3s / var(--sp, 1)); }
+.unit.healed .spr { animation: healglow calc(.6s / var(--sp, 1)); }
+.unit.buffed .spr { animation: buffglow calc(.5s / var(--sp, 1)); }
+.unit.cursed .spr { animation: curse calc(.5s / var(--sp, 1)); }
+.unit.cast .spr { animation: castglow calc(.7s / var(--sp, 1)); }
+@keyframes hitflash { 30% { filter: brightness(2.6) saturate(.3); } }
+@keyframes healglow { 40% { filter: drop-shadow(0 0 7px #5bbf7a) brightness(1.3); } }
+@keyframes buffglow { 40% { filter: drop-shadow(0 0 6px #8fc7ff); } }
+@keyframes curse { 40% { filter: drop-shadow(0 0 6px #b47bff) brightness(.8); } }
+@keyframes castglow { 20%, 70% { filter: drop-shadow(0 0 9px #ffd98a) brightness(1.35); transform: scale(1.08); } }
+.unit .tn { position: absolute; left: -30px; right: -30px; top: -15px; text-align: center; font-size: 12px; font-weight: 800; color: #ffe3a0;
+  text-shadow: 0 0 6px #b45f06, 0 1px 2px #000; white-space: nowrap; opacity: 0; pointer-events: none; z-index: 6; }
+.unit.cast .tn { animation: tname calc(.9s / var(--sp, 1)) ease-out; }
+@keyframes tname { 0% { opacity: 0; transform: translateY(6px) scale(.7); } 18% { opacity: 1; transform: translateY(0) scale(1.12); } 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-6px); } }
+
+/* 부대가 무너졌을 때 */
+.unit.dead .spr { transition: transform .5s, opacity .5s, filter .5s; transform: translateY(8px) rotate(-10deg) scaleY(.6); opacity: .28; filter: grayscale(1); }
+.unit.side-B.dead .spr { transform: translateY(8px) rotate(10deg) scaleY(.6); }
+.unit.dead .sol { animation: none; }
+.unit.dead .plate { opacity: .45; }
+
+.unit .fl { position: absolute; left: -10px; right: -10px; top: 2px; text-align: center; font-weight: 800; font-size: 16px; pointer-events: none; opacity: 0; z-index: 7; text-shadow: 0 1px 3px #000; }
+.unit .fl.go { animation: floatup calc(.8s / var(--sp, 1)) ease-out; }
+.unit .fl.dmg { color: #ff8a7a; } .unit .fl.heal { color: #7be39b; }
+
+/* 화살과 충격 효과 */
+.proj { position: absolute; left: 0; top: 0; width: 24px; height: 2px; margin: -1px 0 0 -12px; background: linear-gradient(90deg, transparent, #e8e2d6 40%); z-index: 8; pointer-events: none; }
+.proj::after { content: ''; position: absolute; right: -4px; top: -3px; border-left: 7px solid #dfe6ea; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+.proj.fire { background: linear-gradient(90deg, transparent, #ff9c3a 30%, #ffe08a); box-shadow: 0 0 6px #ff7a1a; }
+.spark { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; z-index: 8; pointer-events: none; background: #fff;
+  clip-path: polygon(50% 0, 58% 36%, 96% 22%, 66% 50%, 100% 72%, 60% 64%, 52% 100%, 42% 64%, 2% 80%, 34% 50%, 4% 20%, 42% 36%);
+  animation: sparkpop calc(.36s / var(--sp, 1)) ease-out forwards; }
+.spark.fire { background: #ffb347; }
+@keyframes sparkpop { 0% { transform: scale(.2) rotate(0); opacity: 1; } 60% { opacity: .95; } 100% { transform: scale(1.15) rotate(25deg); opacity: 0; } }
+
+/* 무장 상세 화면의 부대 그림 */
+.spr-demo { width: 132px; margin: 4px auto 6px; padding: 8px 10px 2px; border-radius: 12px; background: linear-gradient(180deg, #2a2f33, #3d3628); }
+.spr-demo svg { display: block; width: 100%; height: auto; }
+.spr-demo .sol { animation: idle 1.5s ease-in-out infinite; } .spr-demo .sol1 { animation-delay: -.45s; } .spr-demo .sol2 { animation-delay: -.9s; }
+
+@media (prefers-reduced-motion: reduce) { .unit .sol, .spr-demo .sol { animation: none; } }
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 @keyframes floatup { 0% { opacity: 1; transform: translateY(8px); } 100% { opacity: 0; transform: translateY(-18px); } }
-.b-log { flex: 1; overflow-y: auto; margin: 0 10px; background: #100d0b; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.65; }
+.b-log { flex: 1; overflow-y: auto; margin: 8px 10px; background: #100d0b; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.65; }
 .b-log .l-round { color: var(--gold); font-weight: 700; margin-top: 4px; }
 .b-log .l-tactic { color: #ffd98a; }
 .b-log .l-heal, .b-log .l-buff { color: #9fd8b0; }
